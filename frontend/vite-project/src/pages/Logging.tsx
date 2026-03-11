@@ -193,7 +193,7 @@ const StepSend = ({ onNext, onBack }) => {
   const options = [
     { type: "flash", emoji: "⚡", label: "Flash", sub: "Sent first try, no beta", color: T.gold },
     { type: "send", emoji: "✓", label: "Send", sub: "Completed after attempts", color: T.green },
-    { type: "attempt", emoji: "◌", label: "Attempt", sub: "Still projecting it", color: T.sub },
+    { type: "project", emoji: "◌", label: "Project", sub: "Still working on it, but haven't sent", color: T.sub },
   ];
 
   return (
