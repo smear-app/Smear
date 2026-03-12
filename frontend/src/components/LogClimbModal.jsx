@@ -17,8 +17,8 @@ const EMPTY_DRAFT = {
 const CLOSE_ANIMATION_MS = 280
 
 function LogClimbModal({ isOpen, onClose, onSave }) {
-  const [isRendered, setIsRendered] = useState(isOpen)
-  const [isVisible, setIsVisible] = useState(isOpen)
+  const [isRendered, setIsRendered] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const previousPhotoRef = useRef(null)
@@ -48,13 +48,20 @@ function LogClimbModal({ isOpen, onClose, onSave }) {
     if (isOpen) {
       // Reset draft and step each time the sheet is opened fresh.
       resetDraft()
+      setIsVisible(false)
       setIsRendered(true)
 
+      let animationFrameId = 0
       const nextFrame = window.requestAnimationFrame(() => {
-        setIsVisible(true)
+        animationFrameId = window.requestAnimationFrame(() => {
+          setIsVisible(true)
+        })
       })
 
-      return () => window.cancelAnimationFrame(nextFrame)
+      return () => {
+        window.cancelAnimationFrame(nextFrame)
+        window.cancelAnimationFrame(animationFrameId)
+      }
     }
 
     setIsVisible(false)
