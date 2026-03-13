@@ -1,3 +1,4 @@
 node_modules
 backend/venv
 backend\app\__pycache__
+CLAUDE.md 
