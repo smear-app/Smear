@@ -3,10 +3,12 @@ import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
 import { useAuth } from "./context/AuthContext"
+import { useGym } from "./context/GymContext"
 import { fetchClimbs } from "./lib/climbs"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
   const { user } = useAuth()
+  const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
   const [loadError, setLoadError] = useState(null)
 
@@ -23,8 +25,8 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
       <main className="mx-auto flex min-h-[450px] max-w-[420px] flex-col px-5 pb-32 pt-6">
         <WelcomeCard />
 
-        <section className="mt-6 flex-1 rounded-[28px] bg-white px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-          <div className="flex items-center justify-between">
+        <section className="mt-6 flex h-[420px] flex-col rounded-[28px] bg-white px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+          <div className="flex shrink-0 items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Recent Climbs</h2>
             <div className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
               {climbs.length}
@@ -40,8 +42,8 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-6 space-y-4">
-              {climbs.slice(0, 3).map((climb) => (
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-4 pr-1">
+              {climbs.map((climb) => (
                 <article
                   key={climb.id}
                   className="rounded-[24px] bg-slate-50 p-4"
@@ -58,6 +60,9 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
                         {climb.send_type} •{" "}
                         {new Date(climb.created_at).toLocaleDateString()}
                       </p>
+                      {climb.gym_name && (
+                        <p className="mt-0.5 text-xs text-slate-400">{climb.gym_name}</p>
+                      )}
                     </div>
                     <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
                       {climb.tags.length} tags
@@ -81,7 +86,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
         </section>
       </main>
 
-      <FloatingActionButton onClick={onOpenLogClimb} />
+      <FloatingActionButton onClick={onOpenLogClimb} disabled={!activeGym} />
       <BottomNav />
     </div>
   )

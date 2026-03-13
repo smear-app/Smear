@@ -10,6 +10,8 @@ export function gradeToValue(grade: string): number {
 }
 
 export interface ClimbDraft {
+  gymId: string
+  gymName: string
   gymGrade: string
   feltLike: string
   sendType: string
@@ -20,6 +22,8 @@ export interface ClimbDraft {
 export interface Climb {
   id: string
   user_id: string
+  gym_id: string | null
+  gym_name: string | null
   gym_grade: string
   gym_grade_value: number
   personal_grade: string | null
@@ -34,6 +38,8 @@ export interface Climb {
 export async function insertClimb(draft: ClimbDraft, userId: string): Promise<void> {
   const { error } = await supabase.from('climbs').insert({
     user_id: userId,
+    gym_id: draft.gymId || null,
+    gym_name: draft.gymName || null,
     gym_grade: draft.gymGrade,
     gym_grade_value: gradeToValue(draft.gymGrade),
     personal_grade: draft.feltLike,
