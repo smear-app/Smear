@@ -156,18 +156,18 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
         type="button"
         aria-label="Close log climb"
         onClick={onClose}
-        className={`absolute inset-0 bg-slate-950/40 transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-[#2E2A26]/35 transition-opacity duration-300 ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
       />
 
       <div className="absolute inset-x-0 bottom-0 flex justify-center">
         <div
-          className={`flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] bg-[#fcfcfa] shadow-2xl transition-transform duration-300 ${
+          className={`flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] transition-transform duration-300 ${
             isVisible ? "translate-y-0" : "translate-y-full"
           }`}
         >
-          <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-200" />
+          <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-stone-border" />
           {currentStep < SUCCESS_STEP && (
             <>
               <LogClimbHeader

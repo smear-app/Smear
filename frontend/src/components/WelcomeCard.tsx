@@ -19,7 +19,7 @@ const WelcomeCard = () => {
   }, [user])
 
   return (
-    <section className="flex items-start justify-between gap-4 rounded-[28px] bg-[#f2f2f2] px-5 py-4 shadow-sm">
+    <section className="flex items-center justify-between rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 shadow-[0_12px_28px_rgba(89,68,51,0.07)]">
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium text-gray-500">Welcome Back</p>
         <p className="text-2xl font-bold text-gray-900">
@@ -29,7 +29,7 @@ const WelcomeCard = () => {
       </div>
       <div
         aria-label="Default user avatar"
-        className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-gray-500 shadow-sm"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-ember text-stone-surface shadow-[0_12px_24px_rgba(201,86,26,0.25)]"
       >
         <FiUser className="h-6 w-6" />
       </div>

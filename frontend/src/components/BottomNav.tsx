@@ -11,7 +11,7 @@ const navItems = [
 
 const BottomNav = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-[#f2f2f2]">
+    <nav className="fixed bottom-0 left-0 right-0 border-t border-stone-border bg-stone-surface/95 backdrop-blur">
       <div className="mx-auto flex max-w-[420px] items-center justify-between px-6 py-3">
         {navItems.map(({ label, icon: Icon, to }) => (
           <NavLink
@@ -20,7 +20,7 @@ const BottomNav = () => {
             end={to === "/"}
             className={({ isActive }) =>
               `flex flex-1 flex-col items-center gap-1 text-[11px] font-medium ${
-                isActive ? "text-gray-900" : "text-gray-400"
+                isActive ? "text-ember" : "text-stone-muted"
               }`
             }
             aria-label={label}

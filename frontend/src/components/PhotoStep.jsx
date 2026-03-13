@@ -25,7 +25,7 @@ function PhotoStep({ draft, onChange, onContinue }) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex aspect-[4/5] w-full max-w-[320px] flex-col items-center justify-center overflow-hidden rounded-[32px] bg-slate-800 text-white"
+          className="flex aspect-[4/5] w-full max-w-[320px] flex-col items-center justify-center overflow-hidden rounded-[32px] border border-stone-border bg-stone-alt text-stone-text shadow-[0_16px_36px_rgba(89,68,51,0.08)]"
         >
           {draft.photo ? (
             <img
@@ -35,7 +35,7 @@ function PhotoStep({ draft, onChange, onContinue }) {
             />
           ) : (
             <>
-              <FiCamera className="h-10 w-10 text-slate-200" />
+              <FiCamera className="h-10 w-10 text-stone-muted" />
               <p className="mt-4 text-lg font-medium">Tap to add photo</p>
             </>
           )}
@@ -53,7 +53,7 @@ function PhotoStep({ draft, onChange, onContinue }) {
       <button
         type="button"
         onClick={onContinue}
-        className="mt-6 rounded-full bg-black px-6 py-4 text-base font-semibold text-white transition-transform duration-200 active:scale-[0.98]"
+        className="mt-6 rounded-full bg-ember px-6 py-4 text-base font-semibold text-stone-surface transition-all duration-200 hover:bg-ember-dark active:scale-[0.98]"
       >
         Continue
       </button>

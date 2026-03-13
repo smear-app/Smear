@@ -1,5 +1,21 @@
 const SEND_OPTIONS = ["Flash", "Send", "Attempt"]
 
+function getOptionStyles(option, isSelected) {
+  if (!isSelected) {
+    return "border-stone-border bg-stone-alt"
+  }
+
+  if (option === "Flash") {
+    return "border-ember/20 bg-ember-soft"
+  }
+
+  if (option === "Send") {
+    return "border-ember/20 bg-ember-soft"
+  }
+
+  return "border-stone-border bg-stone-surface"
+}
+
 function SendStep({ draft, onChange, onContinue }) {
   const canContinueFromSend = draft.sendType !== ""
 
@@ -14,14 +30,12 @@ function SendStep({ draft, onChange, onContinue }) {
               key={option}
               type="button"
               onClick={() => onChange("sendType", option)}
-              className={`rounded-[28px] border px-5 py-6 text-left transition-colors ${
-                isSelected
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-transparent bg-slate-100"
-              }`}
+              className={`rounded-[28px] border px-5 py-6 text-left transition-colors ${getOptionStyles(option, isSelected)}`}
             >
-              <p className="text-lg font-semibold text-slate-900">{option}</p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className={`text-lg font-semibold ${option === "Send" && isSelected ? "text-ember" : option === "Flash" && isSelected ? "text-ember" : "text-stone-text"}`}>
+                {option}
+              </p>
+              <p className="mt-1 text-sm text-stone-secondary">
                 {option === "Flash" && "Sent first go."}
                 {option === "Send" && "Completed after working it out."}
                 {option === "Attempt" && "Tried it, but no send yet."}
@@ -33,7 +47,7 @@ function SendStep({ draft, onChange, onContinue }) {
 
       <div className="mt-6 min-h-[20px]">
         {!canContinueFromSend ? (
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-stone-secondary">
             Select Flash, Send, or Attempt to continue
           </p>
         ) : null}
@@ -47,10 +61,10 @@ function SendStep({ draft, onChange, onContinue }) {
           }
         }}
         disabled={!canContinueFromSend}
-        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
+        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-stone-surface transition-all duration-200 ${
           canContinueFromSend
-            ? "bg-black active:scale-[0.98]"
-            : "cursor-not-allowed bg-black/35 opacity-70"
+            ? "bg-ember hover:bg-ember-dark active:scale-[0.98]"
+            : "cursor-not-allowed bg-stone-border text-stone-muted opacity-80"
         }`}
       >
         Continue
