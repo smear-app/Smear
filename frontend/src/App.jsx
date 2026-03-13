@@ -34,8 +34,9 @@ function ProtectedApp() {
   return (
     <div className="min-h-screen bg-[#f5f5f2] text-slate-900">
       <Routes>
+        <Route path="/" element={<Navigate to="/home" replace />} />
         <Route
-          path="/"
+          path="/home"
           element={
             <HomePage
               onOpenLogClimb={() => setIsLogClimbOpen(true)}
@@ -67,6 +68,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<AuthRoute />} />
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/*" element={<ProtectedApp />} />
         </Routes>

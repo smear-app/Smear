@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom"
 import { FiBarChart2, FiHome, FiSend, FiUser, FiUsers } from "react-icons/fi"
 
 const navItems = [
-  { label: "Home", icon: FiHome, to: "/" },
+  { label: "Home", icon: FiHome, to: "/home" },
   { label: "Stats", icon: FiBarChart2, to: "/stats" },
   { label: "Feed", icon: FiSend, to: "/feed" },
   { label: "Social", icon: FiUsers, to: "/social" },
