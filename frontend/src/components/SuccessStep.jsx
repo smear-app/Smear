@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)"
+const CHALK_EASE = "cubic-bezier(0.16, 1, 0.3, 1)"
 
 function SuccessStep({ draft, onDone }) {
   const [isVisible, setIsVisible] = useState(false)
@@ -37,16 +38,70 @@ function SuccessStep({ draft, onDone }) {
             transform: scale(1);
           }
         }
+
+        /* Reward accent: a very soft chalk bloom that breathes out behind the icon once. */
+        @keyframes chalk-puff {
+          0% {
+            opacity: 0;
+            transform: scale(0.85);
+          }
+          30% {
+            opacity: 0.18;
+            transform: scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.15);
+          }
+        }
+
+        /* Reward accent: a restrained emphasis bounce for the grade badge only. */
+        @keyframes grade-badge-bounce {
+          0% {
+            transform: scale(1);
+          }
+          40% {
+            transform: scale(1.08);
+          }
+          72% {
+            transform: scale(0.98);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
       `}</style>
 
       <div
-        className="flex h-20 w-20 items-center justify-center rounded-full bg-ember-soft text-5xl shadow-[0_12px_28px_rgba(201,86,26,0.12)]"
-        style={{
-          opacity: isVisible ? 1 : 0,
-          animation: isVisible ? `success-icon-pop 400ms ${EASE_OUT} 80ms both` : "none",
-        }}
+        className="relative flex h-20 w-20 items-center justify-center"
       >
-        🧗
+        {/* Reward accent: layered, blurred chalk shapes kept quiet and behind the icon. */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5efe4] blur-xl"
+          style={{
+            opacity: 0,
+            animation: isVisible ? `chalk-puff 620ms ${CHALK_EASE} 120ms both` : "none",
+          }}
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-[42%] top-[48%] h-10 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e9dfcf] blur-lg"
+          style={{
+            opacity: 0,
+            animation: isVisible ? `chalk-puff 560ms ${CHALK_EASE} 160ms both` : "none",
+          }}
+        />
+
+        <div
+          className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-ember-soft text-5xl shadow-[0_12px_28px_rgba(201,86,26,0.12)]"
+          style={{
+            opacity: isVisible ? 1 : 0,
+            animation: isVisible ? `success-icon-pop 400ms ${EASE_OUT} 80ms both` : "none",
+          }}
+        >
+          🧗
+        </div>
       </div>
 
       <h2
@@ -69,7 +124,7 @@ function SuccessStep({ draft, onDone }) {
         }}
       >
         <Row label="Gym" value={draft.gymName} />
-        <Row label="Gym grade" value={draft.gymGrade} />
+        <Row label="Gym grade" value={draft.gymGrade} isGradeBadge={true} isVisible={isVisible} />
         <Row label="Felt like" value={draft.feltLike} />
         <Row label="Send" value={draft.sendType} />
         <div className="flex items-start justify-between gap-4 pt-1">
@@ -107,11 +162,23 @@ function SuccessStep({ draft, onDone }) {
   )
 }
 
-function Row({ label, value }) {
+function Row({ label, value, isGradeBadge = false, isVisible = false }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-stone-secondary">{label}</span>
-      <span className="text-sm font-semibold text-stone-text">{value}</span>
+      {isGradeBadge ? (
+        <span
+          className="inline-flex min-w-11 items-center justify-center rounded-full border border-ember/15 bg-ember-soft px-3 py-1 text-sm font-semibold text-stone-text shadow-[0_4px_12px_rgba(201,86,26,0.08)]"
+          style={{
+            animation: isVisible ? `grade-badge-bounce 400ms ${EASE_OUT} 820ms both` : "none",
+            transformOrigin: "center",
+          }}
+        >
+          {value}
+        </span>
+      ) : (
+        <span className="text-sm font-semibold text-stone-text">{value}</span>
+      )}
     </div>
   )
 }
