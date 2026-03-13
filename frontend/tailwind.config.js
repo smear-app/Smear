@@ -24,7 +24,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['"Space Grotesk"', "sans-serif"],
+        sans: ['"Inter"', "sans-serif"],
       },
     },
   },
