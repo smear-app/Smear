@@ -111,7 +111,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
               onClick={() => {
                 setIsRegistryOpen(true)
               }}
-              className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+              className="inline-flex items-center rounded-full bg-ember-soft px-3 py-1.5 text-xs font-semibold text-ember"
             >
               Select
             </button>
@@ -179,7 +179,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
                   <p className="text-sm text-slate-500">No gyms matched your search.</p>
                   <a
                     href="/support"
-                    className="mt-3 inline-block text-xs font-semibold text-emerald-600"
+                    className="mt-3 inline-block text-xs font-semibold text-ember"
                   >
                     Don't see your gym?
                   </a>
@@ -195,7 +195,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
                           key={gym.id}
                           className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
                             isActive
-                              ? "bg-emerald-50 ring-emerald-100"
+                              ? "bg-ember-soft ring-ember/25"
                               : "bg-white ring-slate-200 hover:bg-slate-50"
                           }`}
                         >
@@ -216,7 +216,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
                               isBookmarked={isBookmarked}
                               onClick={(event) => handleBookmarkToggle(event, gym.id)}
                             />
-                            {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
+                            {isActive && <FiCheck className="h-4 w-4 text-ember" />}
                           </div>
                         </div>
                       )
@@ -269,7 +269,7 @@ function SelectorSection({
               <div
                 key={gym.id}
                 className={`flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
-                  isActive ? "bg-emerald-50" : "bg-slate-50 hover:bg-slate-100"
+                  isActive ? "bg-ember-soft" : "bg-slate-50 hover:bg-slate-100"
                 }`}
               >
                 <button
@@ -290,7 +290,7 @@ function SelectorSection({
                     isBookmarked={isBookmarked}
                     onClick={(event) => onToggleBookmark(event, gym.id)}
                   />
-                  {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
+                  {isActive && <FiCheck className="h-4 w-4 text-ember" />}
                 </div>
               </div>
             )
@@ -315,10 +315,10 @@ function BookmarkToggleButton({
       type="button"
       aria-label={`${isBookmarked ? "Remove bookmark for" : "Bookmark"} ${gymName}`}
       onClick={onClick}
-      className="rounded-full bg-white/90 p-1.5 text-slate-400 ring-1 ring-slate-200 transition hover:text-emerald-600"
+      className="rounded-full bg-white/90 p-1.5 text-slate-400 ring-1 ring-slate-200 transition hover:text-ember"
     >
       {isBookmarked ? (
-        <RiBookmarkFill className="h-3.5 w-3.5 text-emerald-600" />
+        <RiBookmarkFill className="h-3.5 w-3.5 text-ember" />
       ) : (
         <FiBookmark className="h-3.5 w-3.5" />
       )}
