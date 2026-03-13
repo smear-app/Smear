@@ -84,11 +84,11 @@ function TagsStep({ draft, onToggleTag, onSave }) {
         </div>
         </div>
         {showFade && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
         )}
       </div>
 
-      <div className="mt-6 min-h-[20px]">
+      <div className="mt-3 min-h-[20px]">
         {!canSaveFromTags ? (
           <p className="text-center text-sm text-slate-500">
             Select at least one tag to save this climb
@@ -104,7 +104,7 @@ function TagsStep({ draft, onToggleTag, onSave }) {
           }
         }}
         disabled={!canSaveFromTags}
-        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
+        className={`mt-3 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
           canSaveFromTags
             ? "bg-black active:scale-[0.98]"
             : "cursor-not-allowed bg-black/35 opacity-70"
