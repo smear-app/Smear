@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react"
+
 const TAG_SECTIONS = [
   {
     title: "Hold type",
@@ -31,10 +33,22 @@ function TagChip({ isSelected, label, onClick }) {
 
 function TagsStep({ draft, onToggleTag, onSave }) {
   const canSaveFromTags = Array.isArray(draft.tags) && draft.tags.length > 0
+  const scrollRef = useRef(null)
+  const [showFade, setShowFade] = useState(false)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setShowFade(el.scrollTop + el.clientHeight < el.scrollHeight - 4)
+    check()
+    el.addEventListener("scroll", check)
+    return () => el.removeEventListener("scroll", check)
+  }, [])
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="relative min-h-0 flex-1">
+        <div ref={scrollRef} className="h-full overflow-y-auto">
         <div className="rounded-[30px] bg-slate-50/90 p-6">
           <h3 className="text-lg font-semibold tracking-tight text-slate-950">
             Finish the details
@@ -68,6 +82,10 @@ function TagsStep({ draft, onToggleTag, onSave }) {
             ))}
           </div>
         </div>
+        </div>
+        {showFade && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
+        )}
       </div>
 
       <div className="mt-6 min-h-[20px]">
