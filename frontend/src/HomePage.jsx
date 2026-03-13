@@ -47,7 +47,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-6 h-[468px] overflow-y-auto space-y-4 pr-1">
+            <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
               {climbs.map((climb) => (
                 <article
                   key={climb.id}
@@ -77,9 +77,9 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
                     <div className="flex flex-col items-end gap-2">
                       <StatusPill sendType={climb.send_type} />
-                      <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
+                      {/* <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
                         {climb.tags.length} tags
-                      </div>
+                      </div> */}
                     </div>
                   </div>
 
