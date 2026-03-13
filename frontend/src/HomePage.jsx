@@ -3,10 +3,12 @@ import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
 import { useAuth } from "./context/AuthContext"
+import { useGym } from "./context/GymContext"
 import { fetchClimbs } from "./lib/climbs"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
   const { user } = useAuth()
+  const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
   const [loadError, setLoadError] = useState(null)
 
@@ -45,8 +47,8 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-6 space-y-4">
-              {climbs.slice(0, 3).map((climb) => (
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-4 pr-1">
+              {climbs.map((climb) => (
                 <article
                   key={climb.id}
                   className="rounded-[24px] border border-stone-border/70 bg-stone-surface p-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)]"
@@ -59,17 +61,26 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
                           ? ` / ${climb.personal_grade}`
                           : ""}
                       </div>
+
                       <div>
                         <p className="text-sm font-semibold text-stone-text">
                           {climb.tags[0] ? `${climb.tags[0]} session` : "Logged climb"}
                         </p>
                         <p className="mt-1 text-xs text-stone-secondary capitalize">
-                          {climb.send_type} •{" "}
-                          {new Date(climb.created_at).toLocaleDateString()}
+                          {climb.send_type} • {new Date(climb.created_at).toLocaleDateString()}
                         </p>
+                        {climb.gym_name && (
+                          <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
+                        )}
                       </div>
                     </div>
-                    <StatusPill sendType={climb.send_type} />
+
+                    <div className="flex flex-col items-end gap-2">
+                      <StatusPill sendType={climb.send_type} />
+                      <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
+                        {climb.tags.length} tags
+                      </div>
+                    </div>
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -89,7 +100,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
         </section>
       </main>
 
-      <FloatingActionButton onClick={onOpenLogClimb} />
+      <FloatingActionButton onClick={onOpenLogClimb} disabled={!activeGym} />
       <BottomNav />
     </div>
   )
