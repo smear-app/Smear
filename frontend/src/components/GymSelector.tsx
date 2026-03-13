@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react"
-import { FiBookmark, FiCheck, FiChevronDown, FiMapPin, FiPlus, FiSearch } from "react-icons/fi"
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
+import { FiBookmark, FiCheck, FiChevronDown, FiMapPin, FiSearch } from "react-icons/fi"
+import { RiBookmarkFill } from "react-icons/ri"
 import { useGym } from "../context/GymContext"
 import { formatGymLocation, type GymRecord } from "../lib/gyms"
 
@@ -13,56 +14,57 @@ function GymSelector({ className = "" }: GymSelectorProps) {
     bookmarkedGyms,
     recentGyms,
     bookmarkedGymIds,
-    setActiveGym,
-    bookmarkGym,
+    selectGym,
+    toggleBookmark,
     searchGyms,
   } = useGym()
   const [isOpen, setIsOpen] = useState(false)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isRegistryOpen, setIsRegistryOpen] = useState(false)
   const [query, setQuery] = useState("")
   const containerRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   const searchResults = useMemo(() => searchGyms(query), [query, searchGyms])
-  const visibleRecentGyms = useMemo(
-    () => recentGyms.filter((gym) => !bookmarkedGymIds.includes(gym.id)),
-    [bookmarkedGymIds, recentGyms],
-  )
 
   useEffect(() => {
-    if (!isOpen) return undefined
+    if (!isOpen && !isRegistryOpen) return undefined
 
     function handlePointerDown(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
         setIsOpen(false)
+        setIsRegistryOpen(false)
       }
     }
 
     window.addEventListener("mousedown", handlePointerDown)
     return () => window.removeEventListener("mousedown", handlePointerDown)
-  }, [isOpen])
+  }, [isOpen, isRegistryOpen])
 
   useEffect(() => {
-    if (!isAddModalOpen) return undefined
+    if (!isRegistryOpen) return undefined
 
     const timeoutId = window.setTimeout(() => {
       searchInputRef.current?.focus()
     }, 10)
 
     return () => window.clearTimeout(timeoutId)
-  }, [isAddModalOpen])
+  }, [isRegistryOpen])
 
-  function handleSelect(gymId: string) {
-    setActiveGym(gymId)
+  function handleSelectFromPopup(gymId: string) {
+    selectGym(gymId)
     setIsOpen(false)
   }
 
-  function handleAddFromRegistry(gymId: string) {
-    bookmarkGym(gymId)
-    setActiveGym(gymId)
+  function handleSelectFromRegistry(gymId: string) {
+    selectGym(gymId)
     setQuery("")
-    setIsAddModalOpen(false)
+    setIsRegistryOpen(false)
     setIsOpen(false)
+  }
+
+  function handleBookmarkToggle(event: ReactMouseEvent, gymId: string) {
+    event.stopPropagation()
+    toggleBookmark(gymId)
   }
 
   return (
@@ -84,117 +86,121 @@ function GymSelector({ className = "" }: GymSelectorProps) {
       </button>
 
       {isOpen && (
-        <>
-          <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-30 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Select gym</p>
-                <p className="text-xs text-slate-500">Active gym for new logs</p>
-              </div>
+        <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-30 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Select gym</p>
+              <p className="text-xs text-slate-500">Active gym for new logs</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRegistryOpen(true)
+              }}
+              className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+            >
+              Select
+            </button>
+          </div>
+
+          <SelectorSection
+            title="Bookmarked Gyms"
+            gyms={bookmarkedGyms}
+            activeGymId={activeGym.id}
+            bookmarkedGymIds={bookmarkedGymIds}
+            onSelect={handleSelectFromPopup}
+            onToggleBookmark={handleBookmarkToggle}
+            emptyMessage="No bookmarked gyms yet."
+            className="mt-4"
+          />
+          <SelectorSection
+            title="Recently Visited"
+            gyms={recentGyms}
+            activeGymId={activeGym.id}
+            bookmarkedGymIds={bookmarkedGymIds}
+            onSelect={handleSelectFromPopup}
+            onToggleBookmark={handleBookmarkToggle}
+            emptyMessage="No recent gyms yet."
+            className="mt-4"
+          />
+        </div>
+      )}
+
+      {isRegistryOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/20 px-5">
+          <div className="flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-[#fcfcfa] p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-slate-200">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm font-semibold text-slate-900">Select gym</p>
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700"
+                onClick={() => {
+                  setIsRegistryOpen(false)
+                  setQuery("")
+                }}
+                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600"
               >
-                <FiPlus className="h-4 w-4" />
-                + Add
+                Close
               </button>
             </div>
 
-            <SelectorSection
-              title="Bookmarked gyms"
-              gyms={bookmarkedGyms}
-              activeGymId={activeGym.id}
-              bookmarkedGymIds={bookmarkedGymIds}
-              onSelect={handleSelect}
-              onBookmark={bookmarkGym}
-              className="mt-4"
-            />
-            <SelectorSection
-              title="Recently visited"
-              gyms={visibleRecentGyms}
-              activeGymId={activeGym.id}
-              bookmarkedGymIds={bookmarkedGymIds}
-              onSelect={handleSelect}
-              onBookmark={bookmarkGym}
-              className="mt-4"
-            />
-          </div>
+            <label className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+              <FiSearch className="h-4 w-4 text-slate-400" />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search gyms, cities, or chains"
+                className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+              />
+            </label>
 
-          {isAddModalOpen && (
-            <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/20 px-5">
-              <div className="w-full max-w-[420px] rounded-[28px] bg-[#fcfcfa] p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-slate-200">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Add gym</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Search the canonical gym registry.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAddModalOpen(false)
-                      setQuery("")
-                    }}
-                    className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600"
-                  >
-                    Close
-                  </button>
-                </div>
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+              <div className="space-y-2">
+                {searchResults.map((gym) => {
+                  const isBookmarked = bookmarkedGymIds.includes(gym.id)
+                  const isActive = activeGym.id === gym.id
 
-                <label className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                  <FiSearch className="h-4 w-4 text-slate-400" />
-                  <input
-                    ref={searchInputRef}
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search gyms, cities, or chains"
-                    className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                  />
-                </label>
-
-                <div className="mt-4 max-h-[320px] space-y-2 overflow-y-auto pr-1">
-                  {searchResults.map((gym) => {
-                    const isBookmarked = bookmarkedGymIds.includes(gym.id)
-
-                    return (
+                  return (
+                    <div
+                      key={gym.id}
+                      className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
+                        isActive
+                          ? "bg-emerald-50 ring-emerald-100"
+                          : "bg-white ring-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
                       <button
-                        key={gym.id}
                         type="button"
-                        onClick={() => handleAddFromRegistry(gym.id)}
-                        className="flex w-full items-center justify-between rounded-2xl bg-white px-3 py-2.5 text-left ring-1 ring-slate-200 transition hover:bg-slate-50"
+                        onClick={() => handleSelectFromRegistry(gym.id)}
+                        className="min-w-0 flex-1 text-left"
                       >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
-                          <p className="mt-0.5 truncate text-xs text-slate-500">
-                            {formatGymLocation(gym)}
-                            {gym.address ? ` • ${gym.address}` : ""}
-                          </p>
-                        </div>
-                        <span
-                          className={`ml-3 shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                            isBookmarked
-                              ? "bg-slate-100 text-slate-500"
-                              : "bg-emerald-50 text-emerald-700"
-                          }`}
-                        >
-                          {isBookmarked ? "Saved" : "Add"}
-                        </span>
+                        <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">
+                          {formatGymLocation(gym)}
+                          {gym.address ? ` • ${gym.address}` : ""}
+                        </p>
                       </button>
-                    )
-                  })}
-
-                  {searchResults.length === 0 && (
-                    <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                      No gyms matched your search.
+                      <div className="ml-3 flex shrink-0 items-center gap-2">
+                        <BookmarkToggleButton
+                          gymName={gym.name}
+                          isBookmarked={isBookmarked}
+                          onClick={(event) => handleBookmarkToggle(event, gym.id)}
+                        />
+                        {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  )
+                })}
+
+                {searchResults.length === 0 && (
+                  <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No gyms matched your search.
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </>
+          </div>
+        </div>
       )}
     </div>
   )
@@ -206,7 +212,8 @@ function SelectorSection({
   activeGymId,
   bookmarkedGymIds,
   onSelect,
-  onBookmark,
+  onToggleBookmark,
+  emptyMessage,
   className = "",
 }: {
   title: string
@@ -214,7 +221,8 @@ function SelectorSection({
   activeGymId: string
   bookmarkedGymIds: string[]
   onSelect: (gymId: string) => void
-  onBookmark: (gymId: string) => void
+  onToggleBookmark: (event: ReactMouseEvent, gymId: string) => void
+  emptyMessage: string
   className?: string
 }) {
   return (
@@ -223,47 +231,73 @@ function SelectorSection({
         {title}
       </p>
       <div className="mt-2 space-y-1.5">
-        {gyms.map((gym) => {
-          const isActive = gym.id === activeGymId
-          const isBookmarked = bookmarkedGymIds.includes(gym.id)
+        {gyms.length === 0 ? (
+          <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
+            {emptyMessage}
+          </div>
+        ) : (
+          gyms.map((gym) => {
+            const isActive = gym.id === activeGymId
+            const isBookmarked = bookmarkedGymIds.includes(gym.id)
 
-          return (
-            <div
-              key={gym.id}
-              className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left transition ${
-                isActive ? "bg-emerald-50" : "bg-slate-50 hover:bg-slate-100"
-              }`}
-            >
-              <button type="button" onClick={() => onSelect(gym.id)} className="min-w-0 flex-1">
-                <div className="min-w-0">
+            return (
+              <div
+                key={gym.id}
+                className={`flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
+                  isActive ? "bg-emerald-50" : "bg-slate-50 hover:bg-slate-100"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => onSelect(gym.id)}
+                  className="min-w-0 flex-1 text-left"
+                >
                   <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
                   <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
                     <FiMapPin className="h-3.5 w-3.5 shrink-0" />
                     {formatGymLocation(gym)}
                   </p>
+                </button>
+
+                <div className="ml-3 flex shrink-0 items-center gap-2">
+                  <BookmarkToggleButton
+                    gymName={gym.name}
+                    isBookmarked={isBookmarked}
+                    onClick={(event) => onToggleBookmark(event, gym.id)}
+                  />
+                  {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
                 </div>
-              </button>
-              <div className="ml-3 flex shrink-0 items-center gap-2">
-                {!isBookmarked && (
-                  <button
-                    type="button"
-                    aria-label={`Bookmark ${gym.name}`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onBookmark(gym.id)
-                    }}
-                    className="rounded-full bg-white/90 p-1.5 text-slate-400 ring-1 ring-slate-200 transition hover:text-emerald-600"
-                  >
-                    <FiBookmark className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
               </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
     </div>
+  )
+}
+
+function BookmarkToggleButton({
+  gymName,
+  isBookmarked,
+  onClick,
+}: {
+  gymName: string
+  isBookmarked: boolean
+  onClick: (event: ReactMouseEvent) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`${isBookmarked ? "Remove bookmark for" : "Bookmark"} ${gymName}`}
+      onClick={onClick}
+      className="rounded-full bg-white/90 p-1.5 text-slate-400 ring-1 ring-slate-200 transition hover:text-emerald-600"
+    >
+      {isBookmarked ? (
+        <RiBookmarkFill className="h-3.5 w-3.5 text-emerald-600" />
+      ) : (
+        <FiBookmark className="h-3.5 w-3.5" />
+      )}
+    </button>
   )
 }
 

@@ -13,7 +13,9 @@ export interface GymRecord {
 export interface StoredGymState {
   activeGymId: string
   bookmarkedGymIds: string[]
+  recentHistoryGymIds: string[]
   recentGymIds: string[]
+  hiddenGymIds: string[]
 }
 
 export interface BuiltGymState {
@@ -22,6 +24,8 @@ export interface BuiltGymState {
   recentGyms: GymRecord[]
   bookmarkedGymIds: string[]
   recentGymIds: string[]
+  recentHistoryGymIds: string[]
+  hiddenGymIds: string[]
 }
 
 export const GYM_REGISTRY: GymRecord[] = [
@@ -94,6 +98,7 @@ export const GYM_REGISTRY: GymRecord[] = [
 export const DEFAULT_ACTIVE_GYM_ID = "mission-cliffs"
 export const DEFAULT_BOOKMARKED_GYM_IDS = ["mission-cliffs", "dogpatch-boulders"]
 export const DEFAULT_RECENT_GYM_IDS = ["pacific-pipe", "berkeley-ironworks", "mission-cliffs"]
+export const MAX_RECENT_GYMS = 3
 
 export const ACTIVE_GYM_STORAGE_KEY = "smear.active-gym"
 
@@ -115,14 +120,51 @@ function uniqueValidGymIds(gymIds: string[]) {
   return Array.from(new Set(gymIds)).filter((gymId) => gymRegistryMap.has(gymId))
 }
 
+function resolveStoredGymIds(
+  storedGymIds: string[] | undefined,
+  fallbackGymIds: string[],
+) {
+  return storedGymIds === undefined ? fallbackGymIds : storedGymIds
+}
+
+function normalizeBookmarkedGymIds(bookmarkedGymIds: string[], hiddenGymIds: string[]) {
+  return uniqueValidGymIds(bookmarkedGymIds).filter((gymId) => !hiddenGymIds.includes(gymId))
+}
+
+function normalizeRecentHistoryGymIds(recentHistoryGymIds: string[]) {
+  return uniqueValidGymIds(recentHistoryGymIds)
+}
+
+function normalizeRecentGymIds(
+  recentHistoryGymIds: string[],
+  bookmarkedGymIds: string[],
+  hiddenGymIds: string[],
+) {
+  // Visible "Recently Visited" membership is derived from the user's recency
+  // history after removing bookmarked and hidden gyms, then taking the current top 3.
+  return uniqueValidGymIds(recentHistoryGymIds)
+    .filter((gymId) => !bookmarkedGymIds.includes(gymId) && !hiddenGymIds.includes(gymId))
+    .slice(0, MAX_RECENT_GYMS)
+}
+
 export function buildGymState(storedState?: Partial<StoredGymState> | null): BuiltGymState {
-  const bookmarkedGymIds = uniqueValidGymIds(
-    storedState?.bookmarkedGymIds?.length
-      ? storedState.bookmarkedGymIds
-      : DEFAULT_BOOKMARKED_GYM_IDS,
+  // Canonical registry records stay immutable. User-side bookmark, recent, and
+  // hidden preferences only affect which registry gyms are surfaced in the UI.
+  const hiddenGymIds = uniqueValidGymIds(storedState?.hiddenGymIds ?? [])
+  const bookmarkedGymIds = normalizeBookmarkedGymIds(
+    resolveStoredGymIds(storedState?.bookmarkedGymIds, DEFAULT_BOOKMARKED_GYM_IDS),
+    hiddenGymIds,
   )
-  const recentGymIds = uniqueValidGymIds(
-    storedState?.recentGymIds?.length ? storedState.recentGymIds : DEFAULT_RECENT_GYM_IDS,
+  const recentHistoryGymIds = normalizeRecentHistoryGymIds(
+    resolveStoredGymIds(
+      storedState?.recentHistoryGymIds ?? storedState?.recentGymIds,
+      DEFAULT_RECENT_GYM_IDS,
+    ),
+  )
+  const recentGymIds = normalizeRecentGymIds(
+    recentHistoryGymIds,
+    bookmarkedGymIds,
+    hiddenGymIds,
   )
   const activeGym =
     getGymById(storedState?.activeGymId ?? "") ??
@@ -135,11 +177,27 @@ export function buildGymState(storedState?: Partial<StoredGymState> | null): Bui
     recentGyms: recentGymIds.map((gymId) => getGymById(gymId)).filter(isGymRecord),
     bookmarkedGymIds,
     recentGymIds,
+    recentHistoryGymIds,
+    hiddenGymIds,
   }
 }
 
-export function addGymToRecent(recentGymIds: string[], gymId: string, maxItems = 4) {
-  return [gymId, ...recentGymIds.filter((id) => id !== gymId)].slice(0, maxItems)
+export function addGymToRecent(
+  recentHistoryGymIds: string[],
+  gymId: string,
+  maxItems = MAX_RECENT_GYMS,
+) {
+  return [gymId, ...recentHistoryGymIds.filter((id) => id !== gymId)]
+    .slice(0, maxItems)
+    .filter((id) => gymRegistryMap.has(id))
+}
+
+export function removeGymFromIds(gymIds: string[], gymId: string) {
+  return gymIds.filter((id) => id !== gymId)
+}
+
+export function upsertGymId(gymIds: string[], gymId: string) {
+  return uniqueValidGymIds([gymId, ...gymIds])
 }
 
 export function searchGymRegistry(query: string) {

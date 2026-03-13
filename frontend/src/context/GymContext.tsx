@@ -12,8 +12,10 @@ import {
   buildGymState,
   DEFAULT_ACTIVE_GYM_ID,
   getGymById,
+  removeGymFromIds,
   searchGymRegistry,
   type GymRecord,
+  upsertGymId,
 } from "../lib/gyms"
 
 interface GymContextValue {
@@ -21,8 +23,8 @@ interface GymContextValue {
   bookmarkedGyms: GymRecord[]
   recentGyms: GymRecord[]
   bookmarkedGymIds: string[]
-  setActiveGym: (gymId: string) => void
-  bookmarkGym: (gymId: string) => void
+  selectGym: (gymId: string) => void
+  toggleBookmark: (gymId: string) => void
   searchGyms: (query: string) => GymRecord[]
 }
 
@@ -43,53 +45,74 @@ export function GymProvider({ children }: { children: ReactNode }) {
   const initialState = buildGymState(readStoredGyms())
   const [activeGymId, setActiveGymId] = useState(initialState.activeGym.id)
   const [bookmarkedGymIds, setBookmarkedGymIds] = useState(initialState.bookmarkedGymIds)
-  const [recentGymIds, setRecentGymIds] = useState(initialState.recentGymIds)
+  const [recentHistoryGymIds, setRecentHistoryGymIds] = useState(initialState.recentHistoryGymIds)
+  const [hiddenGymIds, setHiddenGymIds] = useState(initialState.hiddenGymIds)
 
   useEffect(() => {
     // TODO: Persist gym preferences per user once profile-backed settings exist.
     // For now this stays in localStorage so active gym, bookmarks, and recent
-    // selections survive app restarts without backend support.
+    // selections, plus user-side hidden gyms, survive app restarts without backend support.
+    // TODO: Persist hidden/removed gyms as user-specific preference state.
     window.localStorage.setItem(
       ACTIVE_GYM_STORAGE_KEY,
       JSON.stringify({
         activeGymId,
         bookmarkedGymIds,
-        recentGymIds,
+        recentHistoryGymIds,
+        hiddenGymIds,
       }),
     )
-  }, [activeGymId, bookmarkedGymIds, recentGymIds])
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds])
 
   const value = useMemo(() => {
+    const state = buildGymState({
+      activeGymId,
+      bookmarkedGymIds,
+      recentHistoryGymIds,
+      hiddenGymIds,
+    })
     const activeGym =
       getGymById(activeGymId) ??
       getGymById(DEFAULT_ACTIVE_GYM_ID) ??
-      buildGymState().activeGym
-    const bookmarkedGyms = buildGymState({ bookmarkedGymIds }).bookmarkedGyms
-    const recentGyms = buildGymState({ recentGymIds }).recentGyms
+      state.activeGym
+    const { bookmarkedGyms, recentGyms } = state
 
     return {
       activeGym,
       bookmarkedGyms,
       recentGyms,
-      bookmarkedGymIds,
-      setActiveGym: (gymId: string) => {
+      bookmarkedGymIds: state.bookmarkedGymIds,
+      selectGym: (gymId: string) => {
         if (!getGymById(gymId)) return
+
+        setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
         setActiveGymId(gymId)
         // TODO: Replace this local recent list with real climb/session history
-        // once gym visits are derived from backend activity data.
-        setRecentGymIds((currentIds) => addGymToRecent(currentIds, gymId))
+        // once gym visits are derived from backend activity data. The visible
+        // top-3 recents are derived from this history after bookmark/hidden
+        // filtering instead of being persisted as a separate user-facing list.
+        setRecentHistoryGymIds((currentIds) => addGymToRecent(currentIds, gymId))
       },
-      bookmarkGym: (gymId: string) => {
+      toggleBookmark: (gymId: string) => {
         if (!getGymById(gymId)) return
-        setBookmarkedGymIds((currentIds) =>
-          currentIds.includes(gymId) ? currentIds : [...currentIds, gymId],
-        )
+
+        if (state.bookmarkedGymIds.includes(gymId)) {
+          // Unbookmarking only changes user-side preference state. The gym will
+          // reappear in "Recently Visited" only if its existing history entry
+          // still lands inside the current filtered top-3 recent set.
+          setBookmarkedGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
+          setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
+          return
+        }
+
+        setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
+        setBookmarkedGymIds((currentIds) => upsertGymId(currentIds, gymId))
       },
       searchGyms: (query: string) => {
         return searchGymRegistry(query)
       },
     }
-  }, [activeGymId, bookmarkedGymIds, recentGymIds])
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds])
 
   return <GymContext.Provider value={value}>{children}</GymContext.Provider>
 }
