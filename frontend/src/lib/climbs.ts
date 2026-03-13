@@ -10,6 +10,8 @@ export function gradeToValue(grade: string): number {
 }
 
 export interface ClimbDraft {
+  gymId: string
+  gymName: string
   gymGrade: string
   feltLike: string
   sendType: string

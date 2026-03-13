@@ -8,6 +8,8 @@ import SuccessStep from "./SuccessStep"
 import TagsStep from "./TagsStep"
 
 const EMPTY_DRAFT = {
+  gymId: "",
+  gymName: "",
   photo: null,
   gymGrade: "",
   feltLike: "",
@@ -19,7 +21,7 @@ const CLOSE_ANIMATION_MS = 280
 
 const SUCCESS_STEP = 4
 
-function LogClimbModal({ isOpen, onClose, onSave, onDone }) {
+function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
   const [isRendered, setIsRendered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -52,6 +54,11 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone }) {
     if (isOpen) {
       // Reset draft and step each time the sheet is opened fresh.
       resetDraft()
+      setDraft({
+        ...EMPTY_DRAFT,
+        gymId: activeGym.id,
+        gymName: activeGym.name,
+      })
       setIsVisible(false)
       setIsRendered(true)
 
@@ -75,7 +82,7 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone }) {
     }, CLOSE_ANIMATION_MS)
 
     return () => window.clearTimeout(timeoutId)
-  }, [isOpen])
+  }, [activeGym, isOpen])
 
   useEffect(() => {
     return () => {
@@ -164,6 +171,9 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone }) {
                 onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
                 onClose={onClose}
               />
+              <div className="px-6 pb-1 text-sm text-slate-500">
+                Logging at <span className="font-semibold text-slate-900">{draft.gymName}</span>
+              </div>
               <StepProgress currentStep={currentStep} />
             </>
           )}
