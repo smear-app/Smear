@@ -1,4 +1,7 @@
 node_modules
 backend/venv
-backend\app\__pycache__
-CLAUDE.md 
+backend/app/__pycache__
+CLAUDE.md
+/docs/
+.env.local
+.env*.local

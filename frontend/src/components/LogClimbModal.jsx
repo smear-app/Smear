@@ -4,6 +4,7 @@ import LogClimbHeader from "./LogClimbHeader"
 import PhotoStep from "./PhotoStep"
 import SendStep from "./SendStep"
 import StepProgress from "./StepProgress"
+import SuccessStep from "./SuccessStep"
 import TagsStep from "./TagsStep"
 
 const EMPTY_DRAFT = {
@@ -16,11 +17,14 @@ const EMPTY_DRAFT = {
 
 const CLOSE_ANIMATION_MS = 280
 
-function LogClimbModal({ isOpen, onClose, onSave }) {
+const SUCCESS_STEP = 4
+
+function LogClimbModal({ isOpen, onClose, onSave, onDone }) {
   const [isRendered, setIsRendered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
+  const [saveError, setSaveError] = useState(null)
   const previousPhotoRef = useRef(null)
 
   const resetDraft = () => {
@@ -114,12 +118,20 @@ function LogClimbModal({ isOpen, onClose, onSave }) {
               : [...currentDraft.tags, tag],
           }))
         }
-        onSave={() => {
-          onSave(draft)
+        onSave={async () => {
+          setSaveError(null)
+          try {
+            await onSave(draft)
+            setCurrentStep(SUCCESS_STEP)
+          } catch (err) {
+            setSaveError(err instanceof Error ? err.message : "Failed to save climb")
+          }
         }}
+        saveError={saveError}
       />,
+      <SuccessStep draft={draft} onDone={onDone} />,
     ],
-    [draft, onSave],
+    [draft, onSave, onDone, saveError],
   )
 
   if (!isRendered) {
@@ -144,13 +156,17 @@ function LogClimbModal({ isOpen, onClose, onSave }) {
           }`}
         >
           <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-slate-200" />
-          <LogClimbHeader
-            currentStep={currentStep}
-            title="Log Climb"
-            onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-            onClose={onClose}
-          />
-          <StepProgress currentStep={currentStep} />
+          {currentStep < SUCCESS_STEP && (
+            <>
+              <LogClimbHeader
+                currentStep={currentStep}
+                title="Log Climb"
+                onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+                onClose={onClose}
+              />
+              <StepProgress currentStep={currentStep} />
+            </>
+          )}
           <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
         </div>
       </div>

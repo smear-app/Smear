@@ -31,7 +31,7 @@ function TagChip({ isSelected, label, onClick }) {
   )
 }
 
-function TagsStep({ draft, onToggleTag, onSave }) {
+function TagsStep({ draft, onToggleTag, onSave, saveError }) {
   const canSaveFromTags = Array.isArray(draft.tags) && draft.tags.length > 0
   const scrollRef = useRef(null)
   const [showFade, setShowFade] = useState(false)
@@ -89,7 +89,9 @@ function TagsStep({ draft, onToggleTag, onSave }) {
       </div>
 
       <div className="mt-3 min-h-[20px]">
-        {!canSaveFromTags ? (
+        {saveError ? (
+          <p className="text-center text-sm text-red-500">{saveError}</p>
+        ) : !canSaveFromTags ? (
           <p className="text-center text-sm text-slate-500">
             Select at least one tag to save this climb
           </p>
