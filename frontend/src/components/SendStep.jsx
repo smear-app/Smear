@@ -6,7 +6,7 @@ function getOptionStyles(option, isSelected) {
   }
 
   if (option === "Flash") {
-    return "border-lichen/20 bg-lichen-soft"
+    return "border-ember/20 bg-ember-soft"
   }
 
   if (option === "Send") {
@@ -32,7 +32,7 @@ function SendStep({ draft, onChange, onContinue }) {
               onClick={() => onChange("sendType", option)}
               className={`rounded-[28px] border px-5 py-6 text-left transition-colors ${getOptionStyles(option, isSelected)}`}
             >
-              <p className={`text-lg font-semibold ${option === "Send" && isSelected ? "text-ember" : option === "Flash" && isSelected ? "text-lichen" : "text-stone-text"}`}>
+              <p className={`text-lg font-semibold ${option === "Send" && isSelected ? "text-ember" : option === "Flash" && isSelected ? "text-ember" : "text-stone-text"}`}>
                 {option}
               </p>
               <p className="mt-1 text-sm text-stone-secondary">

@@ -22,10 +22,10 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
   return (
     <div className="min-h-screen bg-stone-bg">
-      <main className="mx-auto flex min-h-[450px] max-w-[420px] flex-col px-5 pb-32 pt-6">
+      <main className="mx-auto max-w-[420px] px-5 pb-32 pt-6">
         <WelcomeCard />
 
-        <section className="mt-6 flex-1 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
@@ -47,7 +47,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-6 min-h-0 flex-1 overflow-y-auto space-y-4 pr-1">
+            <div className="mt-6 h-[468px] overflow-y-auto space-y-4 pr-1">
               {climbs.map((climb) => (
                 <article
                   key={climb.id}
@@ -111,7 +111,7 @@ function StatusPill({ sendType }) {
 
   if (normalized === "flash") {
     return (
-      <div className="rounded-full border border-lichen/10 bg-lichen-soft px-3 py-1 text-xs font-semibold text-lichen">
+      <div className="rounded-full border border-ember/10 bg-ember-soft px-3 py-1 text-xs font-semibold text-ember">
         Flash
       </div>
     )

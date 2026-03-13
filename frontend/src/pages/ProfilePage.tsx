@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
 import { fetchReferralCode } from "../lib/auth"
+import BottomNav from "../components/BottomNav"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
@@ -41,6 +42,7 @@ export default function ProfilePage() {
           Log out
         </button>
       </main>
+      <BottomNav />
     </div>
   )
 }

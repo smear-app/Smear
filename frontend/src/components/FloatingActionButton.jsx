@@ -8,10 +8,10 @@ function FloatingActionButton({ onClick, disabled = false }) {
         aria-label="Log a climb"
         disabled={disabled}
         onClick={onClick}
-        className={`ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-ember text-stone-surface shadow-[0_16px_32px_rgba(201,86,26,0.32)] transition-all duration-200 hover:scale-[1.02] hover:bg-ember-dark active:scale-95 ${
+        className={`ml-auto flex h-14 w-14 items-center justify-center rounded-full text-stone-surface transition-all duration-200 ${
           disabled
             ? "cursor-not-allowed bg-slate-300 shadow-[0_12px_24px_rgba(148,163,184,0.24)]"
-            : "bg-emerald-500 shadow-[0_16px_32px_rgba(16,185,129,0.32)] hover:scale-[1.02] active:scale-95"
+            : "bg-ember shadow-[0_16px_32px_rgba(201,86,26,0.32)] hover:scale-[1.02] hover:bg-ember-dark active:scale-95"
         }`}
       >
         <FiPlus className="h-6 w-6" />
