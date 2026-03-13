@@ -11,8 +11,9 @@ import {
   buildGymState,
   getGymById,
   getGymStorageKey,
+  loadAllGymsIntoCache,
   removeGymFromIds,
-  searchGymRegistry,
+  searchGymCache,
   type GymRecord,
   upsertGymId,
 } from "../lib/gyms"
@@ -22,6 +23,7 @@ interface GymContextValue {
   bookmarkedGyms: GymRecord[]
   recentGyms: GymRecord[]
   bookmarkedGymIds: string[]
+  isHydrated: boolean
   selectGym: (gymId: string) => void
   toggleBookmark: (gymId: string) => void
   searchGyms: (query: string) => GymRecord[]
@@ -48,25 +50,31 @@ export function GymProvider({
   children: ReactNode
   storageUserId?: string
 }) {
-  const initialState = buildGymState(readStoredGyms(storageUserId))
-  const [activeGymId, setActiveGymId] = useState<string | null>(initialState.activeGym?.id ?? null)
-  const [bookmarkedGymIds, setBookmarkedGymIds] = useState(initialState.bookmarkedGymIds)
-  const [recentHistoryGymIds, setRecentHistoryGymIds] = useState(initialState.recentHistoryGymIds)
-  const [hiddenGymIds, setHiddenGymIds] = useState(initialState.hiddenGymIds)
+  const [isHydrated, setIsHydrated] = useState(false)
+  const [activeGymId, setActiveGymId] = useState<string | null>(null)
+  const [bookmarkedGymIds, setBookmarkedGymIds] = useState<string[]>([])
+  const [recentHistoryGymIds, setRecentHistoryGymIds] = useState<string[]>([])
+  const [hiddenGymIds, setHiddenGymIds] = useState<string[]>([])
+
+  // Hydrate the gym cache from Supabase then restore stored selections
+  useEffect(() => {
+    loadAllGymsIntoCache().then(() => {
+      const stored = readStoredGyms(storageUserId)
+      if (stored) {
+        const initial = buildGymState(stored)
+        setActiveGymId(initial.activeGym?.id ?? null)
+        setBookmarkedGymIds(initial.bookmarkedGymIds)
+        setRecentHistoryGymIds(initial.recentHistoryGymIds)
+        setHiddenGymIds(initial.hiddenGymIds)
+      }
+      setIsHydrated(true)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageUserId])
 
   useEffect(() => {
-    if (!storageUserId) return
+    if (!isHydrated || !storageUserId) return
 
-    // TODO: Persist active gym selection per user once profile-backed settings exist.
-    // TODO: Persist user bookmark selections with profile-backed preferences.
-    // TODO: Persist local visit history so recent derivation can move off localStorage.
-    // TODO: Replace local visit-history derivation with real session/log history from the backend.
-    // TODO: Preserve the initial no-gym-selected state for brand new users when user records are first created.
-    // For now this stays in localStorage so active gym, bookmarks, visit history,
-    // and user-side hidden gyms survive app restarts without backend support.
-    // Local state is namespaced per authenticated user so one user's selections
-    // do not appear for another brand new account on the same device.
-    // TODO: Persist hidden/removed gyms as user-specific preference state.
     window.localStorage.setItem(
       getGymStorageKey(storageUserId),
       JSON.stringify({
@@ -76,7 +84,7 @@ export function GymProvider({
         hiddenGymIds,
       }),
     )
-  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds, storageUserId])
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds, storageUserId])
 
   const value = useMemo(() => {
     const state = buildGymState({
@@ -92,23 +100,18 @@ export function GymProvider({
       bookmarkedGyms,
       recentGyms,
       bookmarkedGymIds: state.bookmarkedGymIds,
+      isHydrated,
       selectGym: (gymId: string) => {
         if (!getGymById(gymId)) return
 
         setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
         setActiveGymId(gymId)
-        // Recent visibility is derived from full visit history, not manually
-        // managed. Selecting a gym records a visit and the UI recomputes the
-        // top 3 most recent non-bookmarked gyms from that history.
         setRecentHistoryGymIds((currentIds) => addGymToRecent(currentIds, gymId))
       },
       toggleBookmark: (gymId: string) => {
         if (!getGymById(gymId)) return
 
         if (state.bookmarkedGymIds.includes(gymId)) {
-          // Unbookmarking does not mutate visit history. The gym naturally
-          // returns to its correct recent position only if its stored visit
-          // recency places it inside the current visible top 3 non-bookmarked gyms.
           setBookmarkedGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
           setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
           return
@@ -117,11 +120,9 @@ export function GymProvider({
         setHiddenGymIds((currentIds) => removeGymFromIds(currentIds, gymId))
         setBookmarkedGymIds((currentIds) => upsertGymId(currentIds, gymId))
       },
-      searchGyms: (query: string) => {
-        return searchGymRegistry(query)
-      },
+      searchGyms: (query: string) => searchGymCache(query),
     }
-  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds])
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds])
 
   return <GymContext.Provider value={value}>{children}</GymContext.Provider>
 }

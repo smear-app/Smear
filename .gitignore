@@ -5,3 +5,5 @@ CLAUDE.md
 /docs/
 .env.local
 .env*.local
+
+backend/.env

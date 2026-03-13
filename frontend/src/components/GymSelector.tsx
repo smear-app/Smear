@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
-import { FiBookmark, FiCheck, FiChevronDown, FiMapPin, FiSearch } from "react-icons/fi"
+import { FiBookmark, FiCheck, FiChevronDown, FiLoader, FiMapPin, FiSearch } from "react-icons/fi"
+
 import { RiBookmarkFill } from "react-icons/ri"
 import { useGym } from "../context/GymContext"
 import { formatGymLocation, type GymRecord } from "../lib/gyms"
@@ -14,6 +15,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
     bookmarkedGyms,
     recentGyms,
     bookmarkedGymIds,
+    isHydrated,
     selectGym,
     toggleBookmark,
     searchGyms,
@@ -77,12 +79,18 @@ function GymSelector({ className = "" }: GymSelectorProps) {
         className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white"
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">
-            {activeGym ? activeGym.name : "Select Gym"}
-          </p>
-          {activeGym ? (
-            <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
-          ) : null}
+          {!isHydrated ? (
+            <p className="text-sm font-semibold text-slate-400">Loading...</p>
+          ) : (
+            <>
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {activeGym ? activeGym.name : "Select Gym"}
+              </p>
+              {activeGym ? (
+                <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
+              ) : null}
+            </>
+          )}
         </div>
         <FiChevronDown
           className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
@@ -149,8 +157,8 @@ function GymSelector({ className = "" }: GymSelectorProps) {
               </button>
             </div>
 
-            <label className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-              <FiSearch className="h-4 w-4 text-slate-400" />
+            <label className="mt- flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+              <FiSearch className="h- w-4 text-slate-400" />
               <input
                 ref={searchInputRef}
                 value={query}
@@ -160,50 +168,61 @@ function GymSelector({ className = "" }: GymSelectorProps) {
               />
             </label>
 
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
-              <div className="space-y-2">
-                {searchResults.map((gym) => {
-                  const isBookmarked = bookmarkedGymIds.includes(gym.id)
-                  const isActive = activeGymId === gym.id
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-1 py-1">
+              {!isHydrated ? (
+                <div className="flex items-center justify-center py-10 text-sm text-slate-400">
+                  <FiLoader className="mr-2 h-4 w-4 animate-spin" />
+                  Loading gyms...
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center">
+                  <p className="text-sm text-slate-500">No gyms matched your search.</p>
+                  <a
+                    href="/support"
+                    className="mt-3 inline-block text-xs font-semibold text-emerald-600"
+                  >
+                    Don't see your gym?
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {searchResults.map((gym) => {
+                      const isBookmarked = bookmarkedGymIds.includes(gym.id)
+                      const isActive = activeGymId === gym.id
 
-                  return (
-                    <div
-                      key={gym.id}
-                      className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
-                        isActive
-                          ? "bg-emerald-50 ring-emerald-100"
-                          : "bg-white ring-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => handleSelectFromRegistry(gym.id)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
-                        <p className="mt-0.5 truncate text-xs text-slate-500">
-                          {formatGymLocation(gym)}
-                          {gym.address ? ` • ${gym.address}` : ""}
-                        </p>
-                      </button>
-                      <div className="ml-3 flex shrink-0 items-center gap-2">
-                        <BookmarkToggleButton
-                          gymName={gym.name}
-                          isBookmarked={isBookmarked}
-                          onClick={(event) => handleBookmarkToggle(event, gym.id)}
-                        />
-                        {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
-                      </div>
-                    </div>
-                  )
-                })}
-
-                {searchResults.length === 0 && (
-                  <div className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                    No gyms matched your search.
-                  </div>
-                )}
-              </div>
+                      return (
+                        <div
+                          key={gym.id}
+                          className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
+                            isActive
+                              ? "bg-emerald-50 ring-emerald-100"
+                              : "bg-white ring-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSelectFromRegistry(gym.id)}
+                            className="min-w-0 flex-1 text-left"
+                          >
+                            <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
+                            <p className="mt-0.5 truncate text-xs text-slate-500">
+                              {formatGymLocation(gym)}
+                              {gym.address ? ` • ${gym.address}` : ""}
+                            </p>
+                          </button>
+                          <div className="ml-3 flex shrink-0 items-center gap-2">
+                            <BookmarkToggleButton
+                              gymName={gym.name}
+                              isBookmarked={isBookmarked}
+                              onClick={(event) => handleBookmarkToggle(event, gym.id)}
+                            />
+                            {isActive && <FiCheck className="h-4 w-4 text-emerald-600" />}
+                          </div>
+                        </div>
+                      )
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

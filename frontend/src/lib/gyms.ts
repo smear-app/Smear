@@ -1,3 +1,5 @@
+import { supabase } from "./supabase"
+
 export interface GymRecord {
   id: string
   name: string
@@ -28,73 +30,6 @@ export interface BuiltGymState {
   hiddenGymIds: string[]
 }
 
-export const GYM_REGISTRY: GymRecord[] = [
-  {
-    id: "mission-cliffs",
-    name: "Mission Cliffs",
-    city: "San Francisco",
-    state: "CA",
-    address: "2295 Harrison St",
-    metadata: { chain: "Touchstone", disciplines: ["rope", "bouldering"] },
-  },
-  {
-    id: "dogpatch-boulders",
-    name: "Dogpatch Boulders",
-    city: "San Francisco",
-    state: "CA",
-    address: "2573 3rd St",
-    metadata: { chain: "Touchstone", disciplines: ["bouldering"] },
-  },
-  {
-    id: "pacific-pipe",
-    name: "Pacific Pipe",
-    city: "Oakland",
-    state: "CA",
-    address: "920 22nd Ave",
-    metadata: { chain: "Touchstone", disciplines: ["rope", "bouldering"] },
-  },
-  {
-    id: "berkeley-ironworks",
-    name: "Berkeley Ironworks",
-    city: "Berkeley",
-    state: "CA",
-    address: "800 Potter St",
-    metadata: { chain: "Touchstone", disciplines: ["rope", "bouldering"] },
-  },
-  {
-    id: "movement-san-francisco",
-    name: "Movement San Francisco",
-    city: "San Francisco",
-    state: "CA",
-    address: "924 Mason St",
-    metadata: { chain: "Movement", disciplines: ["bouldering"] },
-  },
-  {
-    id: "the-studio",
-    name: "The Studio",
-    city: "San Jose",
-    state: "CA",
-    address: "396 S 1st St",
-    metadata: { disciplines: ["bouldering"] },
-  },
-  {
-    id: "planet-granite-sunnyvale",
-    name: "Movement Sunnyvale",
-    city: "Sunnyvale",
-    state: "CA",
-    address: "815 Stewart Dr",
-    metadata: { chain: "Movement", disciplines: ["rope", "bouldering"] },
-  },
-  {
-    id: "bridges-rock-gym",
-    name: "Bridges Rock Gym",
-    city: "El Cerrito",
-    state: "CA",
-    address: "5635 San Pablo Ave",
-    metadata: { disciplines: ["rope", "bouldering"] },
-  },
-]
-
 export const MAX_RECENT_GYMS = 3
 
 export const ACTIVE_GYM_STORAGE_KEY = "smear.active-gym"
@@ -103,22 +38,54 @@ export function getGymStorageKey(userId: string) {
   return `${ACTIVE_GYM_STORAGE_KEY}:${userId}`
 }
 
-const gymRegistryMap = new Map(GYM_REGISTRY.map((gym) => [gym.id, gym]))
+// Runtime cache — populated from Supabase on app mount. All sync gym
+// lookups (bookmarks, recent, active) resolve against this cache.
+const gymCache = new Map<string, GymRecord>()
 
-export function getGymById(gymId: string) {
-  return gymRegistryMap.get(gymId)
+function dbRowToGymRecord(row: Record<string, unknown>): GymRecord {
+  return {
+    id: row.id as string,
+    name: row.name as string,
+    city: row.city as string,
+    state: row.state as string,
+    address: (row.address as string | null) ?? undefined,
+  }
 }
 
-function isGymRecord(gym: GymRecord | undefined): gym is GymRecord {
-  return Boolean(gym)
+export function registerGymsInCache(gyms: GymRecord[]) {
+  for (const gym of gyms) {
+    gymCache.set(gym.id, gym)
+  }
+}
+
+export async function loadAllGymsIntoCache(): Promise<void> {
+  const { data } = await supabase.from("gyms").select("*").limit(500)
+  if (data) registerGymsInCache(data.map(dbRowToGymRecord))
+}
+
+export async function getGymsByIds(ids: string[]): Promise<GymRecord[]> {
+  if (ids.length === 0) return []
+  const { data } = await supabase.from("gyms").select("*").in("id", ids)
+  if (!data) return []
+  const gyms = data.map(dbRowToGymRecord)
+  registerGymsInCache(gyms)
+  return gyms
+}
+
+export function getGymById(gymId: string): GymRecord | undefined {
+  return gymCache.get(gymId)
 }
 
 export function formatGymLocation(gym: GymRecord) {
   return `${gym.city}, ${gym.state}`
 }
 
+function isGymRecord(gym: GymRecord | undefined): gym is GymRecord {
+  return Boolean(gym)
+}
+
 function uniqueValidGymIds(gymIds: string[]) {
-  return Array.from(new Set(gymIds)).filter((gymId) => gymRegistryMap.has(gymId))
+  return Array.from(new Set(gymIds)).filter((gymId) => gymCache.has(gymId))
 }
 
 function resolveStoredGymIds(
@@ -141,18 +108,12 @@ function normalizeRecentGymIds(
   bookmarkedGymIds: string[],
   hiddenGymIds: string[],
 ) {
-  // Visible "Recently Visited" is always a derived view. We scan the full
-  // visit history ordered most-recent-first, exclude bookmarked/hidden gyms,
-  // then take the first 3 remaining gyms so older non-bookmarked entries can
-  // backfill when newer history items are bookmarked.
   return uniqueValidGymIds(recentHistoryGymIds)
     .filter((gymId) => !bookmarkedGymIds.includes(gymId) && !hiddenGymIds.includes(gymId))
     .slice(0, MAX_RECENT_GYMS)
 }
 
 export function buildGymState(storedState?: Partial<StoredGymState> | null): BuiltGymState {
-  // Canonical registry records stay immutable. User-side bookmark, recent, and
-  // hidden preferences only affect which registry gyms are surfaced in the UI.
   const hiddenGymIds = uniqueValidGymIds(storedState?.hiddenGymIds ?? [])
   const bookmarkedGymIds = normalizeBookmarkedGymIds(
     resolveStoredGymIds(storedState?.bookmarkedGymIds, []),
@@ -182,12 +143,7 @@ export function buildGymState(storedState?: Partial<StoredGymState> | null): Bui
   }
 }
 
-export function addGymToRecent(
-  recentHistoryGymIds: string[],
-  gymId: string,
-) {
-  // Keep full local visit history so the derived recent list can backfill from
-  // older entries and restore correct placement after unbookmarking.
+export function addGymToRecent(recentHistoryGymIds: string[], gymId: string) {
   return uniqueValidGymIds([gymId, ...recentHistoryGymIds.filter((id) => id !== gymId)])
 }
 
@@ -199,24 +155,16 @@ export function upsertGymId(gymIds: string[], gymId: string) {
   return uniqueValidGymIds([gymId, ...gymIds])
 }
 
-export function searchGymRegistry(query: string) {
-  const normalizedQuery = query.trim().toLowerCase()
-  if (!normalizedQuery) return GYM_REGISTRY
+export function searchGymCache(query: string): GymRecord[] {
+  const all = Array.from(gymCache.values())
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return all
 
-  // TODO: Replace this local registry search with backend-powered search once
-  // the canonical gym registry API is available.
-  return GYM_REGISTRY.filter((gym) => {
-    const haystack = [
-      gym.name,
-      gym.city,
-      gym.state,
-      gym.address ?? "",
-      gym.metadata?.chain ?? "",
-      ...(gym.metadata?.disciplines ?? []),
-    ]
+  return all.filter((gym) => {
+    const haystack = [gym.name, gym.city, gym.state, gym.address ?? ""]
       .join(" ")
       .toLowerCase()
-
-    return haystack.includes(normalizedQuery)
+    return haystack.includes(normalized)
   })
 }
+
