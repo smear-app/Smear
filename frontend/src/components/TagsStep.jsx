@@ -33,8 +33,8 @@ function TagsStep({ draft, onToggleTag, onSave }) {
   const canSaveFromTags = Array.isArray(draft.tags) && draft.tags.length > 0
 
   return (
-    <div className="flex flex-1 flex-col px-5 pb-5">
-      <div className="flex flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="rounded-[30px] bg-slate-50/90 p-6">
           <h3 className="text-lg font-semibold tracking-tight text-slate-950">
             Finish the details
