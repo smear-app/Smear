@@ -8,6 +8,7 @@ function SuccessStep({ draft, onDone }) {
       <h2 className="mt-6 text-2xl font-bold text-stone-text">Climb logged!</h2>
 
       <div className="mt-6 w-full space-y-2 rounded-[24px] border border-stone-border bg-stone-alt px-5 py-4">
+        <Row label="Gym" value={draft.gymName} />
         <Row label="Gym grade" value={draft.gymGrade} />
         <Row label="Felt like" value={draft.feltLike} />
         <Row label="Send" value={draft.sendType} />

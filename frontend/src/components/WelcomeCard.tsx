@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { FiUser } from "react-icons/fi"
 import { useAuth } from "../context/AuthContext"
+import GymSelector from "./GymSelector"
 import { supabase } from "../lib/supabase"
 
 const WelcomeCard = () => {
@@ -19,13 +20,12 @@ const WelcomeCard = () => {
 
   return (
     <section className="flex items-center justify-between rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 shadow-[0_12px_28px_rgba(89,68,51,0.07)]">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
-          Welcome Back
-        </p>
-        <p className="text-2xl font-bold text-stone-text">
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-medium text-gray-500">Welcome Back</p>
+        <p className="text-2xl font-bold text-gray-900">
           {displayName ?? "Climber"}
         </p>
+        <GymSelector className="mt-3" />
       </div>
       <div
         aria-label="Default user avatar"

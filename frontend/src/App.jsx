@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
+import { GymProvider, useGym } from "./context/GymContext"
 import HomePage from "./HomePage"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
@@ -9,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage"
 
 function ProtectedApp() {
   const { session, loading } = useAuth()
+  const { activeGym } = useGym()
   const [isLogClimbOpen, setIsLogClimbOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -26,6 +28,11 @@ function ProtectedApp() {
     await insertClimb(draft, session.user.id)
   }
 
+  function handleOpenLogClimb() {
+    if (!activeGym) return
+    setIsLogClimbOpen(true)
+  }
+
   function handleDone() {
     setIsLogClimbOpen(false)
     setRefreshKey((k) => k + 1)
@@ -39,7 +46,7 @@ function ProtectedApp() {
           path="/home"
           element={
             <HomePage
-              onOpenLogClimb={() => setIsLogClimbOpen(true)}
+              onOpenLogClimb={handleOpenLogClimb}
               refreshKey={refreshKey}
             />
           }
@@ -51,6 +58,7 @@ function ProtectedApp() {
         onClose={() => setIsLogClimbOpen(false)}
         onSave={handleSaveClimb}
         onDone={handleDone}
+        activeGym={activeGym}
       />
     </div>
   )
@@ -63,9 +71,11 @@ function AuthRoute() {
   return <AuthPage />
 }
 
-export default function App() {
+function GymScopedApp() {
+  const { user } = useAuth()
+
   return (
-    <AuthProvider>
+    <GymProvider key={user?.id ?? "anon"} storageUserId={user?.id}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AuthRoute />} />
@@ -73,6 +83,14 @@ export default function App() {
           <Route path="/*" element={<ProtectedApp />} />
         </Routes>
       </BrowserRouter>
+    </GymProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <GymScopedApp />
     </AuthProvider>
   )
 }
