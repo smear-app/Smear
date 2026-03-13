@@ -1,27 +1,68 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { motion } from "framer-motion"
 
 const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)"
 const CHALK_EASE = "cubic-bezier(0.16, 1, 0.3, 1)"
+const EXIT_EASE_IN = "cubic-bezier(0.4, 0, 1, 1)"
+const EXIT_ANIMATION_MS = 320
 
 function SuccessStep({ draft, onDone }) {
   const [isVisible, setIsVisible] = useState(false)
+  const [isClosing, setIsClosing] = useState(false)
+  const doneTimeoutRef = useRef(null)
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => {
       setIsVisible(true)
     })
 
-    return () => window.cancelAnimationFrame(frameId)
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      if (doneTimeoutRef.current) {
+        window.clearTimeout(doneTimeoutRef.current)
+      }
+    }
   }, [])
 
+  function handleDoneClick() {
+    if (isClosing) return
+
+    // Closing animation: let the success content gently release downward before dismissing.
+    setIsClosing(true)
+    doneTimeoutRef.current = window.setTimeout(() => {
+      onDone()
+    }, EXIT_ANIMATION_MS)
+  }
+
   return (
-    <div
+    <motion.div
       className="flex flex-1 flex-col items-center justify-center px-5 pb-10"
-      style={{
-        opacity: isVisible ? 1 : 0,
-        transform: isVisible ? "translateY(0)" : "translateY(40px)",
-        transition: `transform 350ms ${EASE_OUT}, opacity 350ms ${EASE_OUT}`,
-      }}
+      initial={false}
+      animate={
+        isClosing
+          ? {
+              opacity: [1, 1, 0],
+              y: [0, -6, 20],
+              scale: [1, 1.003, 0.995],
+            }
+          : {
+              opacity: isVisible ? 1 : 0,
+              y: isVisible ? 0 : 40,
+              scale: 1,
+            }
+      }
+      transition={
+        isClosing
+          ? {
+              duration: EXIT_ANIMATION_MS / 1000,
+              times: [0, 0.3, 1],
+              ease: [EASE_OUT, EXIT_EASE_IN],
+            }
+          : {
+              duration: 0.35,
+              ease: EASE_OUT,
+            }
+      }
     >
       <style>{`
         @keyframes success-icon-pop {
@@ -150,15 +191,17 @@ function SuccessStep({ draft, onDone }) {
           transition: `transform 250ms ${EASE_OUT} 450ms, opacity 250ms ${EASE_OUT} 450ms`,
         }}
       >
-        <button
+        <motion.button
           type="button"
-          onClick={onDone}
+          onClick={handleDoneClick}
+          whileTap={{ scale: 0.98 }}
+          disabled={isClosing}
           className="w-full rounded-full bg-ember py-4 text-base font-semibold text-stone-surface transition-[transform,background-color,box-shadow] duration-200 hover:bg-ember-dark hover:shadow-[0_10px_24px_rgba(32,24,19,0.12)] active:scale-[0.97]"
         >
           Done
-        </button>
+        </motion.button>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
