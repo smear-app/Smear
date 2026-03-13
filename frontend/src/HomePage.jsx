@@ -8,28 +8,9 @@ function HomePage({ onOpenLogClimb, savedClimbs }) {
       <main className="mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
         <WelcomeCard />
 
-        <section className="mt-6 rounded-[28px] bg-white px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">
-            Today
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900">
-            Climb smarter.
-          </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Log sessions, compare grades, and capture how each send really felt.
-          </p>
-        </section>
-
         <section className="mt-6 flex-1 rounded-[28px] bg-white px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Saved Climbs
-              </p>
-              <h2 className="mt-2 text-xl font-bold text-slate-900">
-                Debug Activity
-              </h2>
-            </div>
+            <h2 className="text-xl font-bold text-slate-900">Saved Climbs</h2>
             <div className="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
               {savedClimbs.length}
             </div>
