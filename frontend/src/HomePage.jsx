@@ -63,11 +63,11 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
                       </div>
 
                       <div>
-                        <p className="text-sm font-semibold text-stone-text">
-                          {climb.tags[0] ? `${climb.tags[0]} session` : "Logged climb"}
-                        </p>
                         <p className="mt-1 text-xs text-stone-secondary capitalize">
-                          {climb.send_type} • {new Date(climb.created_at).toLocaleDateString()}
+                          {climb.send_type}
+                        </p>
+                        <p className="mt-0.5 text-xs text-stone-muted">
+                          {new Date(climb.created_at).toLocaleDateString()}
                         </p>
                         {climb.gym_name && (
                           <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
