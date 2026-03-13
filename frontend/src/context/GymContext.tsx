@@ -7,10 +7,10 @@ import {
   type ReactNode,
 } from "react"
 import {
-  ACTIVE_GYM_STORAGE_KEY,
   addGymToRecent,
   buildGymState,
   getGymById,
+  getGymStorageKey,
   removeGymFromIds,
   searchGymRegistry,
   type GymRecord,
@@ -29,25 +29,34 @@ interface GymContextValue {
 
 const GymContext = createContext<GymContextValue | null>(null)
 
-function readStoredGyms() {
+function readStoredGyms(userId: string | undefined) {
   if (typeof window === "undefined") return null
+  if (!userId) return null
 
   try {
-    const rawValue = window.localStorage.getItem(ACTIVE_GYM_STORAGE_KEY)
+    const rawValue = window.localStorage.getItem(getGymStorageKey(userId))
     return rawValue ? JSON.parse(rawValue) : null
   } catch {
     return null
   }
 }
 
-export function GymProvider({ children }: { children: ReactNode }) {
-  const initialState = buildGymState(readStoredGyms())
+export function GymProvider({
+  children,
+  storageUserId,
+}: {
+  children: ReactNode
+  storageUserId?: string
+}) {
+  const initialState = buildGymState(readStoredGyms(storageUserId))
   const [activeGymId, setActiveGymId] = useState<string | null>(initialState.activeGym?.id ?? null)
   const [bookmarkedGymIds, setBookmarkedGymIds] = useState(initialState.bookmarkedGymIds)
   const [recentHistoryGymIds, setRecentHistoryGymIds] = useState(initialState.recentHistoryGymIds)
   const [hiddenGymIds, setHiddenGymIds] = useState(initialState.hiddenGymIds)
 
   useEffect(() => {
+    if (!storageUserId) return
+
     // TODO: Persist active gym selection per user once profile-backed settings exist.
     // TODO: Persist user bookmark selections with profile-backed preferences.
     // TODO: Persist local visit history so recent derivation can move off localStorage.
@@ -55,9 +64,11 @@ export function GymProvider({ children }: { children: ReactNode }) {
     // TODO: Preserve the initial no-gym-selected state for brand new users when user records are first created.
     // For now this stays in localStorage so active gym, bookmarks, visit history,
     // and user-side hidden gyms survive app restarts without backend support.
+    // Local state is namespaced per authenticated user so one user's selections
+    // do not appear for another brand new account on the same device.
     // TODO: Persist hidden/removed gyms as user-specific preference state.
     window.localStorage.setItem(
-      ACTIVE_GYM_STORAGE_KEY,
+      getGymStorageKey(storageUserId),
       JSON.stringify({
         activeGymId,
         bookmarkedGymIds,
@@ -65,7 +76,7 @@ export function GymProvider({ children }: { children: ReactNode }) {
         hiddenGymIds,
       }),
     )
-  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds])
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, recentHistoryGymIds, storageUserId])
 
   const value = useMemo(() => {
     const state = buildGymState({

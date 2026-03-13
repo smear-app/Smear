@@ -71,18 +71,26 @@ function AuthRoute() {
   return <AuthPage />
 }
 
+function GymScopedApp() {
+  const { user } = useAuth()
+
+  return (
+    <GymProvider key={user?.id ?? "anon"} storageUserId={user?.id}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AuthRoute />} />
+          <Route path="/auth" element={<AuthRoute />} />
+          <Route path="/*" element={<ProtectedApp />} />
+        </Routes>
+      </BrowserRouter>
+    </GymProvider>
+  )
+}
+
 export default function App() {
   return (
     <AuthProvider>
-      <GymProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<AuthRoute />} />
-            <Route path="/auth" element={<AuthRoute />} />
-            <Route path="/*" element={<ProtectedApp />} />
-          </Routes>
-        </BrowserRouter>
-      </GymProvider>
+      <GymScopedApp />
     </AuthProvider>
   )
 }

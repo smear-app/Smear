@@ -99,6 +99,10 @@ export const MAX_RECENT_GYMS = 3
 
 export const ACTIVE_GYM_STORAGE_KEY = "smear.active-gym"
 
+export function getGymStorageKey(userId: string) {
+  return `${ACTIVE_GYM_STORAGE_KEY}:${userId}`
+}
+
 const gymRegistryMap = new Map(GYM_REGISTRY.map((gym) => [gym.id, gym]))
 
 export function getGymById(gymId: string) {
