@@ -51,6 +51,8 @@ function GradeSelectorRow({ label, value, onSelect }) {
 }
 
 function GradeStep({ draft, onChange, onContinue }) {
+  const canContinueFromGrade = draft.gymGrade !== "" && draft.feltLike !== ""
+
   return (
     <div className="flex flex-1 flex-col px-5 pb-5">
       <div className="flex flex-1 flex-col justify-center gap-4">
@@ -66,10 +68,27 @@ function GradeStep({ draft, onChange, onContinue }) {
         />
       </div>
 
+      <div className="mt-6 min-h-[20px]">
+        {!canContinueFromGrade ? (
+          <p className="text-center text-sm text-slate-500">
+            Select both Gym Grade and Felt Like to continue
+          </p>
+        ) : null}
+      </div>
+
       <button
         type="button"
-        onClick={onContinue}
-        className="mt-6 rounded-full bg-black px-6 py-4 text-base font-semibold text-white transition-transform duration-200 active:scale-[0.98]"
+        onClick={() => {
+          if (canContinueFromGrade) {
+            onContinue()
+          }
+        }}
+        disabled={!canContinueFromGrade}
+        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
+          canContinueFromGrade
+            ? "bg-black active:scale-[0.98]"
+            : "cursor-not-allowed bg-black/35 opacity-70"
+        }`}
       >
         Continue
       </button>
