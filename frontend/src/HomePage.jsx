@@ -3,10 +3,12 @@ import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
 import { useAuth } from "./context/AuthContext"
+import { useGym } from "./context/GymContext"
 import { fetchClimbs } from "./lib/climbs"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
   const { user } = useAuth()
+  const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
   const [loadError, setLoadError] = useState(null)
 
@@ -81,7 +83,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
         </section>
       </main>
 
-      <FloatingActionButton onClick={onOpenLogClimb} />
+      <FloatingActionButton onClick={onOpenLogClimb} disabled={!activeGym} />
       <BottomNav />
     </div>
   )

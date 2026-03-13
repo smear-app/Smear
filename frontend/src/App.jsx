@@ -28,6 +28,11 @@ function ProtectedApp() {
     await insertClimb(draft, session.user.id)
   }
 
+  function handleOpenLogClimb() {
+    if (!activeGym) return
+    setIsLogClimbOpen(true)
+  }
+
   function handleDone() {
     setIsLogClimbOpen(false)
     setRefreshKey((k) => k + 1)
@@ -41,7 +46,7 @@ function ProtectedApp() {
           path="/home"
           element={
             <HomePage
-              onOpenLogClimb={() => setIsLogClimbOpen(true)}
+              onOpenLogClimb={handleOpenLogClimb}
               refreshKey={refreshKey}
             />
           }

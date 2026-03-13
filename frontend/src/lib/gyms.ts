@@ -11,7 +11,7 @@ export interface GymRecord {
 }
 
 export interface StoredGymState {
-  activeGymId: string
+  activeGymId: string | null
   bookmarkedGymIds: string[]
   recentHistoryGymIds: string[]
   recentGymIds: string[]
@@ -19,7 +19,7 @@ export interface StoredGymState {
 }
 
 export interface BuiltGymState {
-  activeGym: GymRecord
+  activeGym: GymRecord | null
   bookmarkedGyms: GymRecord[]
   recentGyms: GymRecord[]
   bookmarkedGymIds: string[]
@@ -95,9 +95,6 @@ export const GYM_REGISTRY: GymRecord[] = [
   },
 ]
 
-export const DEFAULT_ACTIVE_GYM_ID = "mission-cliffs"
-export const DEFAULT_BOOKMARKED_GYM_IDS = ["mission-cliffs", "dogpatch-boulders"]
-export const DEFAULT_RECENT_GYM_IDS = ["pacific-pipe", "berkeley-ironworks", "mission-cliffs"]
 export const MAX_RECENT_GYMS = 3
 
 export const ACTIVE_GYM_STORAGE_KEY = "smear.active-gym"
@@ -140,8 +137,10 @@ function normalizeRecentGymIds(
   bookmarkedGymIds: string[],
   hiddenGymIds: string[],
 ) {
-  // Visible "Recently Visited" membership is derived from the user's recency
-  // history after removing bookmarked and hidden gyms, then taking the current top 3.
+  // Visible "Recently Visited" is always a derived view. We scan the full
+  // visit history ordered most-recent-first, exclude bookmarked/hidden gyms,
+  // then take the first 3 remaining gyms so older non-bookmarked entries can
+  // backfill when newer history items are bookmarked.
   return uniqueValidGymIds(recentHistoryGymIds)
     .filter((gymId) => !bookmarkedGymIds.includes(gymId) && !hiddenGymIds.includes(gymId))
     .slice(0, MAX_RECENT_GYMS)
@@ -152,13 +151,13 @@ export function buildGymState(storedState?: Partial<StoredGymState> | null): Bui
   // hidden preferences only affect which registry gyms are surfaced in the UI.
   const hiddenGymIds = uniqueValidGymIds(storedState?.hiddenGymIds ?? [])
   const bookmarkedGymIds = normalizeBookmarkedGymIds(
-    resolveStoredGymIds(storedState?.bookmarkedGymIds, DEFAULT_BOOKMARKED_GYM_IDS),
+    resolveStoredGymIds(storedState?.bookmarkedGymIds, []),
     hiddenGymIds,
   )
   const recentHistoryGymIds = normalizeRecentHistoryGymIds(
     resolveStoredGymIds(
       storedState?.recentHistoryGymIds ?? storedState?.recentGymIds,
-      DEFAULT_RECENT_GYM_IDS,
+      [],
     ),
   )
   const recentGymIds = normalizeRecentGymIds(
@@ -166,10 +165,7 @@ export function buildGymState(storedState?: Partial<StoredGymState> | null): Bui
     bookmarkedGymIds,
     hiddenGymIds,
   )
-  const activeGym =
-    getGymById(storedState?.activeGymId ?? "") ??
-    getGymById(DEFAULT_ACTIVE_GYM_ID) ??
-    GYM_REGISTRY[0]
+  const activeGym = storedState?.activeGymId ? getGymById(storedState.activeGymId) ?? null : null
 
   return {
     activeGym,
@@ -185,11 +181,10 @@ export function buildGymState(storedState?: Partial<StoredGymState> | null): Bui
 export function addGymToRecent(
   recentHistoryGymIds: string[],
   gymId: string,
-  maxItems = MAX_RECENT_GYMS,
 ) {
-  return [gymId, ...recentHistoryGymIds.filter((id) => id !== gymId)]
-    .slice(0, maxItems)
-    .filter((id) => gymRegistryMap.has(id))
+  // Keep full local visit history so the derived recent list can backfill from
+  // older entries and restore correct placement after unbookmarking.
+  return uniqueValidGymIds([gymId, ...recentHistoryGymIds.filter((id) => id !== gymId)])
 }
 
 export function removeGymFromIds(gymIds: string[], gymId: string) {

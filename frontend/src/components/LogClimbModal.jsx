@@ -52,6 +52,11 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
 
   useEffect(() => {
     if (isOpen) {
+      if (!activeGym) {
+        setIsRendered(false)
+        return undefined
+      }
+
       // Reset draft and step each time the sheet is opened fresh.
       resetDraft()
       setDraft({
@@ -171,7 +176,7 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
                 onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
                 onClose={onClose}
               />
-              <div className="px-6 pb-1 text-sm text-slate-500">
+              <div className="px-6 pb-1 text-center text-sm text-slate-500">
                 Logging at <span className="font-semibold text-slate-900">{draft.gymName}</span>
               </div>
               <StepProgress currentStep={currentStep} />

@@ -67,6 +67,8 @@ function GymSelector({ className = "" }: GymSelectorProps) {
     toggleBookmark(gymId)
   }
 
+  const activeGymId = activeGym?.id ?? null
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <button
@@ -75,8 +77,12 @@ function GymSelector({ className = "" }: GymSelectorProps) {
         className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white"
       >
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900">{activeGym.name}</p>
-          <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
+          <p className="truncate text-sm font-semibold text-slate-900">
+            {activeGym ? activeGym.name : "Select Gym"}
+          </p>
+          {activeGym ? (
+            <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
+          ) : null}
         </div>
         <FiChevronDown
           className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
@@ -106,21 +112,21 @@ function GymSelector({ className = "" }: GymSelectorProps) {
           <SelectorSection
             title="Bookmarked Gyms"
             gyms={bookmarkedGyms}
-            activeGymId={activeGym.id}
+            activeGymId={activeGymId}
             bookmarkedGymIds={bookmarkedGymIds}
             onSelect={handleSelectFromPopup}
             onToggleBookmark={handleBookmarkToggle}
-            emptyMessage="No bookmarked gyms yet."
+            emptyMessage="None"
             className="mt-4"
           />
           <SelectorSection
             title="Recently Visited"
             gyms={recentGyms}
-            activeGymId={activeGym.id}
+            activeGymId={activeGymId}
             bookmarkedGymIds={bookmarkedGymIds}
             onSelect={handleSelectFromPopup}
             onToggleBookmark={handleBookmarkToggle}
-            emptyMessage="No recent gyms yet."
+            emptyMessage="None"
             className="mt-4"
           />
         </div>
@@ -158,7 +164,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
               <div className="space-y-2">
                 {searchResults.map((gym) => {
                   const isBookmarked = bookmarkedGymIds.includes(gym.id)
-                  const isActive = activeGym.id === gym.id
+                  const isActive = activeGymId === gym.id
 
                   return (
                     <div
@@ -218,7 +224,7 @@ function SelectorSection({
 }: {
   title: string
   gyms: GymRecord[]
-  activeGymId: string
+  activeGymId: string | null
   bookmarkedGymIds: string[]
   onSelect: (gymId: string) => void
   onToggleBookmark: (event: ReactMouseEvent, gymId: string) => void
@@ -232,7 +238,7 @@ function SelectorSection({
       </p>
       <div className="mt-2 space-y-1.5">
         {gyms.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">
+          <div className="rounded-2xl bg-slate-50 px-4 py-4 text-center text-sm text-slate-500">
             {emptyMessage}
           </div>
         ) : (
