@@ -84,7 +84,7 @@ function TagsStep({ draft, onToggleTag, onSave }) {
         </div>
         </div>
         {showFade && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
         )}
       </div>
 
