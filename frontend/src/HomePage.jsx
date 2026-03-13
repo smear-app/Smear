@@ -20,7 +20,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
   return (
     <div className="min-h-screen bg-[#f5f5f2]">
-      <main className="mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
+      <main className="mx-auto flex min-h-[450px] max-w-[420px] flex-col px-5 pb-32 pt-6">
         <WelcomeCard />
 
         <section className="mt-6 flex-1 rounded-[28px] bg-white px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
@@ -41,7 +41,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
             </div>
           ) : (
             <div className="mt-6 space-y-4">
-              {climbs.map((climb) => (
+              {climbs.slice(0, 3).map((climb) => (
                 <article
                   key={climb.id}
                   className="rounded-[24px] bg-slate-50 p-4"

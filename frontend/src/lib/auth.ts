@@ -43,3 +43,13 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
 }
+
+export async function fetchReferralCode(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('referral_code')
+    .eq('id', userId)
+    .single()
+  if (error) throw error
+  return data?.referral_code ?? null
+}

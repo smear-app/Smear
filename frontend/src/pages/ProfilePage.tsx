@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
+import { fetchReferralCode } from "../lib/auth"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
+  const [referralCode, setReferralCode] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    fetchReferralCode(user.id).then(setReferralCode).catch(console.error)
+  }, [user])
 
   return (
     <div className="min-h-screen bg-[#f5f5f2]">
@@ -15,6 +23,11 @@ export default function ProfilePage() {
             </div>
             <div>
               <p className="font-semibold text-slate-900">{user?.email}</p>
+              {referralCode && (
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Referral code: <span className="font-semibold text-slate-700">{referralCode}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

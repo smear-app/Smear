@@ -1,11 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { signIn, signUp } from '../lib/auth'
 
 type Tab = 'login' | 'register'
 
 export default function AuthPage() {
   const navigate = useNavigate()
+  const { session } = useAuth()
+
+  useEffect(() => {
+    if (session) navigate('/home', { replace: true })
+  }, [session, navigate])
   const [tab, setTab] = useState<Tab>('login')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -27,7 +33,6 @@ export default function AuthPage() {
     setLoading(true)
     try {
       await signIn(loginEmail, loginPassword)
-      navigate('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -41,7 +46,6 @@ export default function AuthPage() {
     setLoading(true)
     try {
       await signUp(regEmail, regPassword, regUsername, regDisplayName, regReferral || undefined)
-      navigate('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {

@@ -59,7 +59,7 @@ function ProtectedApp() {
 function AuthRoute() {
   const { session, loading } = useAuth()
   if (loading) return null
-  if (session) return <Navigate to="/" replace />
+  if (session) return <Navigate to="/home" replace />
   return <AuthPage />
 }
 
