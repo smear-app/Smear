@@ -27,7 +27,7 @@ export default function AuthPage() {
     setLoading(true)
     try {
       await signIn(loginEmail, loginPassword)
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed')
     } finally {
@@ -41,7 +41,7 @@ export default function AuthPage() {
     setLoading(true)
     try {
       await signUp(regEmail, regPassword, regUsername, regDisplayName, regReferral || undefined)
-      navigate('/')
+      navigate('/home')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
