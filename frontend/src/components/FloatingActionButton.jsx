@@ -7,7 +7,7 @@ function FloatingActionButton({ onClick }) {
         type="button"
         aria-label="Log a climb"
         onClick={onClick}
-        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_16px_32px_rgba(16,185,129,0.32)] transition-transform duration-200 hover:scale-[1.02] active:scale-95"
+        className="ml-auto flex h-14 w-14 items-center justify-center rounded-full bg-ember text-stone-surface shadow-[0_16px_32px_rgba(201,86,26,0.32)] transition-all duration-200 hover:scale-[1.02] hover:bg-ember-dark active:scale-95"
       >
         <FiPlus className="h-6 w-6" />
       </button>

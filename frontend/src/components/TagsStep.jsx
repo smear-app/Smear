@@ -15,15 +15,20 @@ const TAG_SECTIONS = [
   },
 ]
 
-function TagChip({ isSelected, label, onClick }) {
+function TagChip({ isSelected, label, onClick, tone = "ember" }) {
+  const selectedClassName =
+    tone === "lichen"
+      ? "border-lichen/25 bg-lichen-soft text-lichen shadow-[0_8px_18px_rgba(110,139,87,0.14)]"
+      : "border-ember/25 bg-ember-soft text-ember shadow-[0_8px_18px_rgba(201,86,26,0.14)]"
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={`min-w-[88px] rounded-full border px-4 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
         isSelected
-          ? "border-emerald-400 bg-emerald-100 text-emerald-950 shadow-[0_8px_18px_rgba(16,185,129,0.16)]"
-          : "border-slate-200 bg-white text-slate-600"
+          ? selectedClassName
+          : "border-stone-border bg-stone-surface text-stone-secondary"
       }`}
     >
       {label}
@@ -49,18 +54,18 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
     <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
       <div className="relative min-h-0 flex-1">
         <div ref={scrollRef} className="h-full overflow-y-auto">
-        <div className="rounded-[30px] bg-slate-50/90 p-6">
-          <h3 className="text-lg font-semibold tracking-tight text-slate-950">
+        <div className="rounded-[30px] border border-stone-border bg-stone-surface p-6">
+          <h3 className="text-lg font-semibold tracking-tight text-stone-text">
             Finish the details
           </h3>
-          <p className="mt-1.5 max-w-[260px] text-xs leading-5 text-slate-400">
+          <p className="mt-1.5 max-w-[260px] text-xs leading-5 text-stone-muted">
             Pick the holds, movement, and wall angle that best match this climb.
           </p>
 
           <div className="mt-8 space-y-5">
-            {TAG_SECTIONS.map((section) => (
+            {TAG_SECTIONS.map((section, index) => (
               <section key={section.title}>
-                <p className="mb-2.5 text-sm font-medium text-slate-700">
+                <p className="mb-2.5 text-sm font-medium uppercase tracking-[0.14em] text-stone-secondary">
                   {section.title}
                 </p>
 
@@ -73,6 +78,7 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
                         key={tag}
                         label={tag}
                         isSelected={isSelected}
+                        tone="ember"
                         onClick={() => onToggleTag(tag)}
                       />
                     )
@@ -84,7 +90,7 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
         </div>
         </div>
         {showFade && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rounded-b-[30px] bg-gradient-to-t from-[#fcfcfa] to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rounded-b-[30px] bg-gradient-to-t from-stone-surface to-transparent" />
         )}
       </div>
 
@@ -92,7 +98,7 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
         {saveError ? (
           <p className="text-center text-sm text-red-500">{saveError}</p>
         ) : !canSaveFromTags ? (
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-stone-secondary">
             Select at least one tag to save this climb
           </p>
         ) : null}
@@ -106,10 +112,10 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
           }
         }}
         disabled={!canSaveFromTags}
-        className={`mt-3 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
+        className={`mt-3 rounded-full px-6 py-4 text-base font-semibold text-stone-surface transition-all duration-200 ${
           canSaveFromTags
-            ? "bg-black active:scale-[0.98]"
-            : "cursor-not-allowed bg-black/35 opacity-70"
+            ? "bg-ember hover:bg-ember-dark active:scale-[0.98]"
+            : "cursor-not-allowed bg-stone-border text-stone-muted opacity-80"
         }`}
       >
         Save Climb

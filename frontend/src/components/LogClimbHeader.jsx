@@ -11,14 +11,14 @@ function LogClimbHeader({ currentStep, title, onBack, onClose }) {
             type="button"
             onClick={onBack}
             aria-label="Go back"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-stone-secondary transition-colors hover:bg-stone-alt"
           >
             <FiArrowLeft className="h-5 w-5" />
           </button>
         ) : null}
       </div>
 
-      <h2 className="text-center text-base font-semibold text-slate-950">
+      <h2 className="text-center text-base font-semibold text-stone-text">
         {title}
       </h2>
 
@@ -27,7 +27,7 @@ function LogClimbHeader({ currentStep, title, onBack, onClose }) {
           type="button"
           onClick={onClose}
           aria-label="Close log climb"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-slate-700 transition-colors hover:bg-slate-100"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-stone-secondary transition-colors hover:bg-stone-alt"
         >
           <FiX className="h-5 w-5" />
         </button>

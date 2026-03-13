@@ -54,17 +54,17 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f5f5f2] px-5">
+    <div className="flex min-h-screen items-center justify-center bg-stone-bg px-5">
       <div className="w-full max-w-[420px]">
-        <h1 className="mb-8 text-center text-3xl font-bold text-slate-900">Smear</h1>
+        <h1 className="mb-8 text-center text-3xl font-bold text-stone-text">Smear</h1>
 
         {/* Tabs */}
-        <div className="mb-6 flex rounded-2xl bg-white p-1 shadow-[0_4px_20px_rgba(15,23,42,0.06)]">
+        <div className="mb-6 flex rounded-2xl border border-stone-border bg-stone-surface p-1 shadow-[0_10px_24px_rgba(89,68,51,0.08)]">
           <button
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
               tab === 'login'
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-ember text-stone-surface'
+                : 'text-stone-secondary hover:text-stone-text'
             }`}
             onClick={() => { setTab('login'); setError(null) }}
           >
@@ -73,8 +73,8 @@ export default function AuthPage() {
           <button
             className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
               tab === 'register'
-                ? 'bg-slate-900 text-white'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-ember text-stone-surface'
+                : 'text-stone-secondary hover:text-stone-text'
             }`}
             onClick={() => { setTab('register'); setError(null) }}
           >
@@ -82,9 +82,9 @@ export default function AuthPage() {
           </button>
         </div>
 
-        <div className="rounded-2xl bg-white p-6 shadow-[0_4px_20px_rgba(15,23,42,0.06)]">
+        <div className="rounded-2xl border border-stone-border bg-stone-surface p-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           {error && (
-            <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>
+            <p className="mb-4 rounded-xl border border-ember/10 bg-ember-soft px-4 py-3 text-sm text-ember">{error}</p>
           )}
 
           {tab === 'login' ? (
@@ -94,7 +94,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                className="mt-2 w-full rounded-xl bg-ember py-3 text-sm font-semibold text-stone-surface transition-colors hover:bg-ember-dark disabled:opacity-50"
               >
                 {loading ? 'Logging in…' : 'Log in'}
               </button>
@@ -109,7 +109,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="mt-2 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white disabled:opacity-50"
+                className="mt-2 w-full rounded-xl bg-ember py-3 text-sm font-semibold text-stone-surface transition-colors hover:bg-ember-dark disabled:opacity-50"
               >
                 {loading ? 'Creating account…' : 'Create account'}
               </button>
@@ -133,7 +133,7 @@ interface FieldProps {
 function Field({ label, type, value, onChange, required, placeholder }: FieldProps) {
   return (
     <div>
-      <label className="mb-1.5 block text-xs font-semibold text-slate-500 uppercase tracking-wide">
+      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.18em] text-stone-muted">
         {label}
       </label>
       <input
@@ -142,7 +142,7 @@ function Field({ label, type, value, onChange, required, placeholder }: FieldPro
         onChange={e => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-400 focus:bg-white transition-colors"
+        className="w-full rounded-xl border border-stone-border bg-stone-alt px-4 py-3 text-sm text-stone-text outline-none transition-colors placeholder:text-stone-muted focus:border-ember/50 focus:bg-stone-surface"
       />
     </div>
   )

@@ -16,10 +16,10 @@ const GRADE_OPTIONS = [
 
 function GradeSelectorRow({ label, value, onSelect }) {
   return (
-    <div className="rounded-[28px] bg-slate-100 p-4">
+    <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900">{label}</h3>
-        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+        <h3 className="text-sm font-semibold text-stone-text">{label}</h3>
+        <span className="rounded-full border border-stone-border/80 bg-stone-surface px-3 py-1 text-xs font-semibold text-stone-secondary">
           {value || "None"}
         </span>
       </div>
@@ -36,8 +36,8 @@ function GradeSelectorRow({ label, value, onSelect }) {
                 onClick={() => onSelect(grade)}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                   isSelected
-                    ? "bg-emerald-500 text-white"
-                    : "bg-white text-slate-600"
+                    ? "bg-ember text-stone-surface"
+                    : "border border-stone-border/80 bg-stone-surface text-stone-secondary"
                 }`}
               >
                 {grade}
@@ -70,7 +70,7 @@ function GradeStep({ draft, onChange, onContinue }) {
 
       <div className="mt-6 min-h-[20px]">
         {!canContinueFromGrade ? (
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-stone-secondary">
             Select both Gym Grade and Felt Like to continue
           </p>
         ) : null}
@@ -84,10 +84,10 @@ function GradeStep({ draft, onChange, onContinue }) {
           }
         }}
         disabled={!canContinueFromGrade}
-        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-white transition-transform duration-200 ${
+        className={`mt-6 rounded-full px-6 py-4 text-base font-semibold text-stone-surface transition-all duration-200 ${
           canContinueFromGrade
-            ? "bg-black active:scale-[0.98]"
-            : "cursor-not-allowed bg-black/35 opacity-70"
+            ? "bg-ember hover:bg-ember-dark active:scale-[0.98]"
+            : "cursor-not-allowed bg-stone-border text-stone-muted opacity-80"
         }`}
       >
         Continue

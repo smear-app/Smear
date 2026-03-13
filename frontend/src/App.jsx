@@ -14,8 +14,8 @@ function ProtectedApp() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f5f5f2]">
-        <p className="text-sm text-slate-400">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center bg-stone-bg">
+        <p className="text-sm text-stone-muted">Loading…</p>
       </div>
     )
   }
@@ -32,7 +32,7 @@ function ProtectedApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f2] text-slate-900">
+    <div className="min-h-screen bg-stone-bg text-stone-text">
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route
