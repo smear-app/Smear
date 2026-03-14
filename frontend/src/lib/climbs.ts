@@ -17,6 +17,7 @@ export interface ClimbDraft {
   sendType: string
   tags: string[]
   photo: string | null
+  climbColor: string | null
 }
 
 export interface Climb {
@@ -31,6 +32,7 @@ export interface Climb {
   send_type: string
   tags: string[]
   photo_url: string | null
+  climb_color: string | null
   notes: string | null
   created_at: string
 }
@@ -47,6 +49,8 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<vo
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map(t => t.toLowerCase()),
     photo_url: null,
+    // TODO: Persist draft.climbColor once the climbs table accepts a color field.
+    // TODO: Logged climb cards should render null as gray with the label "No color selected".
   })
   if (error) throw error
 }

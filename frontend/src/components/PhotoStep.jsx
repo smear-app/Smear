@@ -1,8 +1,11 @@
 import { useRef } from "react"
 import { FiCamera } from "react-icons/fi"
+import ColorChipSelector from "./ColorChipSelector"
+import { getClimbColorPalette } from "../lib/climbColors"
 
 function PhotoStep({ draft, onChange, onContinue }) {
   const fileInputRef = useRef(null)
+  const colorOptions = getClimbColorPalette()
 
   const handleSelectPhoto = (event) => {
     const file = event.target.files?.[0]
@@ -49,6 +52,18 @@ function PhotoStep({ draft, onChange, onContinue }) {
         onChange={handleSelectPhoto}
         className="hidden"
       />
+
+      <div className="mt-6">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+          Climb Color
+        </p>
+        <ColorChipSelector
+          className="mt-3"
+          options={colorOptions}
+          value={draft.climbColor}
+          onChange={(value) => onChange("climbColor", value)}
+        />
+      </div>
 
       <button
         type="button"
