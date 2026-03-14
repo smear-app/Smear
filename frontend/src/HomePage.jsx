@@ -6,6 +6,7 @@ import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
 import { useAuth } from "./context/AuthContext"
 import { useGym } from "./context/GymContext"
+import { getClimbColorBadgeStyle, getClimbColorName } from "./lib/climbColors"
 import { fetchClimbs } from "./lib/climbs"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
@@ -74,51 +75,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
           ) : (
             <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
               {climbs.map((climb) => (
-                <article
-                  key={climb.id}
-                  className="rounded-[24px] border border-stone-border/70 bg-stone-surface p-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)]"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-[18px] bg-stone-alt px-3 py-2 text-sm font-semibold text-ember shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                        {climb.gym_grade}
-                        {climb.personal_grade && climb.personal_grade !== climb.gym_grade
-                          ? ` / ${climb.personal_grade}`
-                          : ""}
-                      </div>
-
-                      <div>
-                        <p className="mt-1 text-xs text-stone-secondary capitalize">
-                          {climb.send_type}
-                        </p>
-                        <p className="mt-0.5 text-xs text-stone-muted">
-                          {new Date(climb.created_at).toLocaleDateString()}
-                        </p>
-                        {climb.gym_name && (
-                          <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <StatusPill sendType={climb.send_type} />
-                      {/* <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
-                        {climb.tags.length} tags
-                      </div> */}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {climb.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary capitalize"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </article>
+                <ClimbCard key={climb.id} climb={climb} />
               ))}
             </div>
           )}
@@ -128,6 +85,59 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
       <FloatingActionButton onClick={onOpenLogClimb} disabled={!activeGym} />
       <BottomNav />
     </div>
+  )
+}
+
+function ClimbCard({ climb }) {
+  const badgeStyle = getClimbColorBadgeStyle(climb.climbColor)
+  const climbColorName = getClimbColorName(climb.climbColor)
+
+  return (
+    <article className="rounded-[24px] border border-stone-border/70 bg-stone-surface p-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div
+            className="rounded-[18px] border px-3 py-2 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+            style={badgeStyle}
+          >
+            {climb.gym_grade}
+            {climb.personal_grade && climb.personal_grade !== climb.gym_grade
+              ? ` / ${climb.personal_grade}`
+              : ""}
+          </div>
+
+          <div>
+            <p className="mt-1 text-xs text-stone-secondary font-bold">
+              {climbColorName}
+            </p>
+            <p className="mt-0.5 text-xs text-stone-muted">
+              {new Date(climb.created_at).toLocaleDateString()}
+            </p>
+            {climb.gym_name && (
+              <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-end gap-2">
+          <StatusPill sendType={climb.send_type} />
+          {/* <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
+            {climb.tags.length} tags
+          </div> */}
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {climb.tags.map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary capitalize"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </article>
   )
 }
 
