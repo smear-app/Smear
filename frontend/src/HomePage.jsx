@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
@@ -27,15 +28,16 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
         <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
-                Recent Climbs
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-stone-text">Your latest sessions</h2>
-            </div>
-            <div className="rounded-full border border-ember/10 bg-ember-soft px-3 py-1 text-sm font-semibold text-ember">
-              {climbs.length}
-            </div>
+            <h2 className="text-xl font-bold text-stone-text">Recent Climbs</h2>
+            <Link
+              to="/home/logbook"
+              className="inline-flex items-center gap-2 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-sm font-semibold text-stone-text transition-colors duration-200 hover:border-ember/20 hover:text-ember"
+            >
+              <span>View All &rarr;</span>
+              <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
+                {climbs.length}
+              </span>
+            </Link>
           </div>
 
           {loadError && (
