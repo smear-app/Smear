@@ -28,7 +28,7 @@ function PhotoStep({ draft, onChange, onContinue }) {
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex aspect-[4/5] w-full max-w-[320px] flex-col items-center justify-center overflow-hidden rounded-[32px] border border-stone-border bg-stone-alt text-stone-text shadow-[0_16px_36px_rgba(89,68,51,0.08)]"
+          className="flex aspect-[4/5] w-full max-w-[320px] max-h-[300px] flex-col items-center justify-center overflow-hidden rounded-[32px] border border-stone-border bg-stone-alt text-stone-text shadow-[0_16px_36px_rgba(89,68,51,0.08)]"
         >
           {draft.photo ? (
             <img
