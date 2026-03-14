@@ -82,7 +82,7 @@ function ClimbCard({ climb }) {
           </div>
 
           <div>
-            <p className="mt-1 text-xs text-stone-secondary">
+            <p className="mt-1 text-xs text-stone-secondary font-bold">
               {climbColorName}
             </p>
             <p className="mt-0.5 text-xs text-stone-muted">
