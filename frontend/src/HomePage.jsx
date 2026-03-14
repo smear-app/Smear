@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import { useLocation } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
@@ -8,10 +9,12 @@ import { useGym } from "./context/GymContext"
 import { fetchClimbs } from "./lib/climbs"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
+  const location = useLocation()
   const { user } = useAuth()
   const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
   const [loadError, setLoadError] = useState(null)
+  const isReturningFromLogbook = location.state?.stackTransition === "back"
 
   useEffect(() => {
     if (!user) return
@@ -23,17 +26,37 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
   return (
     <div className="min-h-screen bg-stone-bg">
-      <main className="mx-auto max-w-[420px] px-5 pb-32 pt-6">
+      <main
+        className="mx-auto max-w-[420px] px-5 pb-32 pt-6"
+        style={{
+          animation: isReturningFromLogbook ? "home-stack-return 280ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+        }}
+      >
+        <style>{`
+          @keyframes home-stack-return {
+            0% {
+              opacity: 0.92;
+              transform: translateX(-18px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateX(0);
+            }
+          }
+        `}</style>
         <WelcomeCard />
 
         <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-stone-text">Recent Climbs</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="min-w-0 whitespace-nowrap text-lg font-bold text-stone-text sm:text-xl">
+              Recent Climbs
+            </h2>
             <Link
               to="/home/logbook"
-              className="inline-flex items-center gap-2 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-sm font-semibold text-stone-text transition-colors duration-200 hover:border-ember/20 hover:text-ember"
+              state={{ stackTransition: "forward" }}
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-stone-secondary transition-colors duration-200 hover:text-ember sm:gap-2 sm:text-sm"
             >
-              <span>View All &rarr;</span>
+              <span className="whitespace-nowrap">View All &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
                 {climbs.length}
               </span>
