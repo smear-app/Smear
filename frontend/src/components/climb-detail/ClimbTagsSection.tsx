@@ -2,30 +2,60 @@ type ClimbTagsSectionProps = {
   tags: string[]
 }
 
+const TAG_GROUPS = [
+  { title: "Hold Type", tags: ["Crimp", "Sloper", "Pinch", "Pocket", "Jug"] },
+  { title: "Movement", tags: ["Dynamic", "Static", "Balance", "Compression", "Tension"] },
+  { title: "Wall Angle", tags: ["Slab", "Vertical", "Overhang", "Cave"] },
+]
+
 function formatTag(tag: string) {
   return tag.replace(/_/g, " ")
 }
 
-export default function ClimbTagsSection({ tags }: ClimbTagsSectionProps) {
-  return (
-    <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
-            Climb Tags
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-stone-text">Canonical beta cues</h2>
-        </div>
-      </div>
+function groupTags(tags: string[]) {
+  const grouped = TAG_GROUPS
+    .map((group) => ({
+      title: group.title,
+      tags: tags.filter((tag) => group.tags.includes(tag)),
+    }))
+    .filter((group) => group.tags.length > 0)
 
-      <div className="mt-4 flex flex-wrap gap-2.5">
-        {tags.map((tag) => (
-          <span
-            key={tag}
-            className="rounded-full border border-stone-border/80 bg-stone-alt px-3.5 py-2 text-sm font-medium capitalize text-stone-secondary"
-          >
-            {formatTag(tag)}
-          </span>
+  const knownTags = new Set(TAG_GROUPS.flatMap((group) => group.tags))
+  const otherTags = tags.filter((tag) => !knownTags.has(tag))
+
+  if (otherTags.length > 0) {
+    grouped.push({ title: "Other", tags: otherTags })
+  }
+
+  return grouped
+}
+
+export default function ClimbTagsSection({ tags }: ClimbTagsSectionProps) {
+  const groupedTags = groupTags(tags)
+
+  return (
+    <section className="rounded-[28px] border border-stone-border/90 bg-[#F6F1EA] px-5 py-3.5 shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+        Climb Tags
+      </p>
+
+      <div className="mt-2.5 space-y-2.5">
+        {groupedTags.map((group) => (
+          <section key={group.title}>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-stone-muted">
+              {group.title}
+            </p>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {group.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full border border-stone-border/70 bg-stone-surface/85 px-2 py-0.5 text-[10px] font-medium capitalize text-stone-secondary"
+                >
+                  {formatTag(tag)}
+                </span>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
     </section>

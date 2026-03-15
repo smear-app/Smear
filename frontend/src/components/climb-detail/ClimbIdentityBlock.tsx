@@ -4,14 +4,12 @@ type ClimbIdentityBlockProps = {
   gymGrade: string
   climbColor?: string | null
   officialName?: string | null
-  gymName?: string | null
 }
 
 export default function ClimbIdentityBlock({
   gymGrade,
   climbColor,
   officialName,
-  gymName,
 }: ClimbIdentityBlockProps) {
   const badgeStyle = getClimbColorBadgeStyle(climbColor)
   const climbColorName = getClimbColorName(climbColor)
@@ -33,8 +31,6 @@ export default function ClimbIdentityBlock({
           {officialName}
         </h1>
       ) : null}
-
-      {gymName ? <p className="mt-3 text-sm text-stone-muted">{gymName}</p> : null}
     </div>
   )
 }

@@ -15,3 +15,32 @@
     @apply bg-stone-bg text-stone-text font-sans;
   }
 }
+
+@layer base {
+  ::view-transition-old(active-climb-card),
+  ::view-transition-new(active-climb-card) {
+    animation-duration: 220ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 180ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes climb-card-content-return {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .climb-card-interactive:hover {
+    background-color: #f0ebe4;
+  }
+}

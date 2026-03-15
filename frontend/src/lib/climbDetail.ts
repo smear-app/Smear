@@ -8,7 +8,6 @@ export interface ClimbDetailData {
   gymName: string | null
   referenceImageUrl: string | null
   canonicalTags: string[]
-  userTags: string[]
   userTagDifferences: string[]
   userNotes: string | null
   sendType: string
@@ -65,13 +64,9 @@ export function buildClimbDetailData(climb: Climb): ClimbDetailData {
     gymName: climb.gym_name,
     referenceImageUrl: climb.photo_url,
     canonicalTags,
-    userTags,
     userTagDifferences,
-    // TODO: Replace this mock note source with persisted user-specific notes once the backend supports them.
-    userNotes:
-      stableIndex % 3 === 0
-        ? "Left hand bumps better if you stay patient through the feet. The top felt easier once I kept hips close."
-        : null,
+    // TODO: Replace this null placeholder with persisted user-specific notes once the backend supports them.
+    userNotes: null,
     sendType: climb.send_type,
     loggedAt: climb.created_at,
   }

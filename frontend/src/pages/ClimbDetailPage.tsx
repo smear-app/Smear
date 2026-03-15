@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { FiCalendar, FiMapPin } from "react-icons/fi"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import ClimbStatusPill from "../components/ClimbStatusPill"
@@ -15,6 +16,7 @@ import { fetchClimbs } from "../lib/climbs"
 type ClimbLocationState = {
   climb?: Climb
   from?: string
+  transition?: string
 }
 
 const IMAGE_HEADER_EXPANDED = 336
@@ -32,6 +34,8 @@ export default function ClimbDetailPage() {
   const [loading, setLoading] = useState(!locationState.climb)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [scrollY, setScrollY] = useState(0)
+  const [isClosing, setIsClosing] = useState(false)
+  const isCardOpenTransition = locationState.transition === "card-open"
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -71,22 +75,85 @@ export default function ClimbDetailPage() {
   const collapsedHeight = hasImage ? IMAGE_HEADER_COLLAPSED : PLACEHOLDER_HEADER_COLLAPSED
   const headerHeight = Math.max(collapsedHeight, expandedHeight - scrollY * 0.45)
 
+  const handleBack = () => {
+    if (!detail || isClosing) {
+      return
+    }
+
+    setIsClosing(true)
+
+    window.setTimeout(() => {
+      const goBack = () => {
+        navigate(locationState.from ?? "/home", {
+          state: {
+            stackTransition: locationState.from === "/home" ? undefined : "back",
+            returnClimbId: detail.id,
+            transition: "card-close",
+          },
+        })
+      }
+
+      if (typeof document !== "undefined" && "startViewTransition" in document) {
+        document.startViewTransition(goBack)
+        return
+      }
+
+      goBack()
+    }, 80)
+  }
+
   return (
     <div className="min-h-[100dvh] bg-stone-bg">
       <div className="mx-auto max-w-[420px]">
+        <style>{`
+          @keyframes climb-detail-hero-enter {
+            0% {
+              opacity: 0;
+              transform: scale(0.985);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+
+          @keyframes climb-detail-content-enter {
+            0% {
+              opacity: 0;
+              transform: translateY(12px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @keyframes climb-detail-content-exit {
+            0% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+            100% {
+              opacity: 0;
+              transform: translateY(8px);
+            }
+          }
+        `}</style>
         <div className="sticky top-0 z-0">
-          <div className="relative">
+          <div
+            className="relative"
+            style={{
+              animation: isClosing
+                ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
+                : isCardOpenTransition
+                  ? "climb-detail-hero-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)"
+                  : "none",
+            }}
+          >
             <ClimbDetailHero imageUrl={detail?.referenceImageUrl} height={headerHeight} />
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
               <BackButton
-                onClick={() => {
-                  if (window.history.length > 1) {
-                    navigate(-1)
-                    return
-                  }
-
-                  navigate(locationState.from ?? "/home")
-                }}
+                onClick={handleBack}
                 ariaLabel="Back"
                 size="sm"
                 className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
@@ -95,7 +162,16 @@ export default function ClimbDetailPage() {
           </div>
         </div>
 
-        <main className="relative z-10 -mt-7 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6">
+        <main
+          className="relative z-10 -mt-7 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
+          style={{
+            animation: isClosing
+              ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
+              : isCardOpenTransition
+                ? "climb-detail-content-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+                : "none",
+          }}
+        >
           {loading ? (
             <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
               Loading climb details…
@@ -106,20 +182,35 @@ export default function ClimbDetailPage() {
             </div>
           ) : (
             <>
-              <section className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+              <section
+                className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+                style={{
+                  viewTransitionName:
+                    isCardOpenTransition || isClosing ? "active-climb-card" : "none",
+                }}
+              >
                 <div className="flex items-start justify-between gap-4">
-                  <ClimbIdentityBlock
-                    gymGrade={detail.gymGrade}
-                    climbColor={detail.climbColor}
-                    officialName={detail.officialName}
-                    gymName={detail.gymName}
-                  />
+                  <div>
+                    <ClimbIdentityBlock
+                      gymGrade={detail.gymGrade}
+                      climbColor={detail.climbColor}
+                      officialName={detail.officialName}
+                    />
+                    <div className="mt-3 space-y-1.5">
+                      {detail.gymName ? (
+                        <div className="flex items-center gap-2 text-sm text-stone-muted">
+                          <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                          <span>{detail.gymName}</span>
+                        </div>
+                      ) : null}
+                      <div className="flex items-center gap-2 text-sm text-stone-muted">
+                        <FiCalendar className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                        <span>{new Date(detail.loggedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
                   <ClimbStatusPill sendType={detail.sendType} className="shrink-0" />
                 </div>
-
-                <p className="mt-4 text-xs text-stone-muted">
-                  Logged {new Date(detail.loggedAt).toLocaleDateString()}
-                </p>
               </section>
 
               <div className="mt-5">
@@ -131,7 +222,7 @@ export default function ClimbDetailPage() {
                 <ClimbNotesSection notes={detail.userNotes} />
               </div>
 
-              <section className="mt-5 rounded-[28px] border border-dashed border-stone-border bg-stone-surface/80 px-5 py-5 text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.04)]">
+              <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
                   Coming Later
                 </p>
