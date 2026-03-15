@@ -6,6 +6,7 @@ import HomePage from "./HomePage"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import { insertClimb } from "./lib/climbs"
+import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
 
@@ -53,6 +54,7 @@ function ProtectedApp() {
           }
         />
         <Route path="/home/logbook" element={<LogbookPage />} />
+        <Route path="/climbs/:climbId" element={<ClimbDetailPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
       <LogClimbModal
