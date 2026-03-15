@@ -5,9 +5,12 @@ import { GymProvider, useGym } from "./context/GymContext"
 import HomePage from "./HomePage"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
+import FeedPage from "./pages/FeedPage"
 import { insertClimb } from "./lib/climbs"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
+import SocialPage from "./pages/SocialPage"
+import StatsPage from "./pages/StatsPage"
 
 function ProtectedApp() {
   const { session, loading } = useAuth()
@@ -53,6 +56,9 @@ function ProtectedApp() {
           }
         />
         <Route path="/home/logbook" element={<LogbookPage />} />
+        <Route path="/stats" element={<StatsPage />} />
+        <Route path="/feed" element={<FeedPage />} />
+        <Route path="/social" element={<SocialPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Routes>
       <LogClimbModal
