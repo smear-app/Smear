@@ -14,13 +14,6 @@ export interface ClimbDetailData {
   loggedAt: string
 }
 
-const MOCK_NAME_POOL = [
-  "Warm Grain",
-  "Quiet Tension",
-  "Soft Commit",
-  "Redline Arc",
-]
-
 const FALLBACK_TAGS = ["Vertical", "Static", "Crimp"]
 
 function getStableIndex(seed: string, modulo: number) {
@@ -54,13 +47,12 @@ export function buildClimbDetailData(climb: Climb): ClimbDetailData {
   const canonicalTags = buildCanonicalTags(climb.tags, climb.id)
   const userTags = climb.tags.map(toTitleCase)
   const userTagDifferences = userTags.filter((tag) => !canonicalTags.includes(tag))
-  const stableIndex = getStableIndex(climb.id, MOCK_NAME_POOL.length)
 
   return {
     id: climb.id,
     gymGrade: climb.gym_grade,
     climbColor: climb.climbColor,
-    officialName: stableIndex % 2 === 0 ? MOCK_NAME_POOL[stableIndex] : null,
+    officialName: climb.name?.trim() ? climb.name.trim() : null,
     gymName: climb.gym_name,
     referenceImageUrl: climb.photo_url,
     canonicalTags,

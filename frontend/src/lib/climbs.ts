@@ -24,6 +24,7 @@ export interface ClimbDraft {
 interface ClimbRow {
   id: string
   user_id: string
+  name?: string | null
   gym_id: string | null
   gym_name: string | null
   gym_grade: string
@@ -41,6 +42,7 @@ interface ClimbRow {
 export interface Climb {
   id: string
   user_id: string
+  name?: string | null
   gym_id: string | null
   gym_name: string | null
   gym_grade: string
