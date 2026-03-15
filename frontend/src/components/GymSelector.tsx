@@ -7,9 +7,42 @@ import { formatGymLocation, type GymRecord } from "../lib/gyms"
 
 interface GymSelectorProps {
   className?: string
+  showLocation?: boolean
 }
 
-function GymSelector({ className = "" }: GymSelectorProps) {
+type SelectedGymSnapshot = {
+  id: string | null
+  name: string
+  location: string | null
+}
+
+const GYM_LABEL_TRANSITION_MS = 180
+
+function getSelectedGymSnapshot(activeGym: GymRecord | null, isHydrated: boolean): SelectedGymSnapshot {
+  if (!isHydrated) {
+    return {
+      id: "loading",
+      name: "Loading...",
+      location: "Loading location...",
+    }
+  }
+
+  if (!activeGym) {
+    return {
+      id: null,
+      name: "Select Gym",
+      location: null,
+    }
+  }
+
+  return {
+    id: activeGym.id,
+    name: activeGym.name,
+    location: formatGymLocation(activeGym),
+  }
+}
+
+function GymSelector({ className = "", showLocation = true }: GymSelectorProps) {
   const {
     activeGym,
     bookmarkedGyms,
@@ -23,10 +56,44 @@ function GymSelector({ className = "" }: GymSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isRegistryOpen, setIsRegistryOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [visibleSnapshot, setVisibleSnapshot] = useState<SelectedGymSnapshot>(() =>
+    getSelectedGymSnapshot(activeGym, isHydrated),
+  )
+  const [exitingSnapshot, setExitingSnapshot] = useState<SelectedGymSnapshot | null>(null)
+  const [isLabelAnimating, setIsLabelAnimating] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const labelTimeoutRef = useRef<number | null>(null)
 
   const searchResults = useMemo(() => searchGyms(query), [query, searchGyms])
+  const nextSnapshot = useMemo(
+    () => getSelectedGymSnapshot(activeGym, isHydrated),
+    [activeGym, isHydrated],
+  )
+
+  useEffect(() => {
+    if (
+      visibleSnapshot.id === nextSnapshot.id &&
+      visibleSnapshot.name === nextSnapshot.name &&
+      visibleSnapshot.location === nextSnapshot.location
+    ) {
+      return
+    }
+
+    setExitingSnapshot(visibleSnapshot)
+    setVisibleSnapshot(nextSnapshot)
+    setIsLabelAnimating(true)
+
+    if (labelTimeoutRef.current) {
+      window.clearTimeout(labelTimeoutRef.current)
+    }
+
+    labelTimeoutRef.current = window.setTimeout(() => {
+      setExitingSnapshot(null)
+      setIsLabelAnimating(false)
+      labelTimeoutRef.current = null
+    }, GYM_LABEL_TRANSITION_MS)
+  }, [nextSnapshot, visibleSnapshot])
 
   useEffect(() => {
     if (!isOpen && !isRegistryOpen) return undefined
@@ -52,6 +119,14 @@ function GymSelector({ className = "" }: GymSelectorProps) {
     return () => window.clearTimeout(timeoutId)
   }, [isRegistryOpen])
 
+  useEffect(() => {
+    return () => {
+      if (labelTimeoutRef.current) {
+        window.clearTimeout(labelTimeoutRef.current)
+      }
+    }
+  }, [])
+
   function handleSelectFromPopup(gymId: string) {
     selectGym(gymId)
     setIsOpen(false)
@@ -76,21 +151,19 @@ function GymSelector({ className = "" }: GymSelectorProps) {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white"
+        className="inline-flex min-w-[12.5rem] max-w-[15rem] items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white"
       >
-        <div className="min-w-0">
-          {!isHydrated ? (
-            <p className="text-sm font-semibold text-slate-400">Loading...</p>
-          ) : (
-            <>
-              <p className="truncate text-sm font-semibold text-slate-900">
-                {activeGym ? activeGym.name : "Select Gym"}
-              </p>
-              {activeGym ? (
-                <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
-              ) : null}
-            </>
-          )}
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          <div className={showLocation ? "min-h-[2.625rem]" : "min-h-[1.25rem]"}>
+            {exitingSnapshot ? (
+              <SelectedGymLabel snapshot={exitingSnapshot} state="exit" showLocation={showLocation} />
+            ) : null}
+            <SelectedGymLabel
+              snapshot={visibleSnapshot}
+              state={isLabelAnimating ? "enter" : "static"}
+              showLocation={showLocation}
+            />
+          </div>
         </div>
         <FiChevronDown
           className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
@@ -100,7 +173,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-30 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+        <div className="absolute left-0 top-[calc(100%+12px)] z-30 w-[min(20rem,calc(100vw-2.5rem))] rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Select gym</p>
@@ -227,6 +300,60 @@ function GymSelector({ className = "" }: GymSelectorProps) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function SelectedGymLabel({
+  snapshot,
+  state,
+  showLocation,
+}: {
+  snapshot: SelectedGymSnapshot
+  state: "static" | "enter" | "exit"
+  showLocation: boolean
+}) {
+  const animationClassName =
+    state === "enter"
+      ? "animate-[gym-selector-label-in_180ms_cubic-bezier(0.22,1,0.36,1)]"
+      : state === "exit"
+        ? "pointer-events-none absolute inset-0 animate-[gym-selector-label-out_180ms_cubic-bezier(0.22,1,0.36,1)]"
+        : ""
+
+  const nameTone = snapshot.id === "loading" ? "text-slate-400" : "text-slate-900"
+
+  return (
+    <div className={`min-w-0 ${animationClassName}`}>
+      <style>{`
+        @keyframes gym-selector-label-in {
+          0% {
+            opacity: 0;
+            transform: translateY(5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes gym-selector-label-out {
+          0% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-5px);
+          }
+        }
+      `}</style>
+      <p className={`truncate text-sm font-semibold ${nameTone}`}>{snapshot.name}</p>
+      {showLocation && snapshot.location ? (
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+          <FiMapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{snapshot.location}</span>
+        </p>
+      ) : null}
     </div>
   )
 }
