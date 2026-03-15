@@ -20,6 +20,12 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
   const [openingClimbId, setOpeningClimbId] = useState(null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
   const returningClimbId = location.state?.returnClimbId ?? null
+  const returningClimb = location.state?.returnClimb ?? null
+
+  const displayClimbs =
+    returningClimb && !climbs.some((climb) => climb.id === returningClimb.id)
+      ? [returningClimb, ...climbs]
+      : climbs
 
   useEffect(() => {
     if (!user) return
@@ -63,7 +69,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
             >
               <span className="whitespace-nowrap">View All &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
-                {climbs.length}
+                {displayClimbs.length}
               </span>
             </Link>
           </div>
@@ -72,13 +78,13 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
             <p className="mt-4 text-sm text-red-500">{loadError}</p>
           )}
 
-          {!loadError && climbs.length === 0 ? (
+          {!loadError && displayClimbs.length === 0 ? (
             <div className="mt-8 rounded-[24px] border border-dashed border-stone-border bg-stone-alt px-5 py-8 text-center text-sm text-stone-secondary">
               Your logged climbs will appear here.
             </div>
           ) : (
             <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
-              {climbs.map((climb) => (
+              {displayClimbs.map((climb) => (
                 <ClimbCard
                   key={climb.id}
                   climb={climb}

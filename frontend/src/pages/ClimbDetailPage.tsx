@@ -88,6 +88,7 @@ export default function ClimbDetailPage() {
           state: {
             stackTransition: locationState.from === "/home" ? undefined : "back",
             returnClimbId: detail.id,
+            returnClimb: climb,
             transition: "card-close",
           },
         })
