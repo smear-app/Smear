@@ -19,6 +19,13 @@ type ClimbLocationState = {
   transition?: string
 }
 
+type FetchedClimbState = {
+  climb: Climb | null
+  error: string | null
+  requestedClimbId: string | null
+  status: "idle" | "success" | "error"
+}
+
 const IMAGE_HEADER_EXPANDED = 336
 const IMAGE_HEADER_COLLAPSED = 172
 const PLACEHOLDER_HEADER_EXPANDED = 168
@@ -30,12 +37,31 @@ export default function ClimbDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const locationState = (location.state ?? {}) as ClimbLocationState
-  const [climb, setClimb] = useState<Climb | null>(locationState.climb ?? null)
-  const [loading, setLoading] = useState(!locationState.climb)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const routeClimb = locationState.climb?.id === climbId ? locationState.climb : null
+  const [fetchedState, setFetchedState] = useState<FetchedClimbState>({
+    climb: null,
+    error: null,
+    requestedClimbId: null,
+    status: "idle",
+  })
   const [scrollY, setScrollY] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
   const isCardOpenTransition = locationState.transition === "card-open"
+  const fetchedClimb =
+    fetchedState.requestedClimbId === climbId && fetchedState.status === "success"
+      ? fetchedState.climb
+      : null
+  const climb = routeClimb ?? fetchedClimb
+  const loadError =
+    fetchedState.requestedClimbId === climbId && fetchedState.status === "error"
+      ? fetchedState.error
+      : null
+  const loading =
+    !routeClimb &&
+    Boolean(climbId) &&
+    (!user ||
+      fetchedState.requestedClimbId !== climbId ||
+      fetchedState.status === "idle")
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
@@ -50,24 +76,43 @@ export default function ClimbDetailPage() {
       return
     }
 
-    if (locationState.climb?.id === climbId) {
-      setClimb(locationState.climb)
-      setLoading(false)
+    if (routeClimb) {
       return
     }
 
-    setLoading(true)
-    setLoadError(null)
+    let isCancelled = false
 
     fetchClimbs(user.id)
       .then((climbs) => {
+        if (isCancelled) {
+          return
+        }
+
         const matchingClimb = climbs.find((entry) => entry.id === climbId) ?? null
-        setClimb(matchingClimb)
-        setLoadError(matchingClimb ? null : "Climb not found.")
+        setFetchedState({
+          climb: matchingClimb,
+          error: matchingClimb ? null : "Climb not found.",
+          requestedClimbId: climbId,
+          status: matchingClimb ? "success" : "error",
+        })
       })
-      .catch((error: Error) => setLoadError(error.message))
-      .finally(() => setLoading(false))
-  }, [climbId, locationState.climb, user])
+      .catch((error: Error) => {
+        if (isCancelled) {
+          return
+        }
+
+        setFetchedState({
+          climb: null,
+          error: error.message,
+          requestedClimbId: climbId,
+          status: "error",
+        })
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [climbId, routeClimb, user])
 
   const detail = useMemo(() => (climb ? buildClimbDetailData(climb) : null), [climb])
   const hasImage = Boolean(detail?.referenceImageUrl)

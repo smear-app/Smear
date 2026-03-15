@@ -5,7 +5,7 @@ type ClimbStatusPillProps = {
   className?: string
 }
 
-export function normalizeClimbStatus(sendType?: string | null): ClimbStatus {
+function normalizeClimbStatus(sendType?: string | null): ClimbStatus {
   const normalized = sendType?.toLowerCase()
 
   if (normalized === "flash") {
