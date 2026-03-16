@@ -69,7 +69,6 @@ export function GymProvider({
       }
       setIsHydrated(true)
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageUserId])
 
   useEffect(() => {
