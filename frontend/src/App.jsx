@@ -56,6 +56,7 @@ function ProtectedApp() {
             />
           }
         />
+        <Route path="/climbs/:climbId" element={<ClimbDetailPage />} />
         <Route path="/home/logbook" element={<LogbookPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/feed" element={<FeedPage />} />
