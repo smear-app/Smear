@@ -7,9 +7,40 @@ import { formatGymLocation, type GymRecord } from "../lib/gyms"
 
 interface GymSelectorProps {
   className?: string
+  showLocation?: boolean
 }
 
-function GymSelector({ className = "" }: GymSelectorProps) {
+type SelectedGymSnapshot = {
+  id: string | null
+  name: string
+  location: string | null
+}
+
+function getSelectedGymSnapshot(activeGym: GymRecord | null, isHydrated: boolean): SelectedGymSnapshot {
+  if (!isHydrated) {
+    return {
+      id: "loading",
+      name: "Loading...",
+      location: "Loading location...",
+    }
+  }
+
+  if (!activeGym) {
+    return {
+      id: null,
+      name: "Select Gym",
+      location: null,
+    }
+  }
+
+  return {
+    id: activeGym.id,
+    name: activeGym.name,
+    location: formatGymLocation(activeGym),
+  }
+}
+
+function GymSelector({ className = "", showLocation = true }: GymSelectorProps) {
   const {
     activeGym,
     bookmarkedGyms,
@@ -27,6 +58,10 @@ function GymSelector({ className = "" }: GymSelectorProps) {
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   const searchResults = useMemo(() => searchGyms(query), [query, searchGyms])
+  const selectedSnapshot = useMemo(
+    () => getSelectedGymSnapshot(activeGym, isHydrated),
+    [activeGym, isHydrated],
+  )
 
   useEffect(() => {
     if (!isOpen && !isRegistryOpen) return undefined
@@ -70,27 +105,29 @@ function GymSelector({ className = "" }: GymSelectorProps) {
   }
 
   const activeGymId = activeGym?.id ?? null
+  const isEmptyState = selectedSnapshot.id === null
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white"
+        className={`inline-flex items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white ${
+          isEmptyState ? "min-w-[8.75rem]" : "min-w-[12.5rem] max-w-[15rem]"
+        }`}
       >
-        <div className="min-w-0">
-          {!isHydrated ? (
-            <p className="text-sm font-semibold text-slate-400">Loading...</p>
-          ) : (
-            <>
-              <p className="truncate text-sm font-semibold text-slate-900">
-                {activeGym ? activeGym.name : "Select Gym"}
-              </p>
-              {activeGym ? (
-                <p className="mt-0.5 truncate text-xs text-slate-500">{formatGymLocation(activeGym)}</p>
-              ) : null}
-            </>
-          )}
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          <div
+            className={
+              isEmptyState
+                ? "min-h-[1.25rem]"
+                : showLocation
+                  ? "min-h-[2.625rem]"
+                  : "min-h-[1.25rem]"
+            }
+          >
+            <SelectedGymLabel snapshot={selectedSnapshot} showLocation={showLocation} />
+          </div>
         </div>
         <FiChevronDown
           className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
@@ -100,7 +137,7 @@ function GymSelector({ className = "" }: GymSelectorProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[calc(100%+12px)] z-30 rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+        <div className="absolute left-0 top-[calc(100%+12px)] z-30 w-[min(20rem,calc(100vw-2.5rem))] rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-slate-900">Select gym</p>
@@ -227,6 +264,29 @@ function GymSelector({ className = "" }: GymSelectorProps) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function SelectedGymLabel({
+  snapshot,
+  showLocation,
+}: {
+  snapshot: SelectedGymSnapshot
+  showLocation: boolean
+}) {
+  const isEmptyState = snapshot.id === null
+  const nameTone = snapshot.id === "loading" ? "text-slate-400" : "text-slate-900"
+
+  return (
+    <div className="min-w-0 transition-opacity duration-150">
+      <p className={`truncate text-sm font-semibold ${nameTone}`}>{snapshot.name}</p>
+      {showLocation && snapshot.location && !isEmptyState ? (
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+          <FiMapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">{snapshot.location}</span>
+        </p>
+      ) : null}
     </div>
   )
 }
