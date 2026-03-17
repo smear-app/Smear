@@ -14,6 +14,7 @@ export interface LogbookFilters {
   gymId: string
   sendType: string
   attribute: string
+  grades: string[]
 }
 
 export interface LogbookSession {
@@ -37,6 +38,7 @@ export const DEFAULT_LOGBOOK_FILTERS: LogbookFilters = {
   gymId: "all",
   sendType: "all",
   attribute: "all",
+  grades: [],
 }
 
 export function isChronologicalSort(sort: LogbookSort): boolean {
@@ -86,6 +88,10 @@ export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): bo
     if (!normalizedTags.includes(normalizedFilter)) {
       return false
     }
+  }
+
+  if (filters.grades.length > 0 && !filters.grades.includes(climb.gym_grade)) {
+    return false
   }
 
   return true

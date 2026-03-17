@@ -82,6 +82,7 @@ export function useLogbookHistory({
           gymId: chronological ? undefined : filters.gymId,
           sendType: chronological ? undefined : filters.sendType,
           attribute: chronological ? undefined : filters.attribute,
+          grades: chronological ? undefined : filters.grades,
         })
 
         if (cancelled || requestKeyRef.current !== requestKey) {
@@ -127,6 +128,7 @@ export function useLogbookHistory({
       gymId: chronological ? undefined : filters.gymId,
       sendType: chronological ? undefined : filters.sendType,
       attribute: chronological ? undefined : filters.attribute,
+      grades: chronological ? undefined : filters.grades,
     })
       .then((page) => {
         if (requestKeyRef.current !== activeRequestKey) {

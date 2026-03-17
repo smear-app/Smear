@@ -125,6 +125,11 @@ export interface LoggedGymOption {
   name: string
 }
 
+export interface LoggedGradeOption {
+  grade: string
+  value: number
+}
+
 interface PaginatedClimbsParams {
   userId: string
   limit: number
@@ -133,11 +138,12 @@ interface PaginatedClimbsParams {
   gymId?: string
   sendType?: string
   attribute?: string
+  grades?: string[]
 }
 
 function applyOptionalFilters(
   query: any,
-  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendType' | 'attribute'>,
+  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendType' | 'attribute' | 'grades'>,
 ) {
   let nextQuery = query
 
@@ -151,6 +157,10 @@ function applyOptionalFilters(
 
   if (params.attribute && params.attribute !== 'all') {
     nextQuery = nextQuery.contains('tags', [params.attribute.toLowerCase()])
+  }
+
+  if (params.grades && params.grades.length > 0) {
+    nextQuery = nextQuery.in('gym_grade', params.grades)
   }
 
   return nextQuery
@@ -268,13 +278,14 @@ export async function fetchPaginatedClimbs({
   gymId,
   sendType,
   attribute,
+  grades,
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
   let query = supabase
     .from('climbs')
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
 
-  query = applyOptionalFilters(query, { gymId, sendType, attribute })
+  query = applyOptionalFilters(query, { gymId, sendType, attribute, grades })
 
   if (sort === 'hardest' || sort === 'easiest') {
     query = query
@@ -345,6 +356,34 @@ export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]
   }
 
   return Array.from(uniqueGyms.values()).sort((left, right) => left.name.localeCompare(right.name))
+}
+
+export async function fetchLoggedGrades(userId: string): Promise<LoggedGradeOption[]> {
+  const { data, error } = await supabase
+    .from('climbs')
+    .select('gym_grade, gym_grade_value')
+    .eq('user_id', userId)
+    .not('gym_grade', 'is', null)
+
+  if (error) throw error
+
+  const uniqueGrades = new Map<string, LoggedGradeOption>()
+
+  for (const row of data ?? []) {
+    const grade = row.gym_grade as string | null
+    const value = row.gym_grade_value as number | null
+
+    if (!grade || uniqueGrades.has(grade)) {
+      continue
+    }
+
+    uniqueGrades.set(grade, {
+      grade,
+      value: value ?? gradeToValue(grade),
+    })
+  }
+
+  return Array.from(uniqueGrades.values()).sort((left, right) => left.value - right.value)
 }
 
 export function toClimbDraft(climb: Climb): ClimbDraft {

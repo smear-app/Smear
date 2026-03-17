@@ -8,7 +8,7 @@ import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffo
 import LogbookClimbTile from "../components/logbook/LogbookClimbTile"
 import { useAuth } from "../context/AuthContext"
 import { useLogbookHistory } from "../hooks/useLogbookHistory"
-import { fetchLoggedGyms, type LoggedGymOption } from "../lib/climbs"
+import { fetchLoggedGrades, fetchLoggedGyms, type LoggedGradeOption, type LoggedGymOption } from "../lib/climbs"
 import {
   DEFAULT_LOGBOOK_FILTERS,
   LOGBOOK_SORT_OPTIONS,
@@ -45,6 +45,7 @@ function buildInitialFilters(searchParams: URLSearchParams): LogbookFilters {
     gymId: searchParams.get("gymId") ?? DEFAULT_LOGBOOK_FILTERS.gymId,
     sendType: searchParams.get("sendType") ?? DEFAULT_LOGBOOK_FILTERS.sendType,
     attribute: searchParams.get("attribute") ?? DEFAULT_LOGBOOK_FILTERS.attribute,
+    grades: searchParams.get("grades")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.grades,
   }
 }
 
@@ -76,6 +77,7 @@ export default function LogbookPage({
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
+  const [loggedGrades, setLoggedGrades] = useState<LoggedGradeOption[]>([])
   const [gymLoadError, setGymLoadError] = useState<string | null>(null)
   const {
     climbs,
@@ -112,6 +114,10 @@ export default function LogbookPage({
       nextParams.set("attribute", filters.attribute)
     }
 
+    if (filters.grades.length > 0) {
+      nextParams.set("grades", filters.grades.join(","))
+    }
+
     setSearchParams(nextParams, { replace: true })
   }, [filters, setSearchParams, sort, view])
 
@@ -141,7 +147,30 @@ export default function LogbookPage({
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [refreshKey, user])
+
+  useEffect(() => {
+    if (!user) {
+      setLoggedGrades([])
+      return
+    }
+
+    let cancelled = false
+
+    void fetchLoggedGrades(user.id).then((grades) => {
+      if (!cancelled) {
+        setLoggedGrades(grades)
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setLoggedGrades([])
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, refreshKey])
 
   useEffect(() => {
     const visibilityThreshold = Math.max(window.innerHeight * 1.25, 900)
@@ -158,7 +187,7 @@ export default function LogbookPage({
     }
   }, [])
 
-  const hasActiveFilters = Object.values(filters).some((value) => value !== "all")
+  const hasActiveFilters = filters.gymId !== "all" || filters.sendType !== "all" || filters.attribute !== "all" || filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
 
@@ -283,6 +312,39 @@ export default function LogbookPage({
                     ))}
                   </select>
                 </label>
+
+                <div className="grid gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                    Grades
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {loggedGrades.map((gradeOption) => {
+                      const isSelected = filters.grades.includes(gradeOption.grade)
+
+                      return (
+                        <button
+                          key={gradeOption.grade}
+                          type="button"
+                          onClick={() =>
+                            setFilters((current) => ({
+                              ...current,
+                              grades: current.grades.includes(gradeOption.grade)
+                                ? current.grades.filter((grade) => grade !== gradeOption.grade)
+                                : [...current.grades, gradeOption.grade],
+                            }))
+                          }
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                            isSelected
+                              ? "border-ember/20 bg-ember-soft text-ember"
+                              : "border-stone-border bg-stone-alt text-stone-secondary"
+                          }`}
+                        >
+                          {gradeOption.grade}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
                 <button
                   type="button"
