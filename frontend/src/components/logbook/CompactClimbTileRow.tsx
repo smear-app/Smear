@@ -13,11 +13,11 @@ type CompactClimbTileRowProps = {
 
 const DENSITY_CONFIG = {
   home: {
-    chipSlotClass: "min-w-0 max-w-full shrink",
+    chipSlotClass: "min-w-0 max-w-[8rem] shrink",
     chipThreshold: 72,
     gapClass: "gap-1",
     gridClass: "grid-cols-[4rem_minmax(0,1fr)_4.5rem]",
-    metaClass: "mt-1 truncate text-[11px] text-stone-muted",
+    metaClass: "mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-stone-muted",
     titleSlotClass: "min-w-0 flex-1",
     titleClass: "text-[13px] font-semibold",
   },
@@ -87,7 +87,7 @@ export default function CompactClimbTileRow({
             <ClimbTileTitle climb={climb} className={`flex min-w-0 items-center leading-none ${config.titleClass}`.trim()} />
           </div>
 
-          {primaryAttribute && canShowChip ? (
+          {density !== "home" && primaryAttribute && canShowChip ? (
             <div className={`flex items-center ${config.chipSlotClass}`}>
               <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
                 <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
@@ -96,7 +96,18 @@ export default function CompactClimbTileRow({
           ) : null}
         </div>
 
-        {metaText ? (
+        {metaText ? density === "home" ? (
+          <div className={config.metaClass}>
+            <div className="min-w-0 flex-1 truncate">{metaText}</div>
+            {primaryAttribute && canShowChip ? (
+              <div className={`flex items-center ${config.chipSlotClass}`}>
+                <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
+                  <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ) : (
           <p className={config.metaClass}>{metaText}</p>
         ) : null}
       </div>

@@ -190,6 +190,7 @@ export default function LogbookPage({
   const hasActiveFilters = filters.gymId !== "all" || filters.sendType !== "all" || filters.attribute !== "all" || filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
+  const logbookReturnPath = `${location.pathname}${location.search}`
 
   return (
     <div className="min-h-screen bg-stone-bg">
@@ -444,7 +445,7 @@ export default function LogbookPage({
                         <LogbookClimbTile
                           key={climb.id}
                           climb={climb}
-                          from="/home/logbook"
+                          from={logbookReturnPath}
                           showMeta={false}
                           onDelete={onDeleteClimb}
                           onEdit={onEditClimb}
@@ -457,7 +458,7 @@ export default function LogbookPage({
                   <LogbookClimbTile
                     key={climb.id}
                     climb={climb}
-                    from="/home/logbook"
+                    from={logbookReturnPath}
                     showMeta
                     onDelete={onDeleteClimb}
                     onEdit={onEditClimb}
