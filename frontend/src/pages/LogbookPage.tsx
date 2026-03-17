@@ -301,16 +301,16 @@ export default function LogbookPage() {
               ? sessions.map((session) => (
                   <section key={session.id} className="space-y-2.5">
                     <div className="flex items-center gap-2 px-1">
+                      <p className="shrink-0 text-xs text-stone-secondary">
+                        {formatSessionDate(session.climbs[0].created_at)}
+                      </p>
+                      <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">
+                        {session.gymName || "Unknown gym"}
+                      </p>
                       <div className="h-px flex-1 bg-stone-border/70" />
-                      <div className="shrink-0 text-right">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">
-                          {session.gymName || "Unknown gym"}
-                        </p>
-                        <p className="text-xs text-stone-secondary">{formatSessionDate(session.climbs[0].created_at)}</p>
-                      </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                       {session.climbs.map((climb) => (
                         <LogbookClimbTile
                           key={climb.id}

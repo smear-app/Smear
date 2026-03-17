@@ -165,7 +165,7 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
         event.preventDefault()
         onOpen()
       }}
-      className={`climb-card-interactive block rounded-[22px] border border-stone-border/70 px-4 py-3.5 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+      className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
         isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
       }`}
       style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
@@ -178,8 +178,8 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
           animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div
               className="rounded-[16px] border px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
               style={badgeStyle}
@@ -187,29 +187,24 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
               {climb.gym_grade}
             </div>
 
-            <div className="min-w-0">
-              <ClimbTileTitle climb={climb} />
-              <p className="mt-0.5 text-xs text-stone-muted">
-                {new Date(climb.created_at).toLocaleDateString()}
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <ClimbTileTitle climb={climb} className="min-w-0" />
+                {primaryAttribute ? (
+                  <span className="shrink-0 rounded-full border border-stone-border/70 bg-stone-alt px-2.5 py-0.5 text-[10px] font-medium text-stone-secondary">
+                    {formatTagLabel(primaryAttribute)}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-0.5 truncate text-[11px] text-stone-muted">
+                {[climb.gym_name, new Date(climb.created_at).toLocaleDateString()].filter(Boolean).join(" • ")}
               </p>
-              {climb.gym_name && (
-                <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
-              )}
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex shrink-0 items-center">
             <ClimbStatusPill sendType={climb.send_type} />
-            {/* <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
-              {climb.tags.length} tags
-            </div> */}
           </div>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <span className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary">
-            {primaryAttribute ? formatTagLabel(primaryAttribute) : "Unspecified style"}
-          </span>
         </div>
       </div>
     </Link>
