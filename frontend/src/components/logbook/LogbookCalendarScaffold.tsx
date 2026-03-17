@@ -1,9 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi"
 import type { Climb } from "../../lib/climbs"
+import AnchoredPopover from "./AnchoredPopover"
 
 type LogbookCalendarScaffoldProps = {
   climbs: Climb[]
+  visibleMonth: Date
+  onVisibleMonthChange: (nextMonth: Date) => void
+  selectedDateKey: string | null
+  onSelectedDateKeyChange: (nextDateKey: string | null) => void
 }
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -69,28 +74,45 @@ function buildCalendarDays(visibleMonth: Date) {
   return days
 }
 
-export default function LogbookCalendarScaffold({ climbs }: LogbookCalendarScaffoldProps) {
-  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(new Date()))
-  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+function isSameLocalDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  )
+}
+
+export default function LogbookCalendarScaffold({
+  climbs,
+  visibleMonth,
+  onVisibleMonthChange,
+  selectedDateKey,
+  onSelectedDateKeyChange,
+}: LogbookCalendarScaffoldProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement | null>(null)
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear())
+  const today = useMemo(() => new Date(), [])
 
   const climbCounts = useMemo(() => buildClimbCounts(climbs), [climbs])
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth])
   const availableYears = useMemo(() => {
-    const years = new Set<number>([visibleMonth.getFullYear()])
-
-    for (const climb of climbs) {
-      years.add(new Date(climb.created_at).getFullYear())
-    }
-
+    const loggedYears = climbs.map((climb) => new Date(climb.created_at).getFullYear())
     const currentYear = new Date().getFullYear()
-    for (let offset = -2; offset <= 2; offset += 1) {
-      years.add(currentYear + offset)
+    const earliestLoggedYear = loggedYears.length > 0 ? Math.min(...loggedYears) : currentYear
+    const latestLoggedYear = loggedYears.length > 0 ? Math.max(...loggedYears) : currentYear
+    const startYear = Math.min(earliestLoggedYear - 2, currentYear - 20)
+    const endYear = Math.max(latestLoggedYear + 3, currentYear + 20)
+
+    const years: number[] = []
+    for (let year = startYear; year <= endYear; year += 1) {
+      years.push(year)
     }
 
-    return Array.from(years.values()).sort((left, right) => right - left)
+    return years
   }, [climbs, visibleMonth])
+
+  const pickerMinYear = availableYears[0]
+  const pickerMaxYear = availableYears[availableYears.length - 1]
 
   const monthSummary = useMemo(() => {
     const visibleMonthKey = `${visibleMonth.getFullYear()}-${`${visibleMonth.getMonth() + 1}`.padStart(2, "0")}`
@@ -105,19 +127,10 @@ export default function LogbookCalendarScaffold({ climbs }: LogbookCalendarScaff
     : monthSummary
 
   useEffect(() => {
-    if (!isPickerOpen) {
-      return undefined
+    if (isPickerOpen) {
+      setPickerYear(visibleMonth.getFullYear())
     }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!pickerRef.current?.contains(event.target as Node)) {
-        setIsPickerOpen(false)
-      }
-    }
-
-    window.addEventListener("mousedown", handlePointerDown)
-    return () => window.removeEventListener("mousedown", handlePointerDown)
-  }, [isPickerOpen])
+  }, [isPickerOpen, visibleMonth])
 
   return (
     <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
@@ -126,87 +139,105 @@ export default function LogbookCalendarScaffold({ climbs }: LogbookCalendarScaff
           type="button"
           aria-label="Previous month"
           onClick={() => {
-            setVisibleMonth((current) => addMonths(current, -1))
-            setSelectedDateKey(null)
+            onVisibleMonthChange(addMonths(visibleMonth, -1))
+            onSelectedDateKeyChange(null)
           }}
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
         >
           <FiChevronLeft className="h-4 w-4" />
         </button>
 
-        <div ref={pickerRef} className="relative">
-          <button
-            type="button"
-            onClick={() => setIsPickerOpen((current) => !current)}
-            className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
-          >
-            <span>{formatMonthHeading(visibleMonth)}</span>
-            <FiChevronDown className={`h-4 w-4 text-stone-secondary transition-transform ${isPickerOpen ? "rotate-180" : ""}`} />
-          </button>
+        <AnchoredPopover
+          open={isPickerOpen}
+          onClose={() => setIsPickerOpen(false)}
+          align="center"
+          panelClassName="w-[min(19rem,calc(100vw-2.5rem))] rounded-[20px] p-2.5"
+          trigger={
+            <button
+              type="button"
+              onClick={() => setIsPickerOpen((current) => !current)}
+              className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+            >
+              <span>{formatMonthHeading(visibleMonth)}</span>
+              <FiChevronDown
+                className={`h-4 w-4 text-stone-secondary transition-transform ${isPickerOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          }
+        >
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              aria-label="Previous year"
+              disabled={pickerYear <= pickerMinYear}
+              onClick={() => setPickerYear((current) => Math.max(pickerMinYear, current - 1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+            >
+              <FiChevronLeft className="h-4 w-4" />
+            </button>
 
-          {isPickerOpen ? (
-            <div className="absolute left-1/2 top-[calc(100%+0.5rem)] z-20 w-[min(18rem,calc(100vw-3.5rem))] -translate-x-1/2 rounded-[20px] border border-stone-border bg-stone-surface p-3 shadow-[0_20px_48px_rgba(89,68,51,0.16)]">
-              <div className="grid gap-3">
-                <div className="grid gap-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                    Year
-                  </p>
-                  <div className="flex gap-1.5 overflow-x-auto pb-1">
-                    {availableYears.map((year) => (
-                      <button
-                        key={year}
-                        type="button"
-                        onClick={() =>
-                          setVisibleMonth((current) => new Date(year, current.getMonth(), 1))
-                        }
-                        className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                          visibleMonth.getFullYear() === year
-                            ? "border-ember/20 bg-ember-soft text-ember"
-                            : "border-stone-border bg-stone-alt text-stone-secondary"
-                        }`}
-                      >
-                        {year}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-1.5">
-                  {Array.from({ length: 12 }, (_, monthIndex) => {
-                    const monthDate = new Date(visibleMonth.getFullYear(), monthIndex, 1)
-                    const isSelectedMonth = visibleMonth.getMonth() === monthIndex
-
-                    return (
-                      <button
-                        key={monthIndex}
-                        type="button"
-                        onClick={() => {
-                          setVisibleMonth(monthDate)
-                          setSelectedDateKey(null)
-                          setIsPickerOpen(false)
-                        }}
-                        className={`rounded-[14px] border px-2 py-2 text-sm font-semibold transition-colors ${
-                          isSelectedMonth
-                            ? "border-ember/20 bg-ember-soft text-ember"
-                            : "border-stone-border bg-stone-alt text-stone-secondary"
-                        }`}
-                      >
-                        {monthDate.toLocaleDateString(undefined, { month: "short" })}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+            <div className="text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                Jump To
+              </p>
+              <p className="mt-0.5 text-lg font-semibold text-stone-text">{pickerYear}</p>
             </div>
-          ) : null}
-        </div>
+
+            <button
+              type="button"
+              aria-label="Next year"
+              disabled={pickerYear >= pickerMaxYear}
+              onClick={() => setPickerYear((current) => Math.min(pickerMaxYear, current + 1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+            >
+              <FiChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-2.5 grid grid-cols-4 gap-1">
+            {Array.from({ length: 12 }, (_, monthIndex) => {
+              const monthDate = new Date(pickerYear, monthIndex, 1)
+              const isSelectedMonth =
+                visibleMonth.getFullYear() === pickerYear && visibleMonth.getMonth() === monthIndex
+
+              return (
+                <button
+                  key={monthIndex}
+                  type="button"
+                  onClick={() => {
+                    onVisibleMonthChange(monthDate)
+                    onSelectedDateKeyChange(null)
+                    setIsPickerOpen(false)
+                  }}
+                  className={`rounded-[11px] border px-1 py-1.5 text-xs font-semibold transition-colors ${
+                    isSelectedMonth
+                      ? "border-ember/20 bg-ember-soft text-ember"
+                      : "border-stone-border bg-stone-alt text-stone-secondary"
+                  }`}
+                >
+                  {monthDate.toLocaleDateString(undefined, { month: "short" })}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="mt-2.5 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setIsPickerOpen(false)}
+              className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+            >
+              Close
+            </button>
+          </div>
+        </AnchoredPopover>
 
         <button
           type="button"
           aria-label="Next month"
           onClick={() => {
-            setVisibleMonth((current) => addMonths(current, 1))
-            setSelectedDateKey(null)
+            onVisibleMonthChange(addMonths(visibleMonth, 1))
+            onSelectedDateKeyChange(null)
           }}
           className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
         >
@@ -230,15 +261,18 @@ export default function LogbookCalendarScaffold({ climbs }: LogbookCalendarScaff
             const isInVisibleMonth = day.getMonth() === visibleMonth.getMonth()
             const climbCount = climbCounts.get(dayKey) ?? 0
             const isSelected = selectedDateKey === dayKey
+            const isToday = isSameLocalDay(day, today)
 
             return (
               <button
                 key={dayKey}
                 type="button"
-                onClick={() => setSelectedDateKey((current) => (current === dayKey ? null : dayKey))}
+                onClick={() => onSelectedDateKeyChange(selectedDateKey === dayKey ? null : dayKey)}
                 className={`relative aspect-square rounded-[14px] border text-sm transition-colors ${
                   isSelected
                     ? "border-ember/25 bg-ember-soft text-ember"
+                    : isToday
+                      ? "border-ember/70 bg-stone-surface text-stone-text"
                     : climbCount > 0
                       ? "border-stone-border/80 bg-stone-surface text-stone-text"
                       : "border-stone-border/60 bg-stone-surface/70 text-stone-secondary"

@@ -58,6 +58,10 @@ function formatSessionDate(value: string) {
   })
 }
 
+function startOfMonth(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
 export default function LogbookPage({
   onEditClimb,
   onDeleteClimb,
@@ -80,6 +84,8 @@ export default function LogbookPage({
   const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
   const [loggedGrades, setLoggedGrades] = useState<LoggedGradeOption[]>([])
   const [gymLoadError, setGymLoadError] = useState<string | null>(null)
+  const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(() => startOfMonth(new Date()))
+  const [calendarSelectedDateKey, setCalendarSelectedDateKey] = useState<string | null>(null)
   const {
     climbs,
     sessions,
@@ -487,7 +493,13 @@ export default function LogbookPage({
             className="mt-4"
             style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
           >
-            <LogbookCalendarScaffold climbs={isChronological ? sessions.flatMap((session) => session.climbs) : climbs} />
+            <LogbookCalendarScaffold
+              climbs={isChronological ? sessions.flatMap((session) => session.climbs) : climbs}
+              visibleMonth={calendarVisibleMonth}
+              onVisibleMonthChange={setCalendarVisibleMonth}
+              selectedDateKey={calendarSelectedDateKey}
+              onSelectedDateKeyChange={setCalendarSelectedDateKey}
+            />
           </div>
         ) : isLoading ? (
           <div
