@@ -1,0 +1,109 @@
+import { useEffect, useRef, useState, type ReactNode } from "react"
+import ClimbStatusPill from "../ClimbStatusPill"
+import ClimbTileTitle from "./ClimbTileTitle"
+import { getClimbColorBadgeStyle } from "../../lib/climbColors"
+import { formatTagLabel, getPrimaryLogbookAttribute } from "../../lib/logbook"
+import type { Climb } from "../../lib/climbs"
+
+type CompactClimbTileRowProps = {
+  climb: Climb
+  metaText?: ReactNode
+  density?: "logbook" | "home"
+}
+
+const DENSITY_CONFIG = {
+  home: {
+    chipSlotClass: "min-w-0 max-w-full shrink",
+    chipThreshold: 72,
+    gapClass: "gap-1",
+    gridClass: "grid-cols-[4rem_minmax(0,1fr)_4.5rem]",
+    metaClass: "mt-1 truncate text-[11px] text-stone-muted",
+    titleSlotClass: "min-w-0 flex-1",
+    titleClass: "text-[13px] font-semibold",
+  },
+  logbook: {
+    chipSlotClass: "min-w-0 max-w-[7rem] flex-none",
+    chipThreshold: 120,
+    gapClass: "gap-1",
+    gridClass: "grid-cols-[4.25rem_minmax(0,1fr)_4.75rem]",
+    metaClass: "mt-0.5 truncate text-[11px] text-stone-muted",
+    titleSlotClass: "min-w-0 flex-1",
+    titleClass: "",
+  },
+} as const
+
+const GRADE_SLOT_WIDTH_CLASS = "w-[4.25rem]"
+const STATUS_SLOT_WIDTH_CLASS = "w-[4.75rem]"
+
+export default function CompactClimbTileRow({
+  climb,
+  metaText,
+  density = "logbook",
+}: CompactClimbTileRowProps) {
+  const config = DENSITY_CONFIG[density]
+  const badgeStyle = getClimbColorBadgeStyle(climb.climbColor)
+  const primaryAttribute = getPrimaryLogbookAttribute(climb)
+  const middleZoneRef = useRef<HTMLDivElement | null>(null)
+  const [canShowChip, setCanShowChip] = useState(true)
+
+  useEffect(() => {
+    if (!primaryAttribute) {
+      setCanShowChip(false)
+      return
+    }
+
+    const element = middleZoneRef.current
+    if (!element) {
+      setCanShowChip(true)
+      return
+    }
+
+    const updateChipVisibility = () => setCanShowChip(element.clientWidth >= config.chipThreshold)
+
+    updateChipVisibility()
+
+    const resizeObserver = new ResizeObserver(updateChipVisibility)
+    resizeObserver.observe(element)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [config.chipThreshold, primaryAttribute])
+
+  return (
+    <div className={`grid items-center gap-2.5 ${config.gridClass}`}>
+      <div className={`flex shrink-0 justify-start ${GRADE_SLOT_WIDTH_CLASS}`}>
+        <div
+          className="min-w-[3.5rem] rounded-[16px] border px-3 py-1.5 text-center text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+          style={badgeStyle}
+        >
+          {climb.gym_grade}
+        </div>
+      </div>
+
+      <div ref={middleZoneRef} className="min-w-0 overflow-hidden">
+        <div className={`flex min-w-0 items-center overflow-hidden ${config.gapClass}`}>
+          <div className={config.titleSlotClass}>
+            <ClimbTileTitle climb={climb} className={`flex min-w-0 items-center leading-none ${config.titleClass}`.trim()} />
+          </div>
+
+          {primaryAttribute && canShowChip ? (
+            <div className={`flex items-center ${config.chipSlotClass}`}>
+              <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
+                <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
+              </span>
+            </div>
+          ) : null}
+        </div>
+
+        {metaText ? (
+          <p className={config.metaClass}>{metaText}</p>
+        ) : null}
+      </div>
+
+      <div className={`flex shrink-0 justify-end ${STATUS_SLOT_WIDTH_CLASS}`}>
+        <ClimbStatusPill sendType={climb.send_type} className="w-full shrink-0 justify-center text-center" />
+      </div>
+    </div>
+  )
+}

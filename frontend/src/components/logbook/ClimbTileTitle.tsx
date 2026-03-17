@@ -36,7 +36,7 @@ export default function ClimbTileTitle({
 
   return (
     <p
-      className={`truncate text-xs font-bold ${isFallback ? "text-stone-muted" : "text-stone-secondary"} ${className}`.trim()}
+      className={`truncate text-xs font-bold ${isFallback ? "text-stone-muted/70" : "text-stone-secondary"} ${className}`.trim()}
     >
       {label}
     </p>

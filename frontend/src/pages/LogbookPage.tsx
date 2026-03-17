@@ -366,7 +366,7 @@ export default function LogbookPage() {
                       <div className="h-px flex-1 bg-stone-border/70" />
                     </div>
 
-                    <div className="space-y-2.5">
+                    <div className="space-y-1.5">
                       {session.climbs.map((climb) => (
                         <LogbookClimbTile
                           key={climb.id}
