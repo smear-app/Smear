@@ -72,7 +72,6 @@ export default function LogbookPage() {
     climbs,
     sessions,
     totalCount,
-    loadedCount,
     visibleCount,
     isLoading,
     isLoadingMore,
@@ -108,6 +107,7 @@ export default function LogbookPage() {
 
   const hasActiveFilters = Object.values(filters).some((value) => value !== "all")
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
+  const totalMatchingResults = totalCount
 
   return (
     <div className="min-h-screen bg-stone-bg">
@@ -139,10 +139,7 @@ export default function LogbookPage() {
             size="sm"
           />
 
-          <div className="min-w-0">
-            <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
-            <p className="text-xs text-stone-muted">Canonical climb history</p>
-          </div>
+          <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
         </div>
 
         <section className="mt-5 rounded-[28px] border border-stone-border bg-stone-surface px-4 py-4 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
@@ -277,9 +274,7 @@ export default function LogbookPage() {
 
         <div className="mt-4 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
           <p>{getSortLabel(sort)}</p>
-          <p>
-            {isChronological ? `${visibleCount} visible of ${loadedCount}/${totalCount} loaded` : `${loadedCount}/${totalCount} loaded`}
-          </p>
+          <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
         </div>
 
         {error ? (

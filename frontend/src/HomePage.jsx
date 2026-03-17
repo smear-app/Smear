@@ -94,7 +94,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-3 space-y-4">
+            <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
               {displayClimbs.map((climb) => (
                 <ClimbCard
                   key={climb.id}
@@ -165,7 +165,7 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
         event.preventDefault()
         onOpen()
       }}
-      className={`climb-card-interactive block rounded-[24px] border border-stone-border/70 p-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+      className={`climb-card-interactive block rounded-[22px] border border-stone-border/70 px-4 py-3.5 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
         isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
       }`}
       style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
@@ -178,10 +178,10 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
           animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
         }}
       >
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div
-              className="rounded-[18px] border px-3 py-2 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+              className="rounded-[16px] border px-3 py-1.5 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
               style={badgeStyle}
             >
               {climb.gym_grade}
@@ -206,7 +206,7 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2">
           <span className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary">
             {primaryAttribute ? formatTagLabel(primaryAttribute) : "Unspecified style"}
           </span>
