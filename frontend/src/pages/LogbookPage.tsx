@@ -211,6 +211,17 @@ export default function LogbookPage({
               transform: translateX(0);
             }
           }
+
+          @keyframes logbook-view-enter {
+            0% {
+              opacity: 0;
+              transform: translateY(8px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
         `}</style>
 
         <div className="flex items-center gap-3">
@@ -227,14 +238,20 @@ export default function LogbookPage({
 
         <section className="relative mt-2 rounded-[22px] border border-stone-border bg-stone-surface px-2.5 py-2.5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center gap-1">
-            <div className="flex min-w-0 flex-1 rounded-full border border-stone-border bg-stone-alt p-0.5">
+            <div className="relative flex min-w-0 flex-1 rounded-full border border-stone-border bg-stone-alt p-0.5">
+              <span
+                aria-hidden="true"
+                className={`absolute inset-y-0.5 w-[calc(50%-0.125rem)] rounded-full bg-stone-surface shadow-sm transition-transform duration-200 ease-out ${
+                  view === "calendar" ? "translate-x-full" : "translate-x-0"
+                }`}
+              />
               {VIEW_OPTIONS.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setView(option)}
-                  className={`flex-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
-                    view === option ? "bg-stone-surface text-stone-text shadow-sm" : "text-stone-secondary"
+                  className={`relative z-10 flex-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold transition-colors duration-200 ${
+                    view === option ? "text-stone-text" : "text-stone-secondary"
                   }`}
                 >
                   {option === "list" ? "List" : "Calendar"}
@@ -402,10 +419,12 @@ export default function LogbookPage({
           </div>
         </section>
 
-        <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
-          <p>{getSortLabel(sort)}</p>
-          <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
-        </div>
+        {view === "list" ? (
+          <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
+            <p>{getSortLabel(sort)}</p>
+            <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
+          </div>
+        ) : null}
 
         {error ? (
           <div className="mt-4 rounded-[24px] border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-600">
@@ -414,19 +433,35 @@ export default function LogbookPage({
         ) : null}
 
         {view === "calendar" ? (
-          <div className="mt-4">
+          <div
+            key="calendar-view"
+            className="mt-4"
+            style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
             <LogbookCalendarScaffold climbs={isChronological ? sessions.flatMap((session) => session.climbs) : climbs} />
           </div>
         ) : isLoading ? (
-          <div className="mt-4 rounded-[28px] border border-dashed border-stone-border bg-stone-surface/70 px-5 py-8 text-center text-sm text-stone-secondary shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+          <div
+            key="list-loading"
+            className="mt-4 rounded-[28px] border border-dashed border-stone-border bg-stone-surface/70 px-5 py-8 text-center text-sm text-stone-secondary shadow-[0_14px_34px_rgba(89,68,51,0.05)]"
+            style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
             Loading climbs…
           </div>
         ) : listIsEmpty ? (
-          <div className="mt-4 rounded-[28px] border border-dashed border-stone-border bg-stone-surface/70 px-5 py-8 text-center text-sm text-stone-secondary shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+          <div
+            key="list-empty"
+            className="mt-4 rounded-[28px] border border-dashed border-stone-border bg-stone-surface/70 px-5 py-8 text-center text-sm text-stone-secondary shadow-[0_14px_34px_rgba(89,68,51,0.05)]"
+            style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
             {hasActiveFilters ? "No climbs match the current filters." : "Your climb history will appear here."}
           </div>
         ) : (
-          <div className="mt-4 space-y-4">
+          <div
+            key="list-content"
+            className="mt-4 space-y-4"
+            style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          >
             {isChronological
               ? sessions.map((session) => (
                   <section key={session.id} className="space-y-2.5">
