@@ -136,14 +136,14 @@ interface PaginatedClimbsParams {
   offset?: number
   sort: LogbookSort
   gymId?: string
-  sendType?: string
+  sendTypes?: string[]
   attribute?: string
   grades?: string[]
 }
 
 function applyOptionalFilters(
   query: any,
-  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendType' | 'attribute' | 'grades'>,
+  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'attribute' | 'grades'>,
 ) {
   let nextQuery = query
 
@@ -151,8 +151,8 @@ function applyOptionalFilters(
     nextQuery = nextQuery.eq('gym_id', params.gymId)
   }
 
-  if (params.sendType && params.sendType !== 'all') {
-    nextQuery = nextQuery.eq('send_type', params.sendType)
+  if (params.sendTypes && params.sendTypes.length > 0) {
+    nextQuery = nextQuery.in('send_type', params.sendTypes)
   }
 
   if (params.attribute && params.attribute !== 'all') {
@@ -276,7 +276,7 @@ export async function fetchPaginatedClimbs({
   offset = 0,
   sort,
   gymId,
-  sendType,
+  sendTypes,
   attribute,
   grades,
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
@@ -285,7 +285,7 @@ export async function fetchPaginatedClimbs({
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
 
-  query = applyOptionalFilters(query, { gymId, sendType, attribute, grades })
+  query = applyOptionalFilters(query, { gymId, sendTypes, attribute, grades })
 
   if (sort === 'hardest' || sort === 'easiest') {
     query = query

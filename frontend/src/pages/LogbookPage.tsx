@@ -22,7 +22,7 @@ import {
 
 const SORT_PANEL_OPTIONS: LogbookSort[] = [...LOGBOOK_SORT_OPTIONS]
 const VIEW_OPTIONS: LogbookView[] = ["list", "calendar"]
-const SEND_TYPE_OPTIONS = ["all", "send", "flash", "attempt"]
+const SEND_TYPE_OPTIONS = ["flash", "send", "attempt"]
 
 type OpenPanel = "filters" | "sort" | null
 
@@ -43,7 +43,7 @@ function isValidView(value: string | null): value is LogbookView {
 function buildInitialFilters(searchParams: URLSearchParams): LogbookFilters {
   return {
     gymId: searchParams.get("gymId") ?? DEFAULT_LOGBOOK_FILTERS.gymId,
-    sendType: searchParams.get("sendType") ?? DEFAULT_LOGBOOK_FILTERS.sendType,
+    sendTypes: searchParams.get("sendTypes")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.sendTypes,
     attribute: searchParams.get("attribute") ?? DEFAULT_LOGBOOK_FILTERS.attribute,
     grades: searchParams.get("grades")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.grades,
   }
@@ -74,6 +74,7 @@ export default function LogbookPage({
     isValidSort(searchParams.get("sort")) ? (searchParams.get("sort") as LogbookSort) : "newest",
   )
   const [filters, setFilters] = useState<LogbookFilters>(() => buildInitialFilters(searchParams))
+  const [draftFilters, setDraftFilters] = useState<LogbookFilters>(() => buildInitialFilters(searchParams))
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
@@ -106,8 +107,8 @@ export default function LogbookPage({
       nextParams.set("gymId", filters.gymId)
     }
 
-    if (filters.sendType !== "all") {
-      nextParams.set("sendType", filters.sendType)
+    if (filters.sendTypes.length > 0) {
+      nextParams.set("sendTypes", filters.sendTypes.join(","))
     }
 
     if (filters.attribute !== "all") {
@@ -120,6 +121,12 @@ export default function LogbookPage({
 
     setSearchParams(nextParams, { replace: true })
   }, [filters, setSearchParams, sort, view])
+
+  useEffect(() => {
+    if (openPanel !== "filters") {
+      setDraftFilters(filters)
+    }
+  }, [filters, openPanel])
 
   useEffect(() => {
     if (!user) {
@@ -187,10 +194,15 @@ export default function LogbookPage({
     }
   }, [])
 
-  const hasActiveFilters = filters.gymId !== "all" || filters.sendType !== "all" || filters.attribute !== "all" || filters.grades.length > 0
+  const hasActiveFilters = filters.gymId !== "all" || filters.sendTypes.length > 0 || filters.attribute !== "all" || filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
   const logbookReturnPath = `${location.pathname}${location.search}`
+
+  const closeFilterPopover = () => {
+    setDraftFilters(filters)
+    setOpenPanel(null)
+  }
 
   return (
     <div className="min-h-screen bg-stone-bg">
@@ -261,12 +273,22 @@ export default function LogbookPage({
 
             <AnchoredPopover
               open={openPanel === "filters"}
-              onClose={() => setOpenPanel(null)}
+              onClose={closeFilterPopover}
               align="right"
               trigger={
                 <button
                   type="button"
-                  onClick={() => setOpenPanel((current) => (current === "filters" ? null : "filters"))}
+                  onClick={() =>
+                    setOpenPanel((current) => {
+                      if (current === "filters") {
+                        setDraftFilters(filters)
+                        return null
+                      }
+
+                      setDraftFilters(filters)
+                      return "filters"
+                    })
+                  }
                   className={`rounded-full border px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
                     openPanel === "filters" || hasActiveFilters
                       ? "border-ember/20 bg-ember-soft text-ember"
@@ -283,8 +305,8 @@ export default function LogbookPage({
                     Gym
                   </span>
                   <select
-                    value={filters.gymId}
-                    onChange={(event) => setFilters((current) => ({ ...current, gymId: event.target.value }))}
+                    value={draftFilters.gymId}
+                    onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
                     className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
                   >
                     <option value="all">All gyms</option>
@@ -296,30 +318,46 @@ export default function LogbookPage({
                   </select>
                 </label>
 
-                <label className="grid gap-1 text-sm">
+                <div className="grid gap-1">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
                     Status
                   </span>
-                  <select
-                    value={filters.sendType}
-                    onChange={(event) => setFilters((current) => ({ ...current, sendType: event.target.value }))}
-                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
-                  >
-                    {SEND_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option === "all" ? "All results" : formatTagLabel(option)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SEND_TYPE_OPTIONS.map((option) => {
+                      const isSelected = draftFilters.sendTypes.includes(option)
+
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() =>
+                            setDraftFilters((current) => ({
+                              ...current,
+                              sendTypes: current.sendTypes.includes(option)
+                                ? current.sendTypes.filter((status) => status !== option)
+                                : [...current.sendTypes, option],
+                            }))
+                          }
+                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                            isSelected
+                              ? "border-ember/20 bg-ember-soft text-ember"
+                              : "border-stone-border bg-stone-alt text-stone-secondary"
+                          }`}
+                        >
+                          {formatTagLabel(option)}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
 
                 <label className="grid gap-1 text-sm">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
                     Attribute
                   </span>
                   <select
-                    value={filters.attribute}
-                    onChange={(event) => setFilters((current) => ({ ...current, attribute: event.target.value }))}
+                    value={draftFilters.attribute}
+                    onChange={(event) => setDraftFilters((current) => ({ ...current, attribute: event.target.value }))}
                     className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
                   >
                     <option value="all">All attributes</option>
@@ -337,14 +375,14 @@ export default function LogbookPage({
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {loggedGrades.map((gradeOption) => {
-                      const isSelected = filters.grades.includes(gradeOption.grade)
+                      const isSelected = draftFilters.grades.includes(gradeOption.grade)
 
                       return (
                         <button
                           key={gradeOption.grade}
                           type="button"
                           onClick={() =>
-                            setFilters((current) => ({
+                            setDraftFilters((current) => ({
                               ...current,
                               grades: current.grades.includes(gradeOption.grade)
                                 ? current.grades.filter((grade) => grade !== gradeOption.grade)
@@ -366,10 +404,21 @@ export default function LogbookPage({
 
                 <button
                   type="button"
-                  onClick={() => setFilters(DEFAULT_LOGBOOK_FILTERS)}
-                  className="mt-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-sm font-semibold text-stone-secondary"
+                  onClick={() => setDraftFilters(DEFAULT_LOGBOOK_FILTERS)}
+                  className="mt-1 w-full rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-sm font-semibold text-stone-text transition-colors active:bg-stone-alt"
                 >
                   Reset filters
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilters(draftFilters)
+                    setOpenPanel(null)
+                  }}
+                  className="rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-stone-surface"
+                >
+                  Apply
                 </button>
 
                 {gymLoadError ? (

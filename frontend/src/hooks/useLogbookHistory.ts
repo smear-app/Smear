@@ -80,7 +80,7 @@ export function useLogbookHistory({
           offset: 0,
           sort,
           gymId: chronological ? undefined : filters.gymId,
-          sendType: chronological ? undefined : filters.sendType,
+          sendTypes: chronological ? undefined : filters.sendTypes,
           attribute: chronological ? undefined : filters.attribute,
           grades: chronological ? undefined : filters.grades,
         })
@@ -109,7 +109,7 @@ export function useLogbookHistory({
     return () => {
       cancelled = true
     }
-  }, [filters.attribute, filters.gymId, filters.sendType, pageSize, requestKey, sort, userId, chronological, reloadKey])
+  }, [filters.attribute, filters.gymId, filters.grades, filters.sendTypes, pageSize, requestKey, sort, userId, chronological, reloadKey])
 
   const loadMore = () => {
     if (!userId || isLoading || isLoadingMore || loadedClimbs.length >= totalCount) {
@@ -126,7 +126,7 @@ export function useLogbookHistory({
       offset: loadedClimbs.length,
       sort,
       gymId: chronological ? undefined : filters.gymId,
-      sendType: chronological ? undefined : filters.sendType,
+      sendTypes: chronological ? undefined : filters.sendTypes,
       attribute: chronological ? undefined : filters.attribute,
       grades: chronological ? undefined : filters.grades,
     })

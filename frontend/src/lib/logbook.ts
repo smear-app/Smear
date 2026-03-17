@@ -12,7 +12,7 @@ export type LogbookView = (typeof LOGBOOK_VIEW_OPTIONS)[number]
 
 export interface LogbookFilters {
   gymId: string
-  sendType: string
+  sendTypes: string[]
   attribute: string
   grades: string[]
 }
@@ -36,7 +36,7 @@ const MOVEMENT_TAG_SET = new Set(MOVEMENT_TAGS)
 
 export const DEFAULT_LOGBOOK_FILTERS: LogbookFilters = {
   gymId: "all",
-  sendType: "all",
+  sendTypes: [],
   attribute: "all",
   grades: [],
 }
@@ -78,7 +78,7 @@ export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): bo
     return false
   }
 
-  if (filters.sendType !== "all" && climb.send_type !== filters.sendType) {
+  if (filters.sendTypes.length > 0 && !filters.sendTypes.includes(climb.send_type)) {
     return false
   }
 
