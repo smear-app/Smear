@@ -7,11 +7,10 @@ import ClimbDetailHero from "../components/climb-detail/ClimbDetailHero"
 import ClimbIdentityBlock from "../components/climb-detail/ClimbIdentityBlock"
 import ClimbNotesSection from "../components/climb-detail/ClimbNotesSection"
 import ClimbTagsSection from "../components/climb-detail/ClimbTagsSection"
-import UserTagDifferenceBar from "../components/climb-detail/UserTagDifferenceBar"
 import { useAuth } from "../context/AuthContext"
 import { buildClimbDetailData } from "../lib/climbDetail"
 import type { Climb } from "../lib/climbs"
-import { fetchClimbs } from "../lib/climbs"
+import { fetchClimbById } from "../lib/climbs"
 
 type ClimbLocationState = {
   climb?: Climb
@@ -82,13 +81,12 @@ export default function ClimbDetailPage() {
 
     let isCancelled = false
 
-    fetchClimbs(user.id)
-      .then((climbs) => {
+    fetchClimbById(user.id, climbId)
+      .then((matchingClimb) => {
         if (isCancelled) {
           return
         }
 
-        const matchingClimb = climbs.find((entry) => entry.id === climbId) ?? null
         setFetchedState({
           climb: matchingClimb,
           error: matchingClimb ? null : "Climb not found.",
@@ -260,8 +258,7 @@ export default function ClimbDetailPage() {
               </section>
 
               <div className="mt-5">
-                <ClimbTagsSection tags={detail.canonicalTags} />
-                <UserTagDifferenceBar tags={detail.userTagDifferences} />
+                <ClimbTagsSection tags={detail.detailTags} />
               </div>
 
               <div className="mt-5">

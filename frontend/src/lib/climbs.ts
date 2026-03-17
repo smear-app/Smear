@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { LogbookSort } from './logbook'
 
 const GRADE_VALUES: Record<string, number> = {
   VB: -1, V0: 0, V1: 1, V2: 2, V3: 3, V4: 4, V5: 5,
@@ -106,6 +107,42 @@ function mapClimbRow(row: ClimbRow, userId: string): Climb {
   }
 }
 
+export interface PaginatedClimbsResult {
+  climbs: Climb[]
+  totalCount: number
+}
+
+interface PaginatedClimbsParams {
+  userId: string
+  limit: number
+  offset?: number
+  sort: LogbookSort
+  gymId?: string
+  sendType?: string
+  attribute?: string
+}
+
+function applyOptionalFilters(
+  query: any,
+  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendType' | 'attribute'>,
+) {
+  let nextQuery = query
+
+  if (params.gymId && params.gymId !== 'all') {
+    nextQuery = nextQuery.eq('gym_id', params.gymId)
+  }
+
+  if (params.sendType && params.sendType !== 'all') {
+    nextQuery = nextQuery.eq('send_type', params.sendType)
+  }
+
+  if (params.attribute && params.attribute !== 'all') {
+    nextQuery = nextQuery.contains('tags', [params.attribute.toLowerCase()])
+  }
+
+  return nextQuery
+}
+
 export async function insertClimb(draft: ClimbDraft, userId: string): Promise<void> {
   const baseClimbRecord = {
     user_id: userId,
@@ -157,12 +194,60 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<vo
   setStoredClimbColor(userId, fallbackInsert.data.id, draft.climbColor)
 }
 
-export async function fetchClimbs(userId: string): Promise<Climb[]> {
+export async function fetchPaginatedClimbs({
+  userId,
+  limit,
+  offset = 0,
+  sort,
+  gymId,
+  sendType,
+  attribute,
+}: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
+  let query = supabase
+    .from('climbs')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+
+  query = applyOptionalFilters(query, { gymId, sendType, attribute })
+
+  if (sort === 'hardest' || sort === 'easiest') {
+    query = query
+      .order('gym_grade_value', { ascending: sort === 'easiest' })
+      .order('created_at', { ascending: false })
+  } else {
+    query = query.order('created_at', { ascending: sort === 'oldest' })
+  }
+
+  const { data, error, count } = await query.range(offset, offset + limit - 1)
+
+  if (error) throw error
+  return {
+    climbs: (data as ClimbRow[]).map((row) => mapClimbRow(row, userId)),
+    totalCount: count ?? 0,
+  }
+}
+
+export async function fetchRecentClimbs(userId: string, limit = 5): Promise<Climb[]> {
+  const { climbs } = await fetchPaginatedClimbs({
+    userId,
+    limit,
+    offset: 0,
+    sort: 'newest',
+  })
+
+  return climbs
+}
+
+export async function fetchClimbById(userId: string, climbId: string): Promise<Climb | null> {
   const { data, error } = await supabase
     .from('climbs')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .eq('id', climbId)
+    .maybeSingle()
+
   if (error) throw error
-  return (data as ClimbRow[]).map((row) => mapClimbRow(row, userId))
+  if (!data) return null
+
+  return mapClimbRow(data as ClimbRow, userId)
 }

@@ -5,10 +5,12 @@ import BottomNav from "./components/BottomNav"
 import ClimbStatusPill from "./components/ClimbStatusPill"
 import FloatingActionButton from "./components/FloatingActionButton"
 import WelcomeCard from "./components/WelcomeCard"
+import ClimbTileTitle from "./components/logbook/ClimbTileTitle"
 import { useAuth } from "./context/AuthContext"
 import { useGym } from "./context/GymContext"
-import { getClimbColorBadgeStyle, getClimbColorName } from "./lib/climbColors"
-import { fetchClimbs } from "./lib/climbs"
+import { getClimbColorBadgeStyle } from "./lib/climbColors"
+import { fetchPaginatedClimbs } from "./lib/climbs"
+import { formatTagLabel, getPrimaryLogbookAttribute } from "./lib/logbook"
 
 function HomePage({ onOpenLogClimb, refreshKey }) {
   const location = useLocation()
@@ -16,6 +18,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
   const { user } = useAuth()
   const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
+  const [totalClimbs, setTotalClimbs] = useState(0)
   const [loadError, setLoadError] = useState(null)
   const [openingClimbId, setOpeningClimbId] = useState(null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
@@ -30,8 +33,16 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
   useEffect(() => {
     if (!user) return
     setLoadError(null)
-    fetchClimbs(user.id)
-      .then(setClimbs)
+    fetchPaginatedClimbs({
+      userId: user.id,
+      limit: 5,
+      offset: 0,
+      sort: "newest",
+    })
+      .then((page) => {
+        setClimbs(page.climbs)
+        setTotalClimbs(page.totalCount)
+      })
       .catch((err) => setLoadError(err.message))
   }, [user, refreshKey])
 
@@ -69,7 +80,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
             >
               <span className="whitespace-nowrap">View All &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
-                {displayClimbs.length}
+                {totalClimbs}
               </span>
             </Link>
           </div>
@@ -83,7 +94,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
+            <div className="mt-3 space-y-4">
               {displayClimbs.map((climb) => (
                 <ClimbCard
                   key={climb.id}
@@ -126,7 +137,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
 
 function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
   const badgeStyle = getClimbColorBadgeStyle(climb.climbColor)
-  const climbColorName = getClimbColorName(climb.climbColor)
+  const primaryAttribute = getPrimaryLogbookAttribute(climb)
   const isTransitioning = isOpening || isReturning
   const [isPressed, setIsPressed] = useState(false)
 
@@ -174,15 +185,10 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
               style={badgeStyle}
             >
               {climb.gym_grade}
-              {climb.personal_grade && climb.personal_grade !== climb.gym_grade
-                ? ` / ${climb.personal_grade}`
-                : ""}
             </div>
 
-            <div>
-              <p className="mt-1 text-xs text-stone-secondary font-bold">
-                {climbColorName}
-              </p>
+            <div className="min-w-0">
+              <ClimbTileTitle climb={climb} />
               <p className="mt-0.5 text-xs text-stone-muted">
                 {new Date(climb.created_at).toLocaleDateString()}
               </p>
@@ -201,14 +207,9 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {climb.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary capitalize"
-            >
-              {tag}
-            </span>
-          ))}
+          <span className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary">
+            {primaryAttribute ? formatTagLabel(primaryAttribute) : "Unspecified style"}
+          </span>
         </div>
       </div>
     </Link>
