@@ -63,6 +63,11 @@ export default function ClimbDetailPage() {
       fetchedState.status === "idle")
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    setScrollY(0)
+  }, [climbId])
+
+  useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
 
     handleScroll()
