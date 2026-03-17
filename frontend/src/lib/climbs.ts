@@ -58,6 +58,14 @@ export interface Climb {
   created_at: string
 }
 
+function toTitleCase(value: string) {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join(' ')
+}
+
 const getClimbColorStorageKey = (userId: string) => `smear.climb-color-overrides:${userId}`
 
 function readClimbColorOverrides(userId: string): Record<string, string> {
@@ -199,6 +207,59 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<vo
   setStoredClimbColor(userId, fallbackInsert.data.id, draft.climbColor)
 }
 
+export async function updateClimb(draft: ClimbDraft, climbId: string, userId: string): Promise<void> {
+  const baseClimbRecord = {
+    gym_id: draft.gymId || null,
+    gym_name: draft.gymName || null,
+    gym_grade: draft.gymGrade,
+    gym_grade_value: gradeToValue(draft.gymGrade),
+    personal_grade: draft.feltLike || null,
+    personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
+    send_type: draft.sendType.toLowerCase(),
+    tags: draft.tags.map((tag) => tag.toLowerCase()),
+    photo_url: draft.photo,
+  }
+
+  const attemptedUpdate = await supabase
+    .from('climbs')
+    .update({
+      ...baseClimbRecord,
+      climb_color: draft.climbColor,
+    })
+    .eq('user_id', userId)
+    .eq('id', climbId)
+
+  if (!attemptedUpdate.error) {
+    setStoredClimbColor(userId, climbId, draft.climbColor)
+    return
+  }
+
+  if (!isMissingClimbColorColumnError(attemptedUpdate.error)) {
+    throw attemptedUpdate.error
+  }
+
+  const fallbackUpdate = await supabase
+    .from('climbs')
+    .update(baseClimbRecord)
+    .eq('user_id', userId)
+    .eq('id', climbId)
+
+  if (fallbackUpdate.error) throw fallbackUpdate.error
+
+  setStoredClimbColor(userId, climbId, draft.climbColor)
+}
+
+export async function deleteClimb(climbId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('climbs')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', climbId)
+
+  if (error) throw error
+  setStoredClimbColor(userId, climbId, null)
+}
+
 export async function fetchPaginatedClimbs({
   userId,
   limit,
@@ -284,4 +345,17 @@ export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]
   }
 
   return Array.from(uniqueGyms.values()).sort((left, right) => left.name.localeCompare(right.name))
+}
+
+export function toClimbDraft(climb: Climb): ClimbDraft {
+  return {
+    gymId: climb.gym_id ?? '',
+    gymName: climb.gym_name ?? '',
+    gymGrade: climb.gym_grade,
+    feltLike: climb.personal_grade ?? '',
+    sendType: toTitleCase(climb.send_type),
+    tags: climb.tags.map(toTitleCase),
+    photo: climb.photo_url,
+    climbColor: climb.climbColor,
+  }
 }

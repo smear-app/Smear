@@ -26,6 +26,12 @@ const SEND_TYPE_OPTIONS = ["all", "send", "flash", "attempt"]
 
 type OpenPanel = "filters" | "sort" | null
 
+type LogbookPageProps = {
+  onDeleteClimb: (climbId: string) => Promise<void> | void
+  onEditClimb: (climb: import("../lib/climbs").Climb) => void
+  refreshKey?: number
+}
+
 function isValidSort(value: string | null): value is LogbookSort {
   return Boolean(value && LOGBOOK_SORT_OPTIONS.includes(value as LogbookSort))
 }
@@ -51,7 +57,11 @@ function formatSessionDate(value: string) {
   })
 }
 
-export default function LogbookPage() {
+export default function LogbookPage({
+  onEditClimb,
+  onDeleteClimb,
+  refreshKey = 0,
+}: LogbookPageProps) {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
@@ -82,6 +92,7 @@ export default function LogbookPage() {
     userId: user?.id,
     filters,
     sort,
+    reloadKey: refreshKey,
   })
 
   useEffect(() => {
@@ -373,6 +384,8 @@ export default function LogbookPage() {
                           climb={climb}
                           from="/home/logbook"
                           showMeta={false}
+                          onDelete={onDeleteClimb}
+                          onEdit={onEditClimb}
                         />
                       ))}
                     </div>
@@ -384,6 +397,8 @@ export default function LogbookPage() {
                     climb={climb}
                     from="/home/logbook"
                     showMeta
+                    onDelete={onDeleteClimb}
+                    onEdit={onEditClimb}
                   />
                 ))}
 

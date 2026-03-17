@@ -17,6 +17,7 @@ interface UseLogbookHistoryParams {
   filters?: LogbookFilters
   sort: LogbookSort
   pageSize?: number
+  reloadKey?: number
 }
 
 interface UseLogbookHistoryResult {
@@ -41,6 +42,7 @@ export function useLogbookHistory({
   filters = DEFAULT_LOGBOOK_FILTERS,
   sort,
   pageSize = LOGBOOK_PAGE_SIZE,
+  reloadKey = 0,
 }: UseLogbookHistoryParams): UseLogbookHistoryResult {
   const [loadedClimbs, setLoadedClimbs] = useState<Climb[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -50,7 +52,7 @@ export function useLogbookHistory({
   const requestKeyRef = useRef("")
 
   const chronological = isChronologicalSort(sort)
-  const requestKey = JSON.stringify({ userId, filters, sort, pageSize, chronological })
+  const requestKey = JSON.stringify({ userId, filters, sort, pageSize, chronological, reloadKey })
 
   useEffect(() => {
     if (!userId) {
@@ -106,7 +108,7 @@ export function useLogbookHistory({
     return () => {
       cancelled = true
     }
-  }, [filters.attribute, filters.gymId, filters.sendType, pageSize, requestKey, sort, userId, chronological])
+  }, [filters.attribute, filters.gymId, filters.sendType, pageSize, requestKey, sort, userId, chronological, reloadKey])
 
   const loadMore = () => {
     if (!userId || isLoading || isLoadingMore || loadedClimbs.length >= totalCount) {

@@ -3,13 +3,14 @@ import { Link } from "react-router-dom"
 import { useLocation, useNavigate } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
 import FloatingActionButton from "./components/FloatingActionButton"
+import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
 import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
 import { useAuth } from "./context/AuthContext"
 import { useGym } from "./context/GymContext"
 import { fetchPaginatedClimbs } from "./lib/climbs"
 
-function HomePage({ onOpenLogClimb, refreshKey }) {
+function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -96,6 +97,8 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
                 <ClimbCard
                   key={climb.id}
                   climb={climb}
+                  onDelete={onDeleteClimb}
+                  onEdit={onEditClimb}
                   isOpening={openingClimbId === climb.id}
                   isReturning={returningClimbId === climb.id}
                   onOpen={() => {
@@ -139,7 +142,7 @@ function formatHomeClimbDate(value) {
   })
 }
 
-function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
+function ClimbCard({ climb, isOpening, isReturning, onDelete, onEdit, onOpen }) {
   const isTransitioning = isOpening || isReturning
   const [isPressed, setIsPressed] = useState(false)
 
@@ -156,43 +159,49 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
   }
 
   return (
-    <Link
-      to={`/climbs/${climb.id}`}
-      state={{ climb, from: "/home", transition: "card-open" }}
-      onPointerDown={handlePointerDown}
-      onPointerUp={clearPressedState}
-      onPointerCancel={clearPressedState}
-      onPointerLeave={clearPressedState}
-      onClick={(event) => {
-        event.preventDefault()
-        onOpen()
-      }}
-      className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3.5 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
-        isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
-      }`}
-      style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
-    >
-      <div
-        className={`transition-opacity duration-100 ${
-          isOpening ? "opacity-0" : "opacity-100"
-        }`}
-        style={{
-          animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
+    <div className="relative">
+      <ClimbTileActionsMenu
+        onEdit={() => onEdit(climb)}
+        onDelete={() => onDelete(climb.id)}
+      />
+      <Link
+        to={`/climbs/${climb.id}`}
+        state={{ climb, from: "/home", transition: "card-open" }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={clearPressedState}
+        onPointerCancel={clearPressedState}
+        onPointerLeave={clearPressedState}
+        onClick={(event) => {
+          event.preventDefault()
+          onOpen()
         }}
+        className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3.5 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+          isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
+        }`}
+        style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
       >
-        <CompactClimbTileRow
-          climb={climb}
-          density="home"
-          metaText={
-            <span className="flex min-w-0 items-center gap-1.5">
-              <span className="shrink-0">{formatHomeClimbDate(climb.created_at)}</span>
-              <span className="shrink-0">•</span>
-              {climb.gym_name ? <span className="min-w-0 truncate">{climb.gym_name}</span> : null}
-            </span>
-          }
-        />
-      </div>
-    </Link>
+        <div
+          className={`transition-opacity duration-100 ${
+            isOpening ? "opacity-0" : "opacity-100"
+          }`}
+          style={{
+            animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
+          }}
+        >
+          <CompactClimbTileRow
+            climb={climb}
+            density="home"
+            metaText={
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0">{formatHomeClimbDate(climb.created_at)}</span>
+                <span className="shrink-0">•</span>
+                {climb.gym_name ? <span className="min-w-0 truncate">{climb.gym_name}</span> : null}
+              </span>
+            }
+          />
+        </div>
+      </Link>
+    </div>
   )
 }
 

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom"
+import ClimbTileActionsMenu from "./ClimbTileActionsMenu"
 import CompactClimbTileRow from "./CompactClimbTileRow"
 import type { Climb } from "../../lib/climbs"
 
@@ -7,6 +8,8 @@ type LogbookClimbTileProps = {
   from: string
   showMeta: boolean
   className?: string
+  onDelete?: (climbId: string) => Promise<void> | void
+  onEdit?: (climb: Climb) => void
 }
 
 function formatClimbDate(value: string) {
@@ -22,17 +25,27 @@ export default function LogbookClimbTile({
   from,
   showMeta,
   className = "",
+  onDelete,
+  onEdit,
 }: LogbookClimbTileProps) {
   return (
-    <Link
-      to={`/climbs/${climb.id}`}
-      state={{ climb, from }}
-      className={`block rounded-[20px] border border-stone-border/75 bg-stone-surface px-4 py-2 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-[#F8F4ED] ${className}`.trim()}
-    >
-      <CompactClimbTileRow
-        climb={climb}
-        metaText={showMeta ? [climb.gym_name, formatClimbDate(climb.created_at)].filter(Boolean).join(" • ") : null}
-      />
-    </Link>
+    <div className={`relative ${className}`.trim()}>
+      {onEdit && onDelete ? (
+        <ClimbTileActionsMenu
+          onEdit={() => onEdit(climb)}
+          onDelete={() => onDelete(climb.id)}
+        />
+      ) : null}
+      <Link
+        to={`/climbs/${climb.id}`}
+        state={{ climb, from }}
+        className="block rounded-[20px] border border-stone-border/75 bg-stone-surface px-4 py-2 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-[#F8F4ED]"
+      >
+        <CompactClimbTileRow
+          climb={climb}
+          metaText={showMeta ? [climb.gym_name, formatClimbDate(climb.created_at)].filter(Boolean).join(" • ") : null}
+        />
+      </Link>
+    </div>
   )
 }
