@@ -82,34 +82,45 @@ export default function CompactClimbTileRow({
       </div>
 
       <div ref={middleZoneRef} className="min-w-0 overflow-hidden">
-        <div className={`flex min-w-0 items-center overflow-hidden ${config.gapClass}`}>
-          <div className={config.titleSlotClass}>
-            <ClimbTileTitle climb={climb} className={`flex min-w-0 items-center leading-none ${config.titleClass}`.trim()} />
-          </div>
-
-          {density !== "home" && primaryAttribute && canShowChip ? (
-            <div className={`flex items-center ${config.chipSlotClass}`}>
-              <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
-                <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
-              </span>
+        {density === "home" ? (
+          <div className="min-w-0">
+            <div className={config.titleSlotClass}>
+              <ClimbTileTitle climb={climb} className={`flex min-w-0 items-center leading-none ${config.titleClass}`.trim()} />
             </div>
-          ) : null}
-        </div>
-
-        {metaText ? density === "home" ? (
-          <div className={config.metaClass}>
-            <div className="min-w-0 flex-1 truncate">{metaText}</div>
             {primaryAttribute && canShowChip ? (
-              <div className={`flex items-center ${config.chipSlotClass}`}>
+              <div className={`mt-1 flex min-w-0 items-center ${config.chipSlotClass}`}>
                 <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
                   <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
                 </span>
               </div>
             ) : null}
+            {metaText ? (
+              <div className={config.metaClass}>
+                <div className="min-w-0 flex-1 truncate">{metaText}</div>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <p className={config.metaClass}>{metaText}</p>
-        ) : null}
+          <>
+            <div className={`flex min-w-0 items-center overflow-hidden ${config.gapClass}`}>
+              <div className={config.titleSlotClass}>
+                <ClimbTileTitle climb={climb} className={`flex min-w-0 items-center leading-none ${config.titleClass}`.trim()} />
+              </div>
+
+              {primaryAttribute && canShowChip ? (
+                <div className={`flex items-center ${config.chipSlotClass}`}>
+                  <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
+                    <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            {metaText ? (
+              <p className={config.metaClass}>{metaText}</p>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div className={`flex shrink-0 justify-end ${STATUS_SLOT_WIDTH_CLASS}`}>

@@ -66,7 +66,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
         `}</style>
         <WelcomeCard />
 
-        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="min-w-0 whitespace-nowrap text-lg font-bold text-stone-text sm:text-xl">
               Recent Climbs
@@ -92,7 +92,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-3 h-[375px] overflow-y-auto space-y-5 pr-1">
+            <div className="mt-2.5 h-[375px] overflow-y-auto space-y-2.5 pr-1">
               {displayClimbs.map((climb) => (
                 <ClimbCard
                   key={climb.id}
@@ -175,7 +175,7 @@ function ClimbCard({ climb, isOpening, isReturning, onDelete, onEdit, onOpen }) 
           event.preventDefault()
           onOpen()
         }}
-        className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3.5 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+        className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
           isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
         }`}
         style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
