@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { FiArrowUp } from "react-icons/fi"
+import { FiArrowUp, FiChevronDown } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
@@ -13,7 +13,8 @@ import {
   DEFAULT_LOGBOOK_FILTERS,
   LOGBOOK_SORT_OPTIONS,
   formatTagLabel,
-  getAttributeFilterOptions,
+  getAttributeFilterSections,
+  getTagCategory,
   getSortLabel,
   type LogbookFilters,
   type LogbookSort,
@@ -25,6 +26,7 @@ const VIEW_OPTIONS: LogbookView[] = ["list", "calendar"]
 const SEND_TYPE_OPTIONS = ["flash", "send", "attempt"]
 
 type OpenPanel = "filters" | "sort" | null
+type AttributeSectionKey = "wallTypes" | "holdTypes" | "movementTypes"
 
 type LogbookPageProps = {
   onDeleteClimb: (climbId: string) => Promise<void> | void
@@ -41,10 +43,21 @@ function isValidView(value: string | null): value is LogbookView {
 }
 
 function buildInitialFilters(searchParams: URLSearchParams): LogbookFilters {
+  const legacyAttribute = searchParams.get("attribute")
+  const legacyCategory = legacyAttribute ? getTagCategory(legacyAttribute) : null
+
   return {
     gymId: searchParams.get("gymId") ?? DEFAULT_LOGBOOK_FILTERS.gymId,
     sendTypes: searchParams.get("sendTypes")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.sendTypes,
-    attribute: searchParams.get("attribute") ?? DEFAULT_LOGBOOK_FILTERS.attribute,
+    wallTypes:
+      searchParams.get("wallTypes")?.split(",").filter(Boolean) ??
+      (legacyCategory === "wall" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.wallTypes),
+    holdTypes:
+      searchParams.get("holdTypes")?.split(",").filter(Boolean) ??
+      (legacyCategory === "hold" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.holdTypes),
+    movementTypes:
+      searchParams.get("movementTypes")?.split(",").filter(Boolean) ??
+      (legacyCategory === "movement" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.movementTypes),
     grades: searchParams.get("grades")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.grades,
   }
 }
@@ -86,6 +99,11 @@ export default function LogbookPage({
   const [gymLoadError, setGymLoadError] = useState<string | null>(null)
   const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(() => startOfMonth(new Date()))
   const [calendarSelectedDateKey, setCalendarSelectedDateKey] = useState<string | null>(null)
+  const [expandedAttributeSections, setExpandedAttributeSections] = useState<Record<AttributeSectionKey, boolean>>({
+    wallTypes: false,
+    holdTypes: false,
+    movementTypes: false,
+  })
   const {
     climbs,
     sessions,
@@ -117,8 +135,16 @@ export default function LogbookPage({
       nextParams.set("sendTypes", filters.sendTypes.join(","))
     }
 
-    if (filters.attribute !== "all") {
-      nextParams.set("attribute", filters.attribute)
+    if (filters.wallTypes.length > 0) {
+      nextParams.set("wallTypes", filters.wallTypes.join(","))
+    }
+
+    if (filters.holdTypes.length > 0) {
+      nextParams.set("holdTypes", filters.holdTypes.join(","))
+    }
+
+    if (filters.movementTypes.length > 0) {
+      nextParams.set("movementTypes", filters.movementTypes.join(","))
     }
 
     if (filters.grades.length > 0) {
@@ -200,7 +226,13 @@ export default function LogbookPage({
     }
   }, [])
 
-  const hasActiveFilters = filters.gymId !== "all" || filters.sendTypes.length > 0 || filters.attribute !== "all" || filters.grades.length > 0
+  const hasActiveFilters =
+    filters.gymId !== "all" ||
+    filters.sendTypes.length > 0 ||
+    filters.wallTypes.length > 0 ||
+    filters.holdTypes.length > 0 ||
+    filters.movementTypes.length > 0 ||
+    filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
   const logbookReturnPath = `${location.pathname}${location.search}`
@@ -208,6 +240,15 @@ export default function LogbookPage({
   const closeFilterPopover = () => {
     setDraftFilters(filters)
     setOpenPanel(null)
+  }
+
+  const toggleDraftAttribute = (sectionKey: AttributeSectionKey, value: string) => {
+    setDraftFilters((current) => ({
+      ...current,
+      [sectionKey]: current[sectionKey].includes(value)
+        ? current[sectionKey].filter((item) => item !== value)
+        : [...current[sectionKey], value],
+    }))
   }
 
   return (
@@ -357,23 +398,97 @@ export default function LogbookPage({
                   </div>
                 </div>
 
-                <label className="grid gap-1 text-sm">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                    Attribute
-                  </span>
-                  <select
-                    value={draftFilters.attribute}
-                    onChange={(event) => setDraftFilters((current) => ({ ...current, attribute: event.target.value }))}
-                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
-                  >
-                    <option value="all">All attributes</option>
-                    {getAttributeFilterOptions().map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="grid gap-1.5">
+                  {getAttributeFilterSections().map((section) => {
+                    const selectedValues = draftFilters[section.key]
+                    const isExpanded = expandedAttributeSections[section.key]
+                    const visibleSummary = selectedValues.slice(0, 2)
+                    const hiddenCount = Math.max(selectedValues.length - visibleSummary.length, 0)
+                    const hasActiveSelection = selectedValues.length > 0
+
+                    return (
+                      <section
+                        key={section.key}
+                        className={`rounded-[14px] border px-2.5 py-2 transition-colors ${
+                          hasActiveSelection
+                            ? "border-ember/20 bg-ember-soft/55"
+                            : "border-stone-border bg-stone-surface"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedAttributeSections((current) => ({
+                              ...current,
+                              [section.key]: !current[section.key],
+                            }))
+                          }
+                          className="flex w-full items-start justify-between gap-2 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p
+                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                                hasActiveSelection ? "text-ember" : "text-stone-muted"
+                              }`}
+                            >
+                              {section.title}
+                            </p>
+                            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
+                              {hasActiveSelection ? (
+                                <>
+                                  {visibleSummary.map((value) => (
+                                    <span
+                                      key={value}
+                                      className="rounded-full border border-ember/20 bg-stone-surface px-2 py-0.5 text-[10px] font-semibold text-ember"
+                                    >
+                                      {formatTagLabel(value)}
+                                    </span>
+                                  ))}
+                                  {hiddenCount > 0 ? (
+                                    <span className="text-[10px] font-semibold text-stone-secondary">
+                                      +{hiddenCount}
+                                    </span>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <span className="text-xs text-stone-muted">All</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <FiChevronDown
+                            className={`mt-0.5 h-4 w-4 shrink-0 text-stone-secondary transition-transform ${
+                              isExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {isExpanded ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {section.options.map((option) => {
+                              const isSelected = selectedValues.includes(option.value)
+
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  onClick={() => toggleDraftAttribute(section.key, option.value)}
+                                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                                    isSelected
+                                      ? "border-ember/20 bg-ember-soft text-ember"
+                                      : "border-stone-border bg-stone-alt text-stone-secondary"
+                                  }`}
+                                >
+                                  {option.label}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : null}
+                      </section>
+                    )
+                  })}
+                </div>
 
                 <div className="grid gap-1">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">

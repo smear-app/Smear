@@ -1,3 +1,4 @@
+import { getTagCategory } from "../../lib/logbook"
 import { Link } from "react-router-dom"
 
 type ClimbTagsSectionProps = {
@@ -15,11 +16,20 @@ function formatTag(tag: string) {
 }
 
 function buildTagHref(tag: string) {
+  const normalizedTag = tag.toLowerCase()
+  const category = getTagCategory(normalizedTag)
   const params = new URLSearchParams({
     view: "list",
     sort: "newest",
-    attribute: tag.toLowerCase(),
   })
+
+  if (category === "wall") {
+    params.set("wallTypes", normalizedTag)
+  } else if (category === "hold") {
+    params.set("holdTypes", normalizedTag)
+  } else if (category === "movement") {
+    params.set("movementTypes", normalizedTag)
+  }
 
   return `/home/logbook?${params.toString()}`
 }

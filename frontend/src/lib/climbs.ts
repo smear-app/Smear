@@ -137,13 +137,15 @@ interface PaginatedClimbsParams {
   sort: LogbookSort
   gymId?: string
   sendTypes?: string[]
-  attribute?: string
+  wallTypes?: string[]
+  holdTypes?: string[]
+  movementTypes?: string[]
   grades?: string[]
 }
 
 function applyOptionalFilters(
   query: any,
-  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'attribute' | 'grades'>,
+  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'wallTypes' | 'holdTypes' | 'movementTypes' | 'grades'>,
 ) {
   let nextQuery = query
 
@@ -155,8 +157,16 @@ function applyOptionalFilters(
     nextQuery = nextQuery.in('send_type', params.sendTypes)
   }
 
-  if (params.attribute && params.attribute !== 'all') {
-    nextQuery = nextQuery.contains('tags', [params.attribute.toLowerCase()])
+  if (params.wallTypes && params.wallTypes.length > 0) {
+    nextQuery = nextQuery.overlaps('tags', params.wallTypes.map((tag) => tag.toLowerCase()))
+  }
+
+  if (params.holdTypes && params.holdTypes.length > 0) {
+    nextQuery = nextQuery.overlaps('tags', params.holdTypes.map((tag) => tag.toLowerCase()))
+  }
+
+  if (params.movementTypes && params.movementTypes.length > 0) {
+    nextQuery = nextQuery.overlaps('tags', params.movementTypes.map((tag) => tag.toLowerCase()))
   }
 
   if (params.grades && params.grades.length > 0) {
@@ -277,7 +287,9 @@ export async function fetchPaginatedClimbs({
   sort,
   gymId,
   sendTypes,
-  attribute,
+  wallTypes,
+  holdTypes,
+  movementTypes,
   grades,
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
   let query = supabase
@@ -285,7 +297,7 @@ export async function fetchPaginatedClimbs({
     .select('*', { count: 'exact' })
     .eq('user_id', userId)
 
-  query = applyOptionalFilters(query, { gymId, sendTypes, attribute, grades })
+  query = applyOptionalFilters(query, { gymId, sendTypes, wallTypes, holdTypes, movementTypes, grades })
 
   if (sort === 'hardest' || sort === 'easiest') {
     query = query

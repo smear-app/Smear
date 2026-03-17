@@ -13,7 +13,9 @@ export type LogbookView = (typeof LOGBOOK_VIEW_OPTIONS)[number]
 export interface LogbookFilters {
   gymId: string
   sendTypes: string[]
-  attribute: string
+  wallTypes: string[]
+  holdTypes: string[]
+  movementTypes: string[]
   grades: string[]
 }
 
@@ -26,9 +28,9 @@ export interface LogbookSession {
   climbs: Climb[]
 }
 
-const WALL_TAGS = ["slab", "vertical", "overhang", "cave", "roof"] as const
-const HOLD_TAGS = ["crimp", "sloper", "pinch", "pocket", "jug"] as const
-const MOVEMENT_TAGS = ["dynamic", "static", "balance", "compression", "tension", "technical"] as const
+export const WALL_TAGS = ["slab", "vertical", "overhang", "cave", "roof"] as const
+export const HOLD_TAGS = ["crimp", "sloper", "pinch", "pocket", "jug"] as const
+export const MOVEMENT_TAGS = ["dynamic", "static", "balance", "compression", "tension", "technical"] as const
 
 const WALL_TAG_SET = new Set(WALL_TAGS)
 const HOLD_TAG_SET = new Set(HOLD_TAGS)
@@ -37,7 +39,9 @@ const MOVEMENT_TAG_SET = new Set(MOVEMENT_TAGS)
 export const DEFAULT_LOGBOOK_FILTERS: LogbookFilters = {
   gymId: "all",
   sendTypes: [],
-  attribute: "all",
+  wallTypes: [],
+  holdTypes: [],
+  movementTypes: [],
   grades: [],
 }
 
@@ -57,6 +61,24 @@ export function normalizeTag(value: string): string {
   return value.trim().toLowerCase()
 }
 
+export function getTagCategory(value: string): "wall" | "hold" | "movement" | null {
+  const normalizedTag = normalizeTag(value)
+
+  if (WALL_TAG_SET.has(normalizedTag as (typeof WALL_TAGS)[number])) {
+    return "wall"
+  }
+
+  if (HOLD_TAG_SET.has(normalizedTag as (typeof HOLD_TAGS)[number])) {
+    return "hold"
+  }
+
+  if (MOVEMENT_TAG_SET.has(normalizedTag as (typeof MOVEMENT_TAGS)[number])) {
+    return "movement"
+  }
+
+  return null
+}
+
 export function getClimbAttributes(climb: Climb) {
   const normalizedTags = climb.tags.map(normalizeTag)
 
@@ -74,6 +96,8 @@ export function getPrimaryLogbookAttribute(climb: Climb): string | null {
 }
 
 export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): boolean {
+  const normalizedTags = climb.tags.map(normalizeTag)
+
   if (filters.gymId !== "all" && climb.gym_id !== filters.gymId) {
     return false
   }
@@ -82,12 +106,19 @@ export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): bo
     return false
   }
 
-  if (filters.attribute !== "all") {
-    const normalizedFilter = normalizeTag(filters.attribute)
-    const normalizedTags = climb.tags.map(normalizeTag)
-    if (!normalizedTags.includes(normalizedFilter)) {
-      return false
-    }
+  if (filters.wallTypes.length > 0 && !filters.wallTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))) {
+    return false
+  }
+
+  if (filters.holdTypes.length > 0 && !filters.holdTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))) {
+    return false
+  }
+
+  if (
+    filters.movementTypes.length > 0 &&
+    !filters.movementTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))
+  ) {
+    return false
   }
 
   if (filters.grades.length > 0 && !filters.grades.includes(climb.gym_grade)) {
@@ -171,11 +202,24 @@ export function getVisibleClimbs(climbs: Climb[], filters: LogbookFilters, sort:
   )
 }
 
-export function getAttributeFilterOptions() {
-  return [...WALL_TAGS, ...MOVEMENT_TAGS, ...HOLD_TAGS].map((value) => ({
-    value,
-    label: formatTagLabel(value),
-  }))
+export function getAttributeFilterSections() {
+  return [
+    {
+      key: "wallTypes" as const,
+      title: "Wall Type",
+      options: WALL_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
+    },
+    {
+      key: "holdTypes" as const,
+      title: "Hold Type",
+      options: HOLD_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
+    },
+    {
+      key: "movementTypes" as const,
+      title: "Movement",
+      options: MOVEMENT_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
+    },
+  ]
 }
 
 export function getSortLabel(sort: LogbookSort): string {
