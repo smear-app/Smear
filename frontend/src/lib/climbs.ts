@@ -112,6 +112,11 @@ export interface PaginatedClimbsResult {
   totalCount: number
 }
 
+export interface LoggedGymOption {
+  id: string
+  name: string
+}
+
 interface PaginatedClimbsParams {
   userId: string
   limit: number
@@ -250,4 +255,33 @@ export async function fetchClimbById(userId: string, climbId: string): Promise<C
   if (!data) return null
 
   return mapClimbRow(data as ClimbRow, userId)
+}
+
+export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]> {
+  const { data, error } = await supabase
+    .from('climbs')
+    .select('gym_id, gym_name, created_at')
+    .eq('user_id', userId)
+    .not('gym_id', 'is', null)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  const uniqueGyms = new Map<string, LoggedGymOption>()
+
+  for (const row of data ?? []) {
+    const gymId = row.gym_id as string | null
+    const gymName = row.gym_name as string | null
+
+    if (!gymId || !gymName || uniqueGyms.has(gymId)) {
+      continue
+    }
+
+    uniqueGyms.set(gymId, {
+      id: gymId,
+      name: gymName,
+    })
+  }
+
+  return Array.from(uniqueGyms.values()).sort((left, right) => left.name.localeCompare(right.name))
 }

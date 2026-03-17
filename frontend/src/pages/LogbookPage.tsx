@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { FiArrowUp } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
+import AnchoredPopover from "../components/logbook/AnchoredPopover"
 import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffold"
 import LogbookClimbTile from "../components/logbook/LogbookClimbTile"
 import { useAuth } from "../context/AuthContext"
-import { useGym } from "../context/GymContext"
 import { useLogbookHistory } from "../hooks/useLogbookHistory"
+import { fetchLoggedGyms, type LoggedGymOption } from "../lib/climbs"
 import {
   DEFAULT_LOGBOOK_FILTERS,
   LOGBOOK_SORT_OPTIONS,
@@ -54,7 +55,6 @@ export default function LogbookPage() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
-  const { searchGyms } = useGym()
   const isOpeningFromHome = location.state?.stackTransition === "forward"
   const [view, setView] = useState<LogbookView>(() =>
     isValidView(searchParams.get("view")) ? (searchParams.get("view") as LogbookView) : "list",
@@ -65,11 +65,8 @@ export default function LogbookPage() {
   const [filters, setFilters] = useState<LogbookFilters>(() => buildInitialFilters(searchParams))
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
-
-  const gyms = useMemo(
-    () => searchGyms("").sort((left, right) => left.name.localeCompare(right.name)),
-    [searchGyms],
-  )
+  const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
+  const [gymLoadError, setGymLoadError] = useState<string | null>(null)
   const {
     climbs,
     sessions,
@@ -106,6 +103,34 @@ export default function LogbookPage() {
 
     setSearchParams(nextParams, { replace: true })
   }, [filters, setSearchParams, sort, view])
+
+  useEffect(() => {
+    if (!user) {
+      setLoggedGyms([])
+      setGymLoadError(null)
+      return
+    }
+
+    let cancelled = false
+
+    void fetchLoggedGyms(user.id)
+      .then((gyms) => {
+        if (!cancelled) {
+          setLoggedGyms(gyms)
+          setGymLoadError(null)
+        }
+      })
+      .catch((loadError) => {
+        if (!cancelled) {
+          setLoggedGyms([])
+          setGymLoadError(loadError instanceof Error ? loadError.message : "Failed to load gyms")
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     const visibilityThreshold = Math.max(window.innerHeight * 1.25, 900)
@@ -159,15 +184,15 @@ export default function LogbookPage() {
           <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
         </div>
 
-        <section className="mt-3 rounded-[24px] border border-stone-border bg-stone-surface px-3 py-3 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
-          <div className="flex items-center gap-1.5">
+        <section className="relative mt-2 rounded-[22px] border border-stone-border bg-stone-surface px-2.5 py-2.5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+          <div className="flex items-center gap-1">
             <div className="flex min-w-0 flex-1 rounded-full border border-stone-border bg-stone-alt p-0.5">
               {VIEW_OPTIONS.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setView(option)}
-                  className={`flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`flex-1 rounded-full px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
                     view === option ? "bg-stone-surface text-stone-text shadow-sm" : "text-stone-secondary"
                   }`}
                 >
@@ -176,120 +201,134 @@ export default function LogbookPage() {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setOpenPanel((current) => (current === "filters" ? null : "filters"))}
-              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                openPanel === "filters" || hasActiveFilters
-                  ? "border-ember/20 bg-ember-soft text-ember"
-                  : "border-stone-border bg-stone-alt text-stone-secondary"
-              }`}
-            >
-              Filter
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setOpenPanel((current) => (current === "sort" ? null : "sort"))}
-              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                openPanel === "sort"
-                  ? "border-ember/20 bg-ember-soft text-ember"
-                  : "border-stone-border bg-stone-alt text-stone-secondary"
-              }`}
-            >
-              Sort
-            </button>
-          </div>
-
-          {openPanel === "filters" ? (
-            <div className="mt-3 grid gap-2.5 rounded-[20px] border border-stone-border/80 bg-[#F6F1EA] p-3">
-              <label className="grid gap-1 text-sm">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                  Gym
-                </span>
-                <select
-                  value={filters.gymId}
-                  onChange={(event) => setFilters((current) => ({ ...current, gymId: event.target.value }))}
-                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
-                >
-                  <option value="all">All gyms</option>
-                  {gyms.map((gym) => (
-                    <option key={gym.id} value={gym.id}>
-                      {gym.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-1 text-sm">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                  Status
-                </span>
-                <select
-                  value={filters.sendType}
-                  onChange={(event) => setFilters((current) => ({ ...current, sendType: event.target.value }))}
-                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
-                >
-                  {SEND_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option === "all" ? "All results" : formatTagLabel(option)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-1 text-sm">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                  Attribute
-                </span>
-                <select
-                  value={filters.attribute}
-                  onChange={(event) => setFilters((current) => ({ ...current, attribute: event.target.value }))}
-                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
-                >
-                  <option value="all">All attributes</option>
-                  {getAttributeFilterOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setFilters(DEFAULT_LOGBOOK_FILTERS)}
-                className="rounded-full border border-stone-border bg-stone-surface px-4 py-2 text-sm font-semibold text-stone-secondary"
-              >
-                Reset filters
-              </button>
-            </div>
-          ) : null}
-
-          {openPanel === "sort" ? (
-            <div className="mt-3 grid gap-2 rounded-[20px] border border-stone-border/80 bg-[#F6F1EA] p-3">
-              {SORT_PANEL_OPTIONS.map((option) => (
+            <AnchoredPopover
+              open={openPanel === "filters"}
+              onClose={() => setOpenPanel(null)}
+              align="right"
+              trigger={
                 <button
-                  key={option}
                   type="button"
-                  onClick={() => {
-                    setSort(option)
-                    setOpenPanel(null)
-                  }}
-                  className={`rounded-[16px] border px-4 py-2.5 text-left text-sm font-semibold transition-colors ${
-                    sort === option
+                  onClick={() => setOpenPanel((current) => (current === "filters" ? null : "filters"))}
+                  className={`rounded-full border px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
+                    openPanel === "filters" || hasActiveFilters
                       ? "border-ember/20 bg-ember-soft text-ember"
-                      : "border-stone-border bg-stone-surface text-stone-secondary"
+                      : "border-stone-border bg-stone-alt text-stone-secondary"
                   }`}
                 >
-                  {getSortLabel(option)}
+                  Filter
                 </button>
-              ))}
-            </div>
-          ) : null}
+              }
+            >
+              <div className="grid gap-2">
+                <label className="grid gap-1 text-sm">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                    Gym
+                  </span>
+                  <select
+                    value={filters.gymId}
+                    onChange={(event) => setFilters((current) => ({ ...current, gymId: event.target.value }))}
+                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
+                  >
+                    <option value="all">All gyms</option>
+                    {loggedGyms.map((gym) => (
+                      <option key={gym.id} value={gym.id}>
+                        {gym.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                    Status
+                  </span>
+                  <select
+                    value={filters.sendType}
+                    onChange={(event) => setFilters((current) => ({ ...current, sendType: event.target.value }))}
+                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
+                  >
+                    {SEND_TYPE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option === "all" ? "All results" : formatTagLabel(option)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                    Attribute
+                  </span>
+                  <select
+                    value={filters.attribute}
+                    onChange={(event) => setFilters((current) => ({ ...current, attribute: event.target.value }))}
+                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
+                  >
+                    <option value="all">All attributes</option>
+                    {getAttributeFilterOptions().map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setFilters(DEFAULT_LOGBOOK_FILTERS)}
+                  className="mt-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-sm font-semibold text-stone-secondary"
+                >
+                  Reset filters
+                </button>
+
+                {gymLoadError ? (
+                  <p className="text-xs text-red-500">{gymLoadError}</p>
+                ) : null}
+              </div>
+            </AnchoredPopover>
+
+            <AnchoredPopover
+              open={openPanel === "sort"}
+              onClose={() => setOpenPanel(null)}
+              align="right"
+              trigger={
+                <button
+                  type="button"
+                  onClick={() => setOpenPanel((current) => (current === "sort" ? null : "sort"))}
+                  className={`rounded-full border px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
+                    openPanel === "sort"
+                      ? "border-ember/20 bg-ember-soft text-ember"
+                      : "border-stone-border bg-stone-alt text-stone-secondary"
+                  }`}
+                >
+                  Sort
+                </button>
+              }
+            >
+              <div className="grid gap-1.5">
+                {SORT_PANEL_OPTIONS.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setSort(option)
+                      setOpenPanel(null)
+                    }}
+                    className={`rounded-[14px] border px-3 py-2 text-left text-sm font-semibold transition-colors ${
+                      sort === option
+                        ? "border-ember/20 bg-ember-soft text-ember"
+                        : "border-stone-border bg-stone-alt text-stone-secondary"
+                    }`}
+                  >
+                    {getSortLabel(option)}
+                  </button>
+                ))}
+              </div>
+            </AnchoredPopover>
+          </div>
         </section>
 
-        <div className="mt-3 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
+        <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
           <p>{getSortLabel(sort)}</p>
           <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
         </div>
