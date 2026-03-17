@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { FiArrowUp } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
@@ -63,6 +64,7 @@ export default function LogbookPage() {
   )
   const [filters, setFilters] = useState<LogbookFilters>(() => buildInitialFilters(searchParams))
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
 
   const gyms = useMemo(
     () => searchGyms("").sort((left, right) => left.name.localeCompare(right.name)),
@@ -105,6 +107,21 @@ export default function LogbookPage() {
     setSearchParams(nextParams, { replace: true })
   }, [filters, setSearchParams, sort, view])
 
+  useEffect(() => {
+    const visibilityThreshold = Math.max(window.innerHeight * 1.25, 900)
+
+    const updateScrollToTopVisibility = () => {
+      setShowScrollToTop(window.scrollY > visibilityThreshold)
+    }
+
+    updateScrollToTopVisibility()
+    window.addEventListener("scroll", updateScrollToTopVisibility, { passive: true })
+
+    return () => {
+      window.removeEventListener("scroll", updateScrollToTopVisibility)
+    }
+  }, [])
+
   const hasActiveFilters = Object.values(filters).some((value) => value !== "all")
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
@@ -142,15 +159,15 @@ export default function LogbookPage() {
           <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
         </div>
 
-        <section className="mt-5 rounded-[28px] border border-stone-border bg-stone-surface px-4 py-4 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
-          <div className="flex items-center gap-2">
-            <div className="flex min-w-0 flex-1 rounded-full border border-stone-border bg-stone-alt p-1">
+        <section className="mt-3 rounded-[24px] border border-stone-border bg-stone-surface px-3 py-3 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+          <div className="flex items-center gap-1.5">
+            <div className="flex min-w-0 flex-1 rounded-full border border-stone-border bg-stone-alt p-0.5">
               {VIEW_OPTIONS.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setView(option)}
-                  className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                  className={`flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
                     view === option ? "bg-stone-surface text-stone-text shadow-sm" : "text-stone-secondary"
                   }`}
                 >
@@ -162,7 +179,7 @@ export default function LogbookPage() {
             <button
               type="button"
               onClick={() => setOpenPanel((current) => (current === "filters" ? null : "filters"))}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                 openPanel === "filters" || hasActiveFilters
                   ? "border-ember/20 bg-ember-soft text-ember"
                   : "border-stone-border bg-stone-alt text-stone-secondary"
@@ -174,7 +191,7 @@ export default function LogbookPage() {
             <button
               type="button"
               onClick={() => setOpenPanel((current) => (current === "sort" ? null : "sort"))}
-              className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
                 openPanel === "sort"
                   ? "border-ember/20 bg-ember-soft text-ember"
                   : "border-stone-border bg-stone-alt text-stone-secondary"
@@ -185,7 +202,7 @@ export default function LogbookPage() {
           </div>
 
           {openPanel === "filters" ? (
-            <div className="mt-4 grid gap-3 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-4">
+            <div className="mt-3 grid gap-2.5 rounded-[20px] border border-stone-border/80 bg-[#F6F1EA] p-3">
               <label className="grid gap-1 text-sm">
                 <span className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-muted">
                   Gym
@@ -193,7 +210,7 @@ export default function LogbookPage() {
                 <select
                   value={filters.gymId}
                   onChange={(event) => setFilters((current) => ({ ...current, gymId: event.target.value }))}
-                  className="rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2.5 text-stone-text"
+                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
                 >
                   <option value="all">All gyms</option>
                   {gyms.map((gym) => (
@@ -211,7 +228,7 @@ export default function LogbookPage() {
                 <select
                   value={filters.sendType}
                   onChange={(event) => setFilters((current) => ({ ...current, sendType: event.target.value }))}
-                  className="rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2.5 text-stone-text"
+                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
                 >
                   {SEND_TYPE_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -228,7 +245,7 @@ export default function LogbookPage() {
                 <select
                   value={filters.attribute}
                   onChange={(event) => setFilters((current) => ({ ...current, attribute: event.target.value }))}
-                  className="rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2.5 text-stone-text"
+                  className="rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-stone-text"
                 >
                   <option value="all">All attributes</option>
                   {getAttributeFilterOptions().map((option) => (
@@ -250,7 +267,7 @@ export default function LogbookPage() {
           ) : null}
 
           {openPanel === "sort" ? (
-            <div className="mt-4 grid gap-2 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-4">
+            <div className="mt-3 grid gap-2 rounded-[20px] border border-stone-border/80 bg-[#F6F1EA] p-3">
               {SORT_PANEL_OPTIONS.map((option) => (
                 <button
                   key={option}
@@ -259,7 +276,7 @@ export default function LogbookPage() {
                     setSort(option)
                     setOpenPanel(null)
                   }}
-                  className={`rounded-[18px] border px-4 py-3 text-left text-sm font-semibold transition-colors ${
+                  className={`rounded-[16px] border px-4 py-2.5 text-left text-sm font-semibold transition-colors ${
                     sort === option
                       ? "border-ember/20 bg-ember-soft text-ember"
                       : "border-stone-border bg-stone-surface text-stone-secondary"
@@ -272,7 +289,7 @@ export default function LogbookPage() {
           ) : null}
         </section>
 
-        <div className="mt-4 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
+        <div className="mt-3 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
           <p>{getSortLabel(sort)}</p>
           <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
         </div>
@@ -346,6 +363,19 @@ export default function LogbookPage() {
           </div>
         )}
       </main>
+
+      <button
+        type="button"
+        aria-label="Scroll to top"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className={`fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-border bg-stone-surface/95 text-stone-secondary shadow-[0_12px_28px_rgba(89,68,51,0.14)] backdrop-blur transition-all duration-200 ${
+          showScrollToTop
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-2 opacity-0"
+        }`}
+      >
+        <FiArrowUp className="h-4 w-4" />
+      </button>
 
       <BottomNav />
     </div>
