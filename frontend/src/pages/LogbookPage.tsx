@@ -621,7 +621,7 @@ export default function LogbookPage({
                 </button>
               }
             >
-              <div className="grid gap-1.5">
+              <div className="grid min-w-[11rem] gap-1.5 rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]">
                 {SORT_PANEL_OPTIONS.map((option) => (
                   <button
                     key={option}
@@ -630,10 +630,10 @@ export default function LogbookPage({
                       setSort(option)
                       setOpenPanel(null)
                     }}
-                    className={`rounded-[14px] border px-3 py-2 text-left text-sm font-semibold transition-colors ${
+                    className={`rounded-[14px] border px-3 py-2 text-left text-[13px] font-semibold transition-colors ${
                       sort === option
                         ? "border-ember/20 bg-ember-soft text-ember"
-                        : "border-stone-border bg-stone-alt text-stone-secondary"
+                        : "border-stone-border/70 bg-stone-surface text-stone-secondary hover:bg-stone-alt"
                     }`}
                   >
                     {getSortLabel(option)}
