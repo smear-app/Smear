@@ -76,7 +76,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
               state={{ stackTransition: "forward" }}
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-stone-secondary transition-colors duration-200 hover:text-ember sm:gap-2 sm:text-sm"
             >
-              <span className="whitespace-nowrap">View All &rarr;</span>
+              <span className="whitespace-nowrap">Logbook &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
                 {totalClimbs}
               </span>
