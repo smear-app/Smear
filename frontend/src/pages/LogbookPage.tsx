@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { FiArrowUp, FiChevronDown } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
@@ -73,6 +73,83 @@ function formatSessionDate(value: string) {
 
 function startOfMonth(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function getSelectionSummary(
+  options: Array<{ value: string; label: string }>,
+  selectedValues: string[],
+) {
+  if (selectedValues.length === 0) {
+    return "All"
+  }
+
+  const selectedLabels = options.filter((option) => selectedValues.includes(option.value)).map((option) => option.label)
+
+  if (selectedLabels.length === 1) {
+    return selectedLabels[0]
+  }
+
+  if (selectedLabels.length === 2) {
+    const summary = `${selectedLabels[0]} + ${selectedLabels[1]}`
+    return summary.length <= 24 ? summary : `${selectedLabels.length} selected`
+  }
+
+  return `${selectedLabels.length} selected`
+}
+
+type CompactFilterSectionProps = {
+  label: string
+  summary: string
+  expanded: boolean
+  onToggle: () => void
+  children: ReactNode
+}
+
+function CompactFilterSection({
+  label,
+  summary,
+  expanded,
+  onToggle,
+  children,
+}: CompactFilterSectionProps) {
+  return (
+    <section
+      className={`rounded-[14px] border transition-all duration-200 ${
+        expanded ? "border-ember/20 bg-ember-soft/55 px-2.5 py-2" : "border-stone-border/80 bg-stone-surface px-2.5 py-1.5"
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 text-left"
+        aria-expanded={expanded}
+      >
+        <p
+          className={`shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+            expanded ? "text-ember" : "text-stone-muted"
+          }`}
+        >
+          {label}
+        </p>
+
+        <p
+          className={`min-w-0 flex-1 truncate text-right text-xs ${
+            expanded ? "text-ember/80" : "text-stone-secondary"
+          }`}
+        >
+          {summary}
+        </p>
+
+        <FiChevronDown
+          className={`h-4 w-4 shrink-0 text-stone-secondary transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {expanded ? <div className="mt-2 flex flex-wrap gap-1.5">{children}</div> : null}
+    </section>
+  )
 }
 
 export default function LogbookPage({
@@ -403,90 +480,40 @@ export default function LogbookPage({
                   {getAttributeFilterSections().map((section) => {
                     const selectedValues = draftFilters[section.key]
                     const isExpanded = expandedAttributeSections[section.key]
-                    const visibleSummary = selectedValues.slice(0, 2)
-                    const hiddenCount = Math.max(selectedValues.length - visibleSummary.length, 0)
-                    const hasActiveSelection = selectedValues.length > 0
+                    const summary = getSelectionSummary(section.options, selectedValues)
 
                     return (
-                      <section
+                      <CompactFilterSection
                         key={section.key}
-                        className={`rounded-[14px] border px-2.5 py-2 transition-colors ${
-                          hasActiveSelection
-                            ? "border-ember/20 bg-ember-soft/55"
-                            : "border-stone-border bg-stone-surface"
-                        }`}
+                        label={section.title}
+                        summary={summary}
+                        expanded={isExpanded}
+                        onToggle={() =>
+                          setExpandedAttributeSections((current) => ({
+                            ...current,
+                            [section.key]: !current[section.key],
+                          }))
+                        }
                       >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedAttributeSections((current) => ({
-                              ...current,
-                              [section.key]: !current[section.key],
-                            }))
-                          }
-                          className="flex w-full items-start justify-between gap-2 text-left"
-                        >
-                          <div className="min-w-0">
-                            <p
-                              className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
-                                hasActiveSelection ? "text-ember" : "text-stone-muted"
+                        {section.options.map((option) => {
+                          const isSelected = selectedValues.includes(option.value)
+
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => toggleDraftAttribute(section.key, option.value)}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                                isSelected
+                                  ? "border-ember/20 bg-ember-soft text-ember"
+                                  : "border-stone-border bg-stone-alt text-stone-secondary"
                               }`}
                             >
-                              {section.title}
-                            </p>
-                            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1">
-                              {hasActiveSelection ? (
-                                <>
-                                  {visibleSummary.map((value) => (
-                                    <span
-                                      key={value}
-                                      className="rounded-full border border-ember/20 bg-stone-surface px-2 py-0.5 text-[10px] font-semibold text-ember"
-                                    >
-                                      {formatTagLabel(value)}
-                                    </span>
-                                  ))}
-                                  {hiddenCount > 0 ? (
-                                    <span className="text-[10px] font-semibold text-stone-secondary">
-                                      +{hiddenCount}
-                                    </span>
-                                  ) : null}
-                                </>
-                              ) : (
-                                <span className="text-xs text-stone-muted">All</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <FiChevronDown
-                            className={`mt-0.5 h-4 w-4 shrink-0 text-stone-secondary transition-transform ${
-                              isExpanded ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-
-                        {isExpanded ? (
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            {section.options.map((option) => {
-                              const isSelected = selectedValues.includes(option.value)
-
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  onClick={() => toggleDraftAttribute(section.key, option.value)}
-                                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                                    isSelected
-                                      ? "border-ember/20 bg-ember-soft text-ember"
-                                      : "border-stone-border bg-stone-alt text-stone-secondary"
-                                  }`}
-                                >
-                                  {option.label}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        ) : null}
-                      </section>
+                              {option.label}
+                            </button>
+                          )
+                        })}
+                      </CompactFilterSection>
                     )
                   })}
                 </div>
@@ -495,7 +522,7 @@ export default function LogbookPage({
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
                     Grades
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.25">
                     {loggedGrades.map((gradeOption) => {
                       const isSelected = draftFilters.grades.includes(gradeOption.grade)
 
@@ -511,7 +538,7 @@ export default function LogbookPage({
                                 : [...current.grades, gradeOption.grade],
                             }))
                           }
-                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
                             isSelected
                               ? "border-ember/20 bg-ember-soft text-ember"
                               : "border-stone-border bg-stone-alt text-stone-secondary"
@@ -527,7 +554,7 @@ export default function LogbookPage({
                 <button
                   type="button"
                   onClick={() => setDraftFilters(DEFAULT_LOGBOOK_FILTERS)}
-                  className="mt-1 w-full rounded-[14px] border border-stone-border bg-stone-surface px-3 py-2 text-sm font-semibold text-stone-text transition-colors active:bg-stone-alt"
+                  className="mt-1 w-full rounded-[14px] border border-stone-border/70 bg-stone-surface px-3 py-2 text-sm font-medium text-stone-secondary transition-colors active:bg-stone-alt"
                 >
                   Reset filters
                 </button>
