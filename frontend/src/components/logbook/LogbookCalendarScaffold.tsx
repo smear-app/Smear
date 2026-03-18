@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi"
 import type { Climb } from "../../lib/climbs"
 import AnchoredPopover from "./AnchoredPopover"
@@ -109,7 +109,7 @@ export default function LogbookCalendarScaffold({
     }
 
     return years
-  }, [climbs, visibleMonth])
+  }, [climbs])
 
   const pickerMinYear = availableYears[0]
   const pickerMaxYear = availableYears[availableYears.length - 1]
@@ -125,12 +125,6 @@ export default function LogbookCalendarScaffold({
   const selectedSummary = selectedDateKey
     ? monthSummary.filter(([dateKey]) => dateKey === selectedDateKey)
     : monthSummary
-
-  useEffect(() => {
-    if (isPickerOpen) {
-      setPickerYear(visibleMonth.getFullYear())
-    }
-  }, [isPickerOpen, visibleMonth])
 
   return (
     <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
@@ -155,7 +149,15 @@ export default function LogbookCalendarScaffold({
           trigger={
             <button
               type="button"
-              onClick={() => setIsPickerOpen((current) => !current)}
+              onClick={() =>
+                setIsPickerOpen((current) => {
+                  const nextOpen = !current
+                  if (nextOpen) {
+                    setPickerYear(visibleMonth.getFullYear())
+                  }
+                  return nextOpen
+                })
+              }
               className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
             >
               <span>{formatMonthHeading(visibleMonth)}</span>

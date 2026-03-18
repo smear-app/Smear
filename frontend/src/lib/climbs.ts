@@ -143,34 +143,40 @@ interface PaginatedClimbsParams {
   grades?: string[]
 }
 
-function applyOptionalFilters(
-  query: any,
+type PaginatedClimbsQuery = {
+  eq: (column: string, value: string) => PaginatedClimbsQuery
+  in: (column: string, values: string[]) => PaginatedClimbsQuery
+  overlaps: (column: string, values: string[]) => PaginatedClimbsQuery
+}
+
+function applyOptionalFilters<T extends PaginatedClimbsQuery>(
+  query: T,
   params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'wallTypes' | 'holdTypes' | 'movementTypes' | 'grades'>,
-) {
+): T {
   let nextQuery = query
 
   if (params.gymId && params.gymId !== 'all') {
-    nextQuery = nextQuery.eq('gym_id', params.gymId)
+    nextQuery = nextQuery.eq('gym_id', params.gymId) as T
   }
 
   if (params.sendTypes && params.sendTypes.length > 0) {
-    nextQuery = nextQuery.in('send_type', params.sendTypes)
+    nextQuery = nextQuery.in('send_type', params.sendTypes) as T
   }
 
   if (params.wallTypes && params.wallTypes.length > 0) {
-    nextQuery = nextQuery.overlaps('tags', params.wallTypes.map((tag) => tag.toLowerCase()))
+    nextQuery = nextQuery.overlaps('tags', params.wallTypes.map((tag) => tag.toLowerCase())) as T
   }
 
   if (params.holdTypes && params.holdTypes.length > 0) {
-    nextQuery = nextQuery.overlaps('tags', params.holdTypes.map((tag) => tag.toLowerCase()))
+    nextQuery = nextQuery.overlaps('tags', params.holdTypes.map((tag) => tag.toLowerCase())) as T
   }
 
   if (params.movementTypes && params.movementTypes.length > 0) {
-    nextQuery = nextQuery.overlaps('tags', params.movementTypes.map((tag) => tag.toLowerCase()))
+    nextQuery = nextQuery.overlaps('tags', params.movementTypes.map((tag) => tag.toLowerCase())) as T
   }
 
   if (params.grades && params.grades.length > 0) {
-    nextQuery = nextQuery.in('gym_grade', params.grades)
+    nextQuery = nextQuery.in('gym_grade', params.grades) as T
   }
 
   return nextQuery

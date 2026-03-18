@@ -64,7 +64,6 @@ export default function ClimbDetailPage() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" })
-    setScrollY(0)
   }, [climbId])
 
   useEffect(() => {

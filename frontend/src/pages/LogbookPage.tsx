@@ -258,15 +258,7 @@ export default function LogbookPage({
   }, [filters, setSearchParams, sort, view])
 
   useEffect(() => {
-    if (openPanel !== "filters") {
-      setDraftFilters(filters)
-    }
-  }, [filters, openPanel])
-
-  useEffect(() => {
     if (!user) {
-      setLoggedGyms([])
-      setGymLoadError(null)
       return
     }
 
@@ -293,7 +285,6 @@ export default function LogbookPage({
 
   useEffect(() => {
     if (!user) {
-      setLoggedGrades([])
       return
     }
 
@@ -340,9 +331,12 @@ export default function LogbookPage({
   const totalMatchingResults = totalCount
   const shownResults = Math.min(visibleCount, totalMatchingResults)
   const logbookReturnPath = `${location.pathname}${location.search}`
+  const availableGyms = user ? loggedGyms : []
+  const availableGrades = user ? loggedGrades : []
+  const visibleGymLoadError = user ? gymLoadError : null
   const selectedGymLabel = draftFilters.gymId === "all"
     ? "All gyms"
-    : loggedGyms.find((gym) => gym.id === draftFilters.gymId)?.name ?? "All gyms"
+    : availableGyms.find((gym) => gym.id === draftFilters.gymId)?.name ?? "All gyms"
 
   const closeFilterPopover = () => {
     setDraftFilters(filters)
@@ -443,7 +437,7 @@ export default function LogbookPage({
                       return "filters"
                     })
                   }
-                  className={`rounded-full border px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
+                    className={`rounded-full border px-2.5 py-1.5 text-[13px] font-semibold transition-colors ${
                     openPanel === "filters" || hasActiveFilters
                       ? "border-ember/20 bg-ember-soft text-ember"
                       : "border-stone-border bg-stone-alt text-stone-secondary"
@@ -462,7 +456,7 @@ export default function LogbookPage({
                     className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   >
                     <option value="all">All gyms</option>
-                    {loggedGyms.map((gym) => (
+                    {availableGyms.map((gym) => (
                       <option key={gym.id} value={gym.id}>
                         {gym.name}
                       </option>
@@ -550,7 +544,7 @@ export default function LogbookPage({
                     Grades
                   </span>
                   <div className="flex flex-wrap gap-1.25">
-                    {loggedGrades.map((gradeOption) => {
+                    {availableGrades.map((gradeOption) => {
                       const isSelected = draftFilters.grades.includes(gradeOption.grade)
 
                       return (
@@ -597,8 +591,8 @@ export default function LogbookPage({
                   Apply
                 </button>
 
-                {gymLoadError ? (
-                  <p className="text-xs text-red-500">{gymLoadError}</p>
+                {visibleGymLoadError ? (
+                  <p className="text-xs text-red-500">{visibleGymLoadError}</p>
                 ) : null}
               </div>
             </AnchoredPopover>

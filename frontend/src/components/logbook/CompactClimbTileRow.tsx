@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useCallback, useRef, useState, type ReactNode } from "react"
 import ClimbStatusPill from "../ClimbStatusPill"
 import ClimbTileTitle from "./ClimbTileTitle"
 import { getClimbColorBadgeStyle } from "../../lib/climbColors"
@@ -43,32 +43,26 @@ export default function CompactClimbTileRow({
   const config = DENSITY_CONFIG[density]
   const badgeStyle = getClimbColorBadgeStyle(climb.climbColor)
   const primaryAttribute = getPrimaryLogbookAttribute(climb)
-  const middleZoneRef = useRef<HTMLDivElement | null>(null)
-  const [canShowChip, setCanShowChip] = useState(true)
+  const middleZoneObserverRef = useRef<ResizeObserver | null>(null)
+  const [middleZoneWidth, setMiddleZoneWidth] = useState(0)
+  const canShowChip = Boolean(primaryAttribute) && (middleZoneWidth === 0 || middleZoneWidth >= config.chipThreshold)
 
-  useEffect(() => {
-    if (!primaryAttribute) {
-      setCanShowChip(false)
-      return
-    }
+  const setMiddleZoneRef = useCallback((element: HTMLDivElement | null) => {
+    middleZoneObserverRef.current?.disconnect()
+    middleZoneObserverRef.current = null
 
-    const element = middleZoneRef.current
     if (!element) {
-      setCanShowChip(true)
+      setMiddleZoneWidth(0)
       return
     }
 
-    const updateChipVisibility = () => setCanShowChip(element.clientWidth >= config.chipThreshold)
+    const updateMiddleZoneWidth = () => setMiddleZoneWidth(element.clientWidth)
+    updateMiddleZoneWidth()
 
-    updateChipVisibility()
-
-    const resizeObserver = new ResizeObserver(updateChipVisibility)
+    const resizeObserver = new ResizeObserver(updateMiddleZoneWidth)
     resizeObserver.observe(element)
-
-    return () => {
-      resizeObserver.disconnect()
-    }
-  }, [config.chipThreshold, primaryAttribute])
+    middleZoneObserverRef.current = resizeObserver
+  }, [])
 
   return (
     <div className={`grid items-center gap-2.5 ${config.gridClass}`}>
@@ -81,7 +75,7 @@ export default function CompactClimbTileRow({
         </div>
       </div>
 
-      <div ref={middleZoneRef} className="min-w-0 overflow-hidden">
+      <div ref={setMiddleZoneRef} className="min-w-0 overflow-hidden">
         {density === "home" ? (
           <div className="min-w-0">
             <div className={config.titleSlotClass}>
