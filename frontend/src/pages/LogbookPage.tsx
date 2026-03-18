@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
-import { FiArrowUp, FiChevronDown } from "react-icons/fi"
+import { FiArrowUp, FiChevronDown, FiMapPin } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
@@ -149,6 +149,32 @@ function CompactFilterSection({
 
       {expanded ? <div className="mt-2 flex flex-wrap gap-1.5">{children}</div> : null}
     </section>
+  )
+}
+
+type CompactSelectorRowProps = {
+  label: string
+  value: string
+  children: ReactNode
+}
+
+function CompactSelectorRow({ label, value, children }: CompactSelectorRowProps) {
+  return (
+    <div className="relative overflow-hidden rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2 shadow-[0_8px_20px_rgba(89,68,51,0.05)]">
+      <div className="flex items-center gap-2">
+        <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+
+        <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+          {label}
+        </p>
+
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-stone-text">{value}</p>
+
+        <FiChevronDown className="h-4 w-4 shrink-0 text-stone-secondary" />
+      </div>
+
+      {children}
+    </div>
   )
 }
 
@@ -314,6 +340,9 @@ export default function LogbookPage({
   const totalMatchingResults = totalCount
   const shownResults = Math.min(visibleCount, totalMatchingResults)
   const logbookReturnPath = `${location.pathname}${location.search}`
+  const selectedGymLabel = draftFilters.gymId === "all"
+    ? "All gyms"
+    : loggedGyms.find((gym) => gym.id === draftFilters.gymId)?.name ?? "All gyms"
 
   const closeFilterPopover = () => {
     setDraftFilters(filters)
@@ -425,14 +454,12 @@ export default function LogbookPage({
               }
             >
               <div className="grid gap-2">
-                <label className="grid gap-1 text-sm">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                    Gym
-                  </span>
+                <CompactSelectorRow label="Gym" value={selectedGymLabel}>
                   <select
                     value={draftFilters.gymId}
                     onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
-                    className="rounded-[12px] border border-stone-border bg-stone-surface px-3 py-1.5 text-sm text-stone-text"
+                    aria-label="Gym"
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                   >
                     <option value="all">All gyms</option>
                     {loggedGyms.map((gym) => (
@@ -441,7 +468,7 @@ export default function LogbookPage({
                       </option>
                     ))}
                   </select>
-                </label>
+                </CompactSelectorRow>
 
                 <div className="grid gap-1">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
