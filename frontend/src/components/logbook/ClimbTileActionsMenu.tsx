@@ -61,7 +61,7 @@ export default function ClimbTileActionsMenu({
               }}
               className="w-full rounded-[12px] px-3 py-2 text-left text-sm font-semibold text-stone-text transition-colors hover:bg-stone-alt"
             >
-              Edit log
+              Edit
             </button>
             <button
               type="button"
@@ -82,7 +82,7 @@ export default function ClimbTileActionsMenu({
               }}
               className="mt-1 w-full rounded-[12px] px-3 py-2 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
             >
-              Delete log
+              Delete
             </button>
           </div>
         ) : null}
