@@ -79,12 +79,12 @@ export function useLogbookHistory({
           limit: pageSize,
           offset: 0,
           sort,
-          gymId: chronological ? undefined : filters.gymId,
-          sendTypes: chronological ? undefined : filters.sendTypes,
-          wallTypes: chronological ? undefined : filters.wallTypes,
-          holdTypes: chronological ? undefined : filters.holdTypes,
-          movementTypes: chronological ? undefined : filters.movementTypes,
-          grades: chronological ? undefined : filters.grades,
+          gymId: filters.gymId,
+          sendTypes: filters.sendTypes,
+          wallTypes: filters.wallTypes,
+          holdTypes: filters.holdTypes,
+          movementTypes: filters.movementTypes,
+          grades: filters.grades,
         })
 
         if (cancelled || requestKeyRef.current !== requestKey) {
@@ -140,12 +140,12 @@ export function useLogbookHistory({
       limit: pageSize,
       offset: loadedClimbs.length,
       sort,
-      gymId: chronological ? undefined : filters.gymId,
-      sendTypes: chronological ? undefined : filters.sendTypes,
-      wallTypes: chronological ? undefined : filters.wallTypes,
-      holdTypes: chronological ? undefined : filters.holdTypes,
-      movementTypes: chronological ? undefined : filters.movementTypes,
-      grades: chronological ? undefined : filters.grades,
+      gymId: filters.gymId,
+      sendTypes: filters.sendTypes,
+      wallTypes: filters.wallTypes,
+      holdTypes: filters.holdTypes,
+      movementTypes: filters.movementTypes,
+      grades: filters.grades,
     })
       .then((page) => {
         if (requestKeyRef.current !== activeRequestKey) {

@@ -235,6 +235,7 @@ export default function LogbookPage({
     filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
+  const shownResults = Math.min(visibleCount, totalMatchingResults)
   const logbookReturnPath = `${location.pathname}${location.search}`
 
   const closeFilterPopover = () => {
@@ -592,7 +593,7 @@ export default function LogbookPage({
         {view === "list" ? (
           <div className="mt-2 flex items-center justify-between gap-3 px-1 text-xs text-stone-muted">
             <p>{getSortLabel(sort)}</p>
-            <p>{`Showing ${visibleCount} of ${totalMatchingResults} results`}</p>
+            <p>{`Showing ${shownResults} of ${totalMatchingResults} results`}</p>
           </div>
         ) : null}
 
