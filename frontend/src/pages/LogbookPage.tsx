@@ -25,6 +25,8 @@ import {
 const SORT_PANEL_OPTIONS: LogbookSort[] = [...LOGBOOK_SORT_OPTIONS]
 const VIEW_OPTIONS: LogbookView[] = ["list", "calendar"]
 const SEND_TYPE_OPTIONS = ["flash", "send", "attempt"]
+const POPUP_CARD_SHELL_CLASS =
+  "rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]"
 
 type OpenPanel = "filters" | "sort" | null
 type AttributeSectionKey = "wallTypes" | "holdTypes" | "movementTypes"
@@ -473,153 +475,157 @@ export default function LogbookPage({
                 </button>
               }
             >
-              <div className="grid gap-2">
-                <CompactSelectorRow label="Gym" value={selectedGymLabel}>
-                  <select
-                    value={draftFilters.gymId}
-                    onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
-                    aria-label="Gym"
-                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                  >
-                    <option value="all">All gyms</option>
-                    {availableGyms.map((gym) => (
-                      <option key={gym.id} value={gym.id}>
-                        {gym.name}
-                      </option>
-                    ))}
-                  </select>
-                </CompactSelectorRow>
+              <div className={POPUP_CARD_SHELL_CLASS}>
+                <div className="grid gap-2">
+                  <CompactSelectorRow label="Gym" value={selectedGymLabel}>
+                    <select
+                      value={draftFilters.gymId}
+                      onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
+                      aria-label="Gym"
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    >
+                      <option value="all">All gyms</option>
+                      {availableGyms.map((gym) => (
+                        <option key={gym.id} value={gym.id}>
+                          {gym.name}
+                        </option>
+                      ))}
+                    </select>
+                  </CompactSelectorRow>
 
-                <div className="grid gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                    Status
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {SEND_TYPE_OPTIONS.map((option) => {
-                      const isSelected = draftFilters.sendTypes.includes(option)
+                  <div className="grid gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Status
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SEND_TYPE_OPTIONS.map((option) => {
+                        const isSelected = draftFilters.sendTypes.includes(option)
+
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setDraftFilters((current) => ({
+                                ...current,
+                                sendTypes: current.sendTypes.includes(option)
+                                  ? current.sendTypes.filter((status) => status !== option)
+                                  : [...current.sendTypes, option],
+                              }))
+                            }
+                            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                              isSelected
+                                ? "border-ember/20 bg-ember-soft text-ember"
+                                : "border-stone-border bg-stone-alt text-stone-secondary"
+                            }`}
+                          >
+                            {formatTagLabel(option)}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-1.5">
+                    {getAttributeFilterSections().map((section) => {
+                      const selectedValues = draftFilters[section.key]
+                      const isExpanded = expandedAttributeSections[section.key]
+                      const summary = getSelectionSummary(section.options, selectedValues)
 
                       return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() =>
-                            setDraftFilters((current) => ({
+                        <CompactFilterSection
+                          key={section.key}
+                          label={section.title}
+                          summary={summary}
+                          expanded={isExpanded}
+                          onToggle={() =>
+                            setExpandedAttributeSections((current) => ({
                               ...current,
-                              sendTypes: current.sendTypes.includes(option)
-                                ? current.sendTypes.filter((status) => status !== option)
-                                : [...current.sendTypes, option],
+                              [section.key]: !current[section.key],
                             }))
                           }
-                          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                            isSelected
-                              ? "border-ember/20 bg-ember-soft text-ember"
-                              : "border-stone-border bg-stone-alt text-stone-secondary"
-                          }`}
                         >
-                          {formatTagLabel(option)}
-                        </button>
+                          {section.options.map((option) => {
+                            const isSelected = selectedValues.includes(option.value)
+
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => toggleDraftAttribute(section.key, option.value)}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                                  isSelected
+                                    ? "border-ember/20 bg-ember-soft text-ember"
+                                    : "border-stone-border bg-stone-alt text-stone-secondary"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            )
+                          })}
+                        </CompactFilterSection>
                       )
                     })}
                   </div>
-                </div>
 
-                <div className="grid gap-1.5">
-                  {getAttributeFilterSections().map((section) => {
-                    const selectedValues = draftFilters[section.key]
-                    const isExpanded = expandedAttributeSections[section.key]
-                    const summary = getSelectionSummary(section.options, selectedValues)
-
-                    return (
-                      <CompactFilterSection
-                        key={section.key}
-                        label={section.title}
-                        summary={summary}
-                        expanded={isExpanded}
-                        onToggle={() =>
-                          setExpandedAttributeSections((current) => ({
-                            ...current,
-                            [section.key]: !current[section.key],
-                          }))
-                        }
-                      >
-                        {section.options.map((option) => {
-                          const isSelected = selectedValues.includes(option.value)
+                  <div className="grid gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Grades
+                    </span>
+                    <div className="w-full px-1.5">
+                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
+                        {availableGrades.map((gradeOption) => {
+                          const isSelected = draftFilters.grades.includes(gradeOption.grade)
 
                           return (
                             <button
-                              key={option.value}
+                              key={gradeOption.grade}
                               type="button"
-                              onClick={() => toggleDraftAttribute(section.key, option.value)}
-                              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                              onClick={() =>
+                                setDraftFilters((current) => ({
+                                  ...current,
+                                  grades: current.grades.includes(gradeOption.grade)
+                                    ? current.grades.filter((grade) => grade !== gradeOption.grade)
+                                    : [...current.grades, gradeOption.grade],
+                                }))
+                              }
+                              className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
                                 isSelected
                                   ? "border-ember/20 bg-ember-soft text-ember"
                                   : "border-stone-border bg-stone-alt text-stone-secondary"
                               }`}
                             >
-                              {option.label}
+                              {gradeOption.grade}
                             </button>
                           )
                         })}
-                      </CompactFilterSection>
-                    )
-                  })}
-                </div>
-
-                <div className="grid gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                    Grades
-                  </span>
-                  <div className="flex flex-wrap gap-1.25">
-                    {availableGrades.map((gradeOption) => {
-                      const isSelected = draftFilters.grades.includes(gradeOption.grade)
-
-                      return (
-                        <button
-                          key={gradeOption.grade}
-                          type="button"
-                          onClick={() =>
-                            setDraftFilters((current) => ({
-                              ...current,
-                              grades: current.grades.includes(gradeOption.grade)
-                                ? current.grades.filter((grade) => grade !== gradeOption.grade)
-                                : [...current.grades, gradeOption.grade],
-                            }))
-                          }
-                          className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
-                            isSelected
-                              ? "border-ember/20 bg-ember-soft text-ember"
-                              : "border-stone-border bg-stone-alt text-stone-secondary"
-                          }`}
-                        >
-                          {gradeOption.grade}
-                        </button>
-                      )
-                    })}
+                      </div>
+                    </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setDraftFilters(DEFAULT_LOGBOOK_FILTERS)}
+                    className="mt-1 w-full rounded-[14px] border border-stone-border/70 bg-stone-surface px-3 py-2 text-sm font-medium text-stone-secondary transition-colors active:bg-stone-alt"
+                  >
+                    Reset filters
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFilters(draftFilters)
+                      setOpenPanel(null)
+                    }}
+                    className="rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-stone-surface"
+                  >
+                    Apply
+                  </button>
+
+                  {visibleGymLoadError ? (
+                    <p className="text-xs text-red-500">{visibleGymLoadError}</p>
+                  ) : null}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setDraftFilters(DEFAULT_LOGBOOK_FILTERS)}
-                  className="mt-1 w-full rounded-[14px] border border-stone-border/70 bg-stone-surface px-3 py-2 text-sm font-medium text-stone-secondary transition-colors active:bg-stone-alt"
-                >
-                  Reset filters
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFilters(draftFilters)
-                    setOpenPanel(null)
-                  }}
-                  className="rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-stone-surface"
-                >
-                  Apply
-                </button>
-
-                {visibleGymLoadError ? (
-                  <p className="text-xs text-red-500">{visibleGymLoadError}</p>
-                ) : null}
               </div>
             </AnchoredPopover>
 
@@ -641,7 +647,7 @@ export default function LogbookPage({
                 </button>
               }
             >
-              <div className="grid min-w-[11rem] gap-1.5 rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]">
+              <div className={`grid min-w-[11rem] gap-1.5 ${POPUP_CARD_SHELL_CLASS}`}>
                 {SORT_PANEL_OPTIONS.map((option) => (
                   <button
                     key={option}
