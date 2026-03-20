@@ -38,21 +38,19 @@ export default function AnchoredPopover({
     <div ref={containerRef} className="relative">
       {trigger}
 
-      <div
-        className={`absolute top-[calc(100%+0.55rem)] z-30 transition-all duration-150 ${
-          align === "left" ? "left-0" : align === "center" ? "left-1/2 -translate-x-1/2" : "right-0"
-        } ${
-          open
-            ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none -translate-y-1 opacity-0"
-        }`}
-      >
+      {open ? (
         <div
-          className={`w-[min(18rem,calc(100vw-2.75rem))] rounded-[18px] border border-stone-border bg-stone-surface/98 p-2.5 shadow-[0_20px_48px_rgba(89,68,51,0.16)] backdrop-blur ${panelClassName}`}
+          className={`absolute top-[calc(100%+0.55rem)] z-30 translate-y-0 opacity-100 transition-all duration-150 ${
+            align === "left" ? "left-0" : align === "center" ? "left-1/2 -translate-x-1/2" : "right-0"
+          }`}
         >
-          {children}
+          <div
+            className={`w-[min(18rem,calc(100vw-2.75rem))] rounded-[18px] border border-stone-border bg-stone-surface/98 p-2.5 shadow-[0_20px_48px_rgba(89,68,51,0.16)] backdrop-blur ${panelClassName}`}
+          >
+            {children}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   )
 }
