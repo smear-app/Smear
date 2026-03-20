@@ -6,7 +6,8 @@ import HomePage from "./HomePage"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import FeedPage from "./pages/FeedPage"
-import { insertClimb } from "./lib/climbs"
+import { deleteClimb, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
+import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -18,6 +19,7 @@ function ProtectedApp() {
   const { activeGym } = useGym()
   const [isLogClimbOpen, setIsLogClimbOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [editingClimb, setEditingClimb] = useState(null)
 
   if (loading) {
     return (
@@ -30,16 +32,34 @@ function ProtectedApp() {
   if (!session) return <Navigate to="/auth" replace />
 
   async function handleSaveClimb(draft) {
-    await insertClimb(draft, session.user.id)
+    if (editingClimb) {
+      await updateClimb(draft, editingClimb.id, session.user.id)
+      return
+    }
+
+    const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
+    await insertClimb(draft, session.user.id, sessionId)
   }
 
   function handleOpenLogClimb() {
     if (!activeGym) return
+    setEditingClimb(null)
     setIsLogClimbOpen(true)
+  }
+
+  function handleEditClimb(climb) {
+    setEditingClimb(climb)
+    setIsLogClimbOpen(true)
+  }
+
+  async function handleDeleteLoggedClimb(climbId) {
+    await deleteClimb(climbId, session.user.id)
+    setRefreshKey((k) => k + 1)
   }
 
   function handleDone() {
     setIsLogClimbOpen(false)
+    setEditingClimb(null)
     setRefreshKey((k) => k + 1)
   }
 
@@ -52,12 +72,23 @@ function ProtectedApp() {
           element={
             <HomePage
               onOpenLogClimb={handleOpenLogClimb}
+              onEditClimb={handleEditClimb}
+              onDeleteClimb={handleDeleteLoggedClimb}
               refreshKey={refreshKey}
             />
           }
         />
         <Route path="/climbs/:climbId" element={<ClimbDetailPage />} />
-        <Route path="/home/logbook" element={<LogbookPage />} />
+        <Route
+          path="/home/logbook"
+          element={
+            <LogbookPage
+              onEditClimb={handleEditClimb}
+              onDeleteClimb={handleDeleteLoggedClimb}
+              refreshKey={refreshKey}
+            />
+          }
+        />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/feed" element={<FeedPage />} />
         <Route path="/social" element={<SocialPage />} />
@@ -65,10 +96,15 @@ function ProtectedApp() {
       </Routes>
       <LogClimbModal
         isOpen={isLogClimbOpen}
-        onClose={() => setIsLogClimbOpen(false)}
+        onClose={() => {
+          setIsLogClimbOpen(false)
+          setEditingClimb(null)
+        }}
         onSave={handleSaveClimb}
         onDone={handleDone}
-        activeGym={activeGym}
+        activeGym={editingClimb?.gym_id ? { id: editingClimb.gym_id, name: editingClimb.gym_name } : activeGym}
+        initialDraft={editingClimb ? toClimbDraft(editingClimb) : null}
+        mode={editingClimb ? "edit" : "create"}
       />
     </div>
   )

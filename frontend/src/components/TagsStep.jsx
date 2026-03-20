@@ -36,7 +36,7 @@ function TagChip({ isSelected, label, onClick, tone = "ember" }) {
   )
 }
 
-function TagsStep({ draft, onToggleTag, onSave, saveError }) {
+function TagsStep({ draft, onToggleTag, onSave, saveError, saveLabel = "Save Climb" }) {
   const canSaveFromTags = Array.isArray(draft.tags) && draft.tags.length > 0
   const scrollRef = useRef(null)
   const [showFade, setShowFade] = useState(false)
@@ -118,7 +118,7 @@ function TagsStep({ draft, onToggleTag, onSave, saveError }) {
             : "cursor-not-allowed bg-stone-border text-stone-muted opacity-80"
         }`}
       >
-        Save Climb
+        {saveLabel}
       </button>
     </div>
   )

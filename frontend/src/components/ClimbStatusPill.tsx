@@ -43,7 +43,7 @@ export default function ClimbStatusPill({ sendType, className = "" }: ClimbStatu
 
   return (
     <div
-      className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${stylesByStatus[status]} ${className}`.trim()}
+      className={`inline-flex rounded-full border px-1.5 py-0.5 text-[11px] font-semibold ${stylesByStatus[status]} ${className}`.trim()}
     >
       {labelByStatus[status]}
     </div>
