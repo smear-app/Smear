@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { uploadToCloudinary } from './cloudinary'
 
 const GRADE_VALUES: Record<string, number> = {
   VB: -1, V0: 0, V1: 1, V2: 2, V3: 3, V4: 4, V5: 5,
@@ -16,8 +17,8 @@ export interface ClimbDraft {
   feltLike: string
   sendType: string
   tags: string[]
-  photo: string | null
-  // Canonical frontend field name for the optional selected climb color.
+  photo: string | null       // blob URL for preview only
+  photoFile: File | null     // raw File for upload
   climbColor: string | null
 }
 
@@ -34,7 +35,7 @@ interface ClimbRow {
   send_type: string
   tags: string[]
   photo_url: string | null
-  climb_color?: string | null
+  hold_color: string | null
   notes: string | null
   created_at: string
 }
@@ -57,57 +58,20 @@ export interface Climb {
   created_at: string
 }
 
-const getClimbColorStorageKey = (userId: string) => `smear.climb-color-overrides:${userId}`
-
-function readClimbColorOverrides(userId: string): Record<string, string> {
-  if (typeof window === 'undefined') return {}
-
-  try {
-    const rawValue = window.localStorage.getItem(getClimbColorStorageKey(userId))
-    const parsed = rawValue ? JSON.parse(rawValue) : {}
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function writeClimbColorOverrides(userId: string, overrides: Record<string, string>) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(getClimbColorStorageKey(userId), JSON.stringify(overrides))
-}
-
-function setStoredClimbColor(userId: string, climbId: string, climbColor: string | null) {
-  const overrides = readClimbColorOverrides(userId)
-
-  if (climbColor) {
-    overrides[climbId] = climbColor
-  } else {
-    delete overrides[climbId]
-  }
-
-  writeClimbColorOverrides(userId, overrides)
-}
-
-function getStoredClimbColor(userId: string, climbId: string): string | null {
-  return readClimbColorOverrides(userId)[climbId] ?? null
-}
-
-function isMissingClimbColorColumnError(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false
-
-  const message = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
-  return message.includes('climb_color') && message.includes('column')
-}
-
-function mapClimbRow(row: ClimbRow, userId: string): Climb {
+function mapClimbRow(row: ClimbRow): Climb {
   return {
     ...row,
-    climbColor: row.climb_color ?? getStoredClimbColor(userId, row.id),
+    climbColor: row.hold_color,
   }
 }
 
 export async function insertClimb(draft: ClimbDraft, userId: string): Promise<void> {
-  const baseClimbRecord = {
+  let photoUrl: string | null = null
+  if (draft.photoFile) {
+    photoUrl = await uploadToCloudinary(draft.photoFile)
+  }
+
+  const { error } = await supabase.from('climbs').insert({
     user_id: userId,
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -117,44 +81,11 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<vo
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map(t => t.toLowerCase()),
-    photo_url: null,
-  }
+    photo_url: photoUrl,
+    hold_color: draft.climbColor || null,
+  })
 
-  if (!draft.climbColor) {
-    const { error } = await supabase.from('climbs').insert(baseClimbRecord)
-    if (error) throw error
-    return
-  }
-
-  const { data, error } = await supabase
-    .from('climbs')
-    .insert({
-      ...baseClimbRecord,
-      // Backend column name; frontend uses the canonical draft.climbColor field.
-      climb_color: draft.climbColor,
-    })
-    .select('id')
-    .single()
-
-  if (!error) {
-    setStoredClimbColor(userId, data.id, draft.climbColor)
-    return
-  }
-
-  if (!isMissingClimbColorColumnError(error)) {
-    throw error
-  }
-
-  const fallbackInsert = await supabase
-    .from('climbs')
-    .insert(baseClimbRecord)
-    .select('id')
-    .single()
-
-  if (fallbackInsert.error) throw fallbackInsert.error
-
-  // TODO: Remove this local fallback after the climbs table persists climb_color everywhere.
-  setStoredClimbColor(userId, fallbackInsert.data.id, draft.climbColor)
+  if (error) throw error
 }
 
 export async function fetchClimbs(userId: string): Promise<Climb[]> {
@@ -164,5 +95,5 @@ export async function fetchClimbs(userId: string): Promise<Climb[]> {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return (data as ClimbRow[]).map((row) => mapClimbRow(row, userId))
+  return (data as ClimbRow[]).map(mapClimbRow)
 }

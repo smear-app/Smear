@@ -11,6 +11,7 @@ const EMPTY_DRAFT = {
   gymId: "",
   gymName: "",
   photo: null,
+  photoFile: null,
   climbColor: null,
   gymGrade: "",
   feltLike: "",
