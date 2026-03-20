@@ -25,8 +25,12 @@ export async function saveGymPreferences(
   bookmarkedGymIds: string[],
   recentGymIds: string[],
 ): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('profiles')
     .update({ bookmarked_gym_ids: bookmarkedGymIds, recent_gym_ids: recentGymIds })
     .eq('id', userId)
+
+  if (error) {
+    throw error
+  }
 }

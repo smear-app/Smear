@@ -220,14 +220,24 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map((tag) => tag.toLowerCase()),
-    photo_url: draft.photo,
+    // photo_url will be set below; draft.photo may be a blob URL (preview)
+  }
+
+  // If a new raw file is present, upload it and persist the returned URL
+  let photoUrl: string | null = null
+  if (draft.photoFile) {
+    photoUrl = await uploadToCloudinary(draft.photoFile)
+  } else if (draft.photo && !draft.photo.startsWith('blob:')) {
+    // Keep existing remote URL when photo is a remote URL
+    photoUrl = draft.photo
   }
 
   const attemptedUpdate = await supabase
     .from('climbs')
     .update({
       ...baseClimbRecord,
-      climb_color: draft.climbColor,
+      photo_url: photoUrl,
+      hold_color: draft.climbColor,
     })
     .eq('user_id', userId)
     .eq('id', climbId)
@@ -243,7 +253,10 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
 
   const fallbackUpdate = await supabase
     .from('climbs')
-    .update(baseClimbRecord)
+    .update({
+      ...baseClimbRecord,
+      photo_url: photoUrl,
+    })
     .eq('user_id', userId)
     .eq('id', climbId)
 

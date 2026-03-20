@@ -95,7 +95,7 @@ export function GymProvider({
     })
   }, [storageUserId])
 
-  // Persist to localStorage immediately and sync to Supabase (debounced 1s)
+  // Persist to localStorage immediately
   useEffect(() => {
     if (!isHydrated || !storageUserId) return
 
@@ -108,15 +108,24 @@ export function GymProvider({
         hiddenGymIds,
       }),
     )
+  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds, storageUserId])
 
-    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
+  // Debounced sync of persisted fields to Supabase (only when persisted fields change)
+  useEffect(() => {
+    if (!isHydrated || !storageUserId) return
+
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current)
+      syncTimeoutRef.current = null
+    }
+
     syncTimeoutRef.current = setTimeout(() => {
-      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch(
-        (error) => {
-          // Prevent unhandled promise rejections if saving preferences fails
-          console.error("Failed to save gym preferences", error)
-        },
-      )
+      // Fire-and-forget but avoid unhandled promise rejections
+      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch((error) => {
+        // Log so failures are visible during development
+        // eslint-disable-next-line no-console
+        console.error('Failed to save gym preferences', error)
+      })
     }, 1000)
 
     return () => {
@@ -125,7 +134,7 @@ export function GymProvider({
         syncTimeoutRef.current = null
       }
     }
-  }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds, storageUserId])
+  }, [bookmarkedGymIds, recentHistoryGymIds, isHydrated, storageUserId])
 
   const value = useMemo(() => {
     const state = buildGymState({
