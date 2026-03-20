@@ -130,6 +130,11 @@ export interface LoggedGradeOption {
   value: number
 }
 
+interface LoggedGymRpcRow {
+  id: string | null
+  name: string | null
+}
+
 interface PaginatedClimbsParams {
   userId: string
   limit: number
@@ -348,18 +353,37 @@ export async function fetchClimbById(userId: string, climbId: string): Promise<C
 }
 
 export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]> {
-  const { data, error } = await supabase
+  const { data, error } = await supabase.rpc('fetch_logged_gyms')
+
+  if (!error) {
+    return (data as LoggedGymRpcRow[] | null ?? [])
+      .filter((row): row is { id: string; name: string } => Boolean(row.id && row.name))
+      .map((row) => ({
+        id: row.id,
+        name: row.name,
+      }))
+  }
+
+  const isMissingRpc =
+    error.code === 'PGRST202' ||
+    `${error.message ?? ''}`.toLowerCase().includes('fetch_logged_gyms')
+
+  if (!isMissingRpc) {
+    throw error
+  }
+
+  const fallback = await supabase
     .from('climbs')
     .select('gym_id, gym_name, created_at')
     .eq('user_id', userId)
     .not('gym_id', 'is', null)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (fallback.error) throw fallback.error
 
   const uniqueGyms = new Map<string, LoggedGymOption>()
 
-  for (const row of data ?? []) {
+  for (const row of fallback.data ?? []) {
     const gymId = row.gym_id as string | null
     const gymName = row.gym_name as string | null
 
@@ -379,7 +403,7 @@ export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]
 export async function fetchLoggedGrades(userId: string): Promise<LoggedGradeOption[]> {
   const { data, error } = await supabase
     .from('climbs')
-    .select('gym_grade, gym_grade_value', { distinct: true })
+    .select('gym_grade, gym_grade_value')
     .eq('user_id', userId)
     .not('gym_grade', 'is', null)
 
