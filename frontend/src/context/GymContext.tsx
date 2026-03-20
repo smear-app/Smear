@@ -111,8 +111,20 @@ export function GymProvider({
 
     if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current)
     syncTimeoutRef.current = setTimeout(() => {
-      saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds)
+      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch(
+        (error) => {
+          // Prevent unhandled promise rejections if saving preferences fails
+          console.error("Failed to save gym preferences", error)
+        },
+      )
     }, 1000)
+
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+        syncTimeoutRef.current = null
+      }
+    }
   }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds, storageUserId])
 
   const value = useMemo(() => {
