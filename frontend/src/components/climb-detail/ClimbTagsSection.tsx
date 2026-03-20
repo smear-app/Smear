@@ -1,3 +1,6 @@
+import { getTagCategory } from "../../lib/logbook"
+import { Link } from "react-router-dom"
+
 type ClimbTagsSectionProps = {
   tags: string[]
 }
@@ -10,6 +13,25 @@ const TAG_GROUPS = [
 
 function formatTag(tag: string) {
   return tag.replace(/_/g, " ")
+}
+
+function buildTagHref(tag: string) {
+  const normalizedTag = tag.toLowerCase()
+  const category = getTagCategory(normalizedTag)
+  const params = new URLSearchParams({
+    view: "list",
+    sort: "newest",
+  })
+
+  if (category === "wall") {
+    params.set("wallTypes", normalizedTag)
+  } else if (category === "hold") {
+    params.set("holdTypes", normalizedTag)
+  } else if (category === "movement") {
+    params.set("movementTypes", normalizedTag)
+  }
+
+  return `/home/logbook?${params.toString()}`
 }
 
 function groupTags(tags: string[]) {
@@ -47,12 +69,13 @@ export default function ClimbTagsSection({ tags }: ClimbTagsSectionProps) {
             </p>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {group.tags.map((tag) => (
-                <span
+                <Link
                   key={tag}
+                  to={buildTagHref(tag)}
                   className="rounded-full border border-stone-border/70 bg-stone-surface/85 px-2 py-0.5 text-[10px] font-medium capitalize text-stone-secondary"
                 >
                   {formatTag(tag)}
-                </span>
+                </Link>
               ))}
             </div>
           </section>

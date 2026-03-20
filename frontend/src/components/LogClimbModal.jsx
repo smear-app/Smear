@@ -22,7 +22,15 @@ const CLOSE_ANIMATION_MS = 280
 
 const SUCCESS_STEP = 4
 
-function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
+function LogClimbModal({
+  isOpen,
+  onClose,
+  onSave,
+  onDone,
+  activeGym,
+  initialDraft = null,
+  mode = "create",
+}) {
   const [isRendered, setIsRendered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -53,18 +61,21 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
 
   useEffect(() => {
     if (isOpen) {
-      if (!activeGym) {
+      if (!initialDraft && !activeGym) {
         setIsRendered(false)
         return undefined
       }
 
       // Reset draft and step each time the sheet is opened fresh.
       resetDraft()
-      setDraft({
-        ...EMPTY_DRAFT,
-        gymId: activeGym.id,
-        gymName: activeGym.name,
-      })
+      setSaveError(null)
+      setDraft(
+        initialDraft ?? {
+          ...EMPTY_DRAFT,
+          gymId: activeGym.id,
+          gymName: activeGym.name,
+        },
+      )
       setIsVisible(false)
       setIsRendered(true)
 
@@ -88,7 +99,7 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
     }, CLOSE_ANIMATION_MS)
 
     return () => window.clearTimeout(timeoutId)
-  }, [activeGym, isOpen])
+  }, [activeGym, initialDraft, isOpen])
 
   useEffect(() => {
     return () => {
@@ -141,10 +152,11 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
           }
         }}
         saveError={saveError}
+        saveLabel={mode === "edit" ? "Save Changes" : "Save Climb"}
       />,
-      <SuccessStep draft={draft} onDone={onDone} />,
+      <SuccessStep draft={draft} onDone={onDone} title={mode === "edit" ? "Log updated!" : "Climb logged!"} />,
     ],
-    [draft, onSave, onDone, saveError],
+    [draft, mode, onSave, onDone, saveError],
   )
 
   if (!isRendered) {
@@ -173,12 +185,13 @@ function LogClimbModal({ isOpen, onClose, onSave, onDone, activeGym }) {
             <>
               <LogClimbHeader
                 currentStep={currentStep}
-                title="Log Climb"
+                title={mode === "edit" ? "Edit Log" : "Log Climb"}
                 onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
                 onClose={onClose}
               />
               <div className="px-6 pb-1 text-center text-sm text-slate-500">
-                Logging at <span className="font-semibold text-slate-900">{draft.gymName}</span>
+                {mode === "edit" ? "Editing at " : "Logging at "}
+                <span className="font-semibold text-slate-900">{draft.gymName}</span>
               </div>
               <StepProgress currentStep={currentStep} />
             </>

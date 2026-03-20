@@ -2,20 +2,21 @@ import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { useLocation, useNavigate } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
-import ClimbStatusPill from "./components/ClimbStatusPill"
 import FloatingActionButton from "./components/FloatingActionButton"
+import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
+import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
 import { useAuth } from "./context/AuthContext"
 import { useGym } from "./context/GymContext"
-import { getClimbColorBadgeStyle, getClimbColorName } from "./lib/climbColors"
-import { fetchClimbs } from "./lib/climbs"
+import { fetchPaginatedClimbs } from "./lib/climbs"
 
-function HomePage({ onOpenLogClimb, refreshKey }) {
+function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { activeGym } = useGym()
   const [climbs, setClimbs] = useState([])
+  const [totalClimbs, setTotalClimbs] = useState(0)
   const [loadError, setLoadError] = useState(null)
   const [openingClimbId, setOpeningClimbId] = useState(null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
@@ -30,8 +31,16 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
   useEffect(() => {
     if (!user) return
     setLoadError(null)
-    fetchClimbs(user.id)
-      .then(setClimbs)
+    fetchPaginatedClimbs({
+      userId: user.id,
+      limit: 5,
+      offset: 0,
+      sort: "newest",
+    })
+      .then((page) => {
+        setClimbs(page.climbs)
+        setTotalClimbs(page.totalCount)
+      })
       .catch((err) => setLoadError(err.message))
   }, [user, refreshKey])
 
@@ -57,7 +66,7 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
         `}</style>
         <WelcomeCard />
 
-        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="min-w-0 whitespace-nowrap text-lg font-bold text-stone-text sm:text-xl">
               Recent Climbs
@@ -67,9 +76,9 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               state={{ stackTransition: "forward" }}
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-stone-secondary transition-colors duration-200 hover:text-ember sm:gap-2 sm:text-sm"
             >
-              <span className="whitespace-nowrap">View All &rarr;</span>
+              <span className="whitespace-nowrap">Logbook &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
-                {displayClimbs.length}
+                {totalClimbs}
               </span>
             </Link>
           </div>
@@ -83,11 +92,13 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
               Your logged climbs will appear here.
             </div>
           ) : (
-            <div className="mt-3 h-[375px] overflow-y-auto space-y-4 pr-1">
+            <div className="mt-2.5 h-[375px] overflow-y-auto space-y-2.5 pr-1">
               {displayClimbs.map((climb) => (
                 <ClimbCard
                   key={climb.id}
                   climb={climb}
+                  onDelete={onDeleteClimb}
+                  onEdit={onEditClimb}
                   isOpening={openingClimbId === climb.id}
                   isReturning={returningClimbId === climb.id}
                   onOpen={() => {
@@ -124,9 +135,14 @@ function HomePage({ onOpenLogClimb, refreshKey }) {
   )
 }
 
-function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
-  const badgeStyle = getClimbColorBadgeStyle(climb.climbColor)
-  const climbColorName = getClimbColorName(climb.climbColor)
+function formatHomeClimbDate(value) {
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "numeric",
+    day: "numeric",
+  })
+}
+
+function ClimbCard({ climb, isOpening, isReturning, onDelete, onEdit, onOpen }) {
   const isTransitioning = isOpening || isReturning
   const [isPressed, setIsPressed] = useState(false)
 
@@ -143,75 +159,49 @@ function ClimbCard({ climb, isOpening, isReturning, onOpen }) {
   }
 
   return (
-    <Link
-      to={`/climbs/${climb.id}`}
-      state={{ climb, from: "/home", transition: "card-open" }}
-      onPointerDown={handlePointerDown}
-      onPointerUp={clearPressedState}
-      onPointerCancel={clearPressedState}
-      onPointerLeave={clearPressedState}
-      onClick={(event) => {
-        event.preventDefault()
-        onOpen()
-      }}
-      className={`climb-card-interactive block rounded-[24px] border border-stone-border/70 p-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
-        isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
-      }`}
-      style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
-    >
-      <div
-        className={`transition-opacity duration-100 ${
-          isOpening ? "opacity-0" : "opacity-100"
-        }`}
-        style={{
-          animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
+    <div className="relative">
+      <ClimbTileActionsMenu
+        onEdit={() => onEdit(climb)}
+        onDelete={() => onDelete(climb.id)}
+      />
+      <Link
+        to={`/climbs/${climb.id}`}
+        state={{ climb, from: "/home", transition: "card-open" }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={clearPressedState}
+        onPointerCancel={clearPressedState}
+        onPointerLeave={clearPressedState}
+        onClick={(event) => {
+          event.preventDefault()
+          onOpen()
         }}
+        className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+          isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
+        }`}
+        style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div
-              className="rounded-[18px] border px-3 py-2 text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
-              style={badgeStyle}
-            >
-              {climb.gym_grade}
-              {climb.personal_grade && climb.personal_grade !== climb.gym_grade
-                ? ` / ${climb.personal_grade}`
-                : ""}
-            </div>
-
-            <div>
-              <p className="mt-1 text-xs text-stone-secondary font-bold">
-                {climbColorName}
-              </p>
-              <p className="mt-0.5 text-xs text-stone-muted">
-                {new Date(climb.created_at).toLocaleDateString()}
-              </p>
-              {climb.gym_name && (
-                <p className="mt-0.5 text-xs text-stone-muted">{climb.gym_name}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            <ClimbStatusPill sendType={climb.send_type} />
-            {/* <div className="rounded-full border border-stone-border bg-stone-alt px-3 py-1 text-xs font-semibold text-stone-secondary">
-              {climb.tags.length} tags
-            </div> */}
-          </div>
+        <div
+          className={`transition-opacity duration-100 ${
+            isOpening ? "opacity-0" : "opacity-100"
+          }`}
+          style={{
+            animation: isReturning ? "climb-card-content-return 140ms ease-out" : "none",
+          }}
+        >
+          <CompactClimbTileRow
+            climb={climb}
+            density="home"
+            metaText={
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0">{formatHomeClimbDate(climb.created_at)}</span>
+                <span className="shrink-0">•</span>
+                {climb.gym_name ? <span className="min-w-0 truncate">{climb.gym_name}</span> : null}
+              </span>
+            }
+          />
         </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {climb.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-stone-border/70 bg-stone-alt px-3 py-1 text-xs font-medium text-stone-secondary capitalize"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   )
 }
 

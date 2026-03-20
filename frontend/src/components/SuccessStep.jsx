@@ -4,7 +4,7 @@ const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)"
 const CHALK_EASE = "cubic-bezier(0.16, 1, 0.3, 1)"
 const EXIT_ANIMATION_MS = 320
 
-function SuccessStep({ draft, onDone }) {
+function SuccessStep({ draft, onDone, title = "Climb logged!" }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const doneTimeoutRef = useRef(null)
@@ -147,7 +147,7 @@ function SuccessStep({ draft, onDone }) {
           transition: `transform 300ms ${EASE_OUT} 200ms, opacity 300ms ${EASE_OUT} 200ms`,
         }}
       >
-        Climb logged!
+        {title}
       </h2>
 
       <div

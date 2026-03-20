@@ -7,17 +7,10 @@ export interface ClimbDetailData {
   officialName: string | null
   gymName: string | null
   referenceImageUrl: string | null
-  canonicalTags: string[]
-  userTagDifferences: string[]
+  detailTags: string[]
   userNotes: string | null
   sendType: string
   loggedAt: string
-}
-
-const FALLBACK_TAGS = ["Vertical", "Static", "Crimp"]
-
-function getStableIndex(seed: string, modulo: number) {
-  return Array.from(seed).reduce((sum, character) => sum + character.charCodeAt(0), 0) % modulo
 }
 
 function toTitleCase(value: string) {
@@ -28,26 +21,7 @@ function toTitleCase(value: string) {
     .join(" ")
 }
 
-function buildCanonicalTags(userTags: string[], climbId: string) {
-  const normalizedUserTags = userTags.length > 0 ? userTags.map(toTitleCase) : FALLBACK_TAGS
-  const variant = getStableIndex(climbId, 3)
-
-  if (variant === 0) {
-    return normalizedUserTags
-  }
-
-  if (variant === 1) {
-    return Array.from(new Set([...normalizedUserTags.slice(0, 2), "Tension"]))
-  }
-
-  return Array.from(new Set([...normalizedUserTags.filter((tag) => tag !== "Compression"), "Static"]))
-}
-
 export function buildClimbDetailData(climb: Climb): ClimbDetailData {
-  const canonicalTags = buildCanonicalTags(climb.tags, climb.id)
-  const userTags = climb.tags.map(toTitleCase)
-  const userTagDifferences = userTags.filter((tag) => !canonicalTags.includes(tag))
-
   return {
     id: climb.id,
     gymGrade: climb.gym_grade,
@@ -55,8 +29,7 @@ export function buildClimbDetailData(climb: Climb): ClimbDetailData {
     officialName: climb.name?.trim() ? climb.name.trim() : null,
     gymName: climb.gym_name,
     referenceImageUrl: climb.photo_url,
-    canonicalTags,
-    userTagDifferences,
+    detailTags: climb.tags.map(toTitleCase),
     // TODO: Replace this null placeholder with persisted user-specific notes once the backend supports them.
     userNotes: null,
     sendType: climb.send_type,
