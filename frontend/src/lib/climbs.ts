@@ -352,52 +352,19 @@ export async function fetchClimbById(userId: string, climbId: string): Promise<C
   return mapClimbRow(data as ClimbRow, userId)
 }
 
-export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]> {
+export async function fetchLoggedGyms(_userId: string): Promise<LoggedGymOption[]> {
+  void _userId
+
   const { data, error } = await supabase.rpc('fetch_logged_gyms')
 
-  if (!error) {
-    return (data as LoggedGymRpcRow[] | null ?? [])
-      .filter((row): row is { id: string; name: string } => Boolean(row.id && row.name))
-      .map((row) => ({
-        id: row.id,
-        name: row.name,
-      }))
-  }
+  if (error) throw error
 
-  const isMissingRpc =
-    error.code === 'PGRST202' ||
-    `${error.message ?? ''}`.toLowerCase().includes('fetch_logged_gyms')
-
-  if (!isMissingRpc) {
-    throw error
-  }
-
-  const fallback = await supabase
-    .from('climbs')
-    .select('gym_id, gym_name, created_at')
-    .eq('user_id', userId)
-    .not('gym_id', 'is', null)
-    .order('created_at', { ascending: false })
-
-  if (fallback.error) throw fallback.error
-
-  const uniqueGyms = new Map<string, LoggedGymOption>()
-
-  for (const row of fallback.data ?? []) {
-    const gymId = row.gym_id as string | null
-    const gymName = row.gym_name as string | null
-
-    if (!gymId || !gymName || uniqueGyms.has(gymId)) {
-      continue
-    }
-
-    uniqueGyms.set(gymId, {
-      id: gymId,
-      name: gymName,
-    })
-  }
-
-  return Array.from(uniqueGyms.values()).sort((left, right) => left.name.localeCompare(right.name))
+  return ((data as LoggedGymRpcRow[] | null) ?? [])
+    .filter((row): row is { id: string; name: string } => Boolean(row.id && row.name))
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+    }))
 }
 
 export async function fetchLoggedGrades(userId: string): Promise<LoggedGradeOption[]> {
