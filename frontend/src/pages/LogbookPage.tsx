@@ -5,7 +5,7 @@ import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
 import AnchoredPopover from "../components/logbook/AnchoredPopover"
 import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffold"
-import LogbookClimbTile from "../components/logbook/LogbookClimbTile"
+import LogbookClimbList from "../components/logbook/LogbookClimbList"
 import { useAuth } from "../context/AuthContext"
 import { useLogbookHistory } from "../hooks/useLogbookHistory"
 import { fetchLoggedGrades, fetchLoggedGyms, type LoggedGradeOption, type LoggedGymOption } from "../lib/climbs"
@@ -14,6 +14,7 @@ import {
   LOGBOOK_SORT_OPTIONS,
   formatTagLabel,
   getAttributeFilterSections,
+  getClimbsForDateKey,
   getTagCategory,
   getSortLabel,
   type LogbookFilters,
@@ -27,6 +28,13 @@ const SEND_TYPE_OPTIONS = ["flash", "send", "attempt"]
 
 type OpenPanel = "filters" | "sort" | null
 type AttributeSectionKey = "wallTypes" | "holdTypes" | "movementTypes"
+type LogbookRestoreState = {
+  restoreLogbookState?: {
+    view: LogbookView
+    visibleMonth: string
+    selectedDateKey: string | null
+  }
+}
 
 type LogbookPageProps = {
   onDeleteClimb: (climbId: string) => Promise<void> | void
@@ -184,11 +192,14 @@ export default function LogbookPage({
   refreshKey = 0,
 }: LogbookPageProps) {
   const location = useLocation()
+  const locationState = (location.state ?? {}) as LogbookRestoreState & { stackTransition?: string }
+  const restoredLogbookState = locationState.restoreLogbookState
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
-  const isOpeningFromHome = location.state?.stackTransition === "forward"
+  const isOpeningFromHome = locationState.stackTransition === "forward"
   const [view, setView] = useState<LogbookView>(() =>
-    isValidView(searchParams.get("view")) ? (searchParams.get("view") as LogbookView) : "list",
+    restoredLogbookState?.view ??
+      (isValidView(searchParams.get("view")) ? (searchParams.get("view") as LogbookView) : "list"),
   )
   const [sort, setSort] = useState<LogbookSort>(() =>
     isValidSort(searchParams.get("sort")) ? (searchParams.get("sort") as LogbookSort) : "newest",
@@ -200,8 +211,12 @@ export default function LogbookPage({
   const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
   const [loggedGrades, setLoggedGrades] = useState<LoggedGradeOption[]>([])
   const [gymLoadError, setGymLoadError] = useState<string | null>(null)
-  const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(() => startOfMonth(new Date()))
-  const [calendarSelectedDateKey, setCalendarSelectedDateKey] = useState<string | null>(null)
+  const [calendarVisibleMonth, setCalendarVisibleMonth] = useState(() =>
+    restoredLogbookState?.visibleMonth ? startOfMonth(new Date(restoredLogbookState.visibleMonth)) : startOfMonth(new Date()),
+  )
+  const [calendarSelectedDateKey, setCalendarSelectedDateKey] = useState<string | null>(
+    () => restoredLogbookState?.selectedDateKey ?? null,
+  )
   const [expandedAttributeSections, setExpandedAttributeSections] = useState<Record<AttributeSectionKey, boolean>>({
     wallTypes: false,
     holdTypes: false,
@@ -331,6 +346,17 @@ export default function LogbookPage({
   const totalMatchingResults = totalCount
   const shownResults = Math.min(visibleCount, totalMatchingResults)
   const logbookReturnPath = `${location.pathname}${location.search}`
+  const calendarSourceClimbs = isChronological ? sessions.flatMap((session) => session.climbs) : climbs
+  const selectedDateClimbs = getClimbsForDateKey(calendarSourceClimbs, calendarSelectedDateKey)
+  const calendarReturnState = calendarSelectedDateKey
+    ? {
+        restoreLogbookState: {
+          view: "calendar" as const,
+          visibleMonth: calendarVisibleMonth.toISOString(),
+          selectedDateKey: calendarSelectedDateKey,
+        },
+      }
+    : undefined
   const availableGyms = user ? loggedGyms : []
   const availableGrades = user ? loggedGrades : []
   const visibleGymLoadError = user ? gymLoadError : null
@@ -654,15 +680,31 @@ export default function LogbookPage({
         {view === "calendar" ? (
           <div
             key="calendar-view"
-            className="mt-4"
+            className="mt-4 flex min-h-0 flex-1"
             style={{ animation: "logbook-view-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)" }}
           >
             <LogbookCalendarScaffold
-              climbs={isChronological ? sessions.flatMap((session) => session.climbs) : climbs}
+              climbs={calendarSourceClimbs}
               visibleMonth={calendarVisibleMonth}
               onVisibleMonthChange={setCalendarVisibleMonth}
               selectedDateKey={calendarSelectedDateKey}
               onSelectedDateKeyChange={setCalendarSelectedDateKey}
+              selectedDateContent={
+                <LogbookClimbList
+                  climbs={selectedDateClimbs}
+                  from={logbookReturnPath}
+                  showMeta
+                  showLoggedDate={false}
+                  fromState={calendarReturnState}
+                  onDelete={onDeleteClimb}
+                  onEdit={onEditClimb}
+                  emptyState={
+                    <div className="flex h-full min-h-full w-full items-center justify-center self-stretch rounded-[22px] border border-dashed border-stone-border/80 bg-stone-surface/65 px-4 py-6 text-center text-sm text-stone-secondary">
+                      No climbs logged.
+                    </div>
+                  }
+                />
+              }
             />
           </div>
         ) : isLoading ? (
@@ -701,29 +743,25 @@ export default function LogbookPage({
                     </div>
 
                     <div className="space-y-1.5">
-                      {session.climbs.map((climb) => (
-                        <LogbookClimbTile
-                          key={climb.id}
-                          climb={climb}
-                          from={logbookReturnPath}
-                          showMeta={false}
-                          onDelete={onDeleteClimb}
-                          onEdit={onEditClimb}
-                        />
-                      ))}
+                      <LogbookClimbList
+                        climbs={session.climbs}
+                        from={logbookReturnPath}
+                        showMeta={false}
+                        onDelete={onDeleteClimb}
+                        onEdit={onEditClimb}
+                      />
                     </div>
                   </section>
                 ))
-              : climbs.map((climb) => (
-                  <LogbookClimbTile
-                    key={climb.id}
-                    climb={climb}
+              : (
+                  <LogbookClimbList
+                    climbs={climbs}
                     from={logbookReturnPath}
                     showMeta
                     onDelete={onDeleteClimb}
                     onEdit={onEditClimb}
                   />
-                ))}
+                )}
 
             {canLoadMore ? (
               <button

@@ -15,6 +15,7 @@ import { fetchClimbById } from "../lib/climbs"
 type ClimbLocationState = {
   climb?: Climb
   from?: string
+  fromState?: Record<string, unknown>
   transition?: string
 }
 
@@ -133,6 +134,7 @@ export default function ClimbDetailPage() {
       const goBack = () => {
         navigate(locationState.from ?? "/home", {
           state: {
+            ...locationState.fromState,
             stackTransition: locationState.from === "/home" ? undefined : "back",
             returnClimbId: detail.id,
             returnClimb: climb,

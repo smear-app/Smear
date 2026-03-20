@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { FiChevronDown, FiChevronLeft, FiChevronRight } from "react-icons/fi"
 import type { Climb } from "../../lib/climbs"
+import { toLocalDateKey } from "../../lib/logbook"
 import AnchoredPopover from "./AnchoredPopover"
 
 type LogbookCalendarScaffoldProps = {
@@ -9,6 +10,7 @@ type LogbookCalendarScaffoldProps = {
   onVisibleMonthChange: (nextMonth: Date) => void
   selectedDateKey: string | null
   onSelectedDateKeyChange: (nextDateKey: string | null) => void
+  selectedDateContent?: ReactNode
 }
 
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -19,14 +21,6 @@ function startOfMonth(date: Date) {
 
 function addMonths(date: Date, delta: number) {
   return new Date(date.getFullYear(), date.getMonth() + delta, 1)
-}
-
-function toLocalDateKey(value: string | Date) {
-  const date = typeof value === "string" ? new Date(value) : value
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, "0")
-  const day = `${date.getDate()}`.padStart(2, "0")
-  return `${year}-${month}-${day}`
 }
 
 function formatMonthHeading(date: Date) {
@@ -88,6 +82,7 @@ export default function LogbookCalendarScaffold({
   onVisibleMonthChange,
   selectedDateKey,
   onSelectedDateKeyChange,
+  selectedDateContent = null,
 }: LogbookCalendarScaffoldProps) {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear())
@@ -122,133 +117,138 @@ export default function LogbookCalendarScaffold({
       .sort(([left], [right]) => right.localeCompare(left))
   }, [climbCounts, visibleMonth])
 
-  const selectedSummary = selectedDateKey
-    ? monthSummary.filter(([dateKey]) => dateKey === selectedDateKey)
-    : monthSummary
+  const selectedDateCount = selectedDateKey ? climbCounts.get(selectedDateKey) ?? 0 : 0
 
   return (
-    <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          aria-label="Previous month"
-          onClick={() => {
-            onVisibleMonthChange(addMonths(visibleMonth, -1))
-            onSelectedDateKeyChange(null)
-          }}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
-        >
-          <FiChevronLeft className="h-4 w-4" />
-        </button>
+    <section
+      className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+      style={{
+        height: "min(44rem, calc(100vh - 14.5rem - env(safe-area-inset-bottom)))",
+        minHeight: "38rem",
+      }}
+    >
+      <div className="shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            aria-label="Previous month"
+            onClick={() => {
+              onVisibleMonthChange(addMonths(visibleMonth, -1))
+              onSelectedDateKeyChange(null)
+            }}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
+          >
+            <FiChevronLeft className="h-4 w-4" />
+          </button>
 
-        <AnchoredPopover
-          open={isPickerOpen}
-          onClose={() => setIsPickerOpen(false)}
-          align="center"
-          panelClassName="w-[min(19rem,calc(100vw-2.5rem))] rounded-[20px] p-2.5"
-          trigger={
-            <button
-              type="button"
-              onClick={() =>
-                setIsPickerOpen((current) => {
-                  const nextOpen = !current
-                  if (nextOpen) {
-                    setPickerYear(visibleMonth.getFullYear())
-                  }
-                  return nextOpen
-                })
-              }
-              className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
-            >
-              <span>{formatMonthHeading(visibleMonth)}</span>
-              <FiChevronDown
-                className={`h-4 w-4 text-stone-secondary transition-transform ${isPickerOpen ? "rotate-180" : ""}`}
-              />
-            </button>
-          }
-        >
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              aria-label="Previous year"
-              disabled={pickerYear <= pickerMinYear}
-              onClick={() => setPickerYear((current) => Math.max(pickerMinYear, current - 1))}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
-            >
-              <FiChevronLeft className="h-4 w-4" />
-            </button>
+          <AnchoredPopover
+            open={isPickerOpen}
+            onClose={() => setIsPickerOpen(false)}
+            align="center"
+            panelClassName="w-[min(19rem,calc(100vw-2.5rem))] rounded-[20px] p-2.5"
+            trigger={
+              <button
+                type="button"
+                onClick={() =>
+                  setIsPickerOpen((current) => {
+                    const nextOpen = !current
+                    if (nextOpen) {
+                      setPickerYear(visibleMonth.getFullYear())
+                    }
+                    return nextOpen
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+              >
+                <span>{formatMonthHeading(visibleMonth)}</span>
+                <FiChevronDown
+                  className={`h-4 w-4 text-stone-secondary transition-transform ${isPickerOpen ? "rotate-180" : ""}`}
+                />
+              </button>
+            }
+          >
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                aria-label="Previous year"
+                disabled={pickerYear <= pickerMinYear}
+                onClick={() => setPickerYear((current) => Math.max(pickerMinYear, current - 1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+              >
+                <FiChevronLeft className="h-4 w-4" />
+              </button>
 
-            <div className="text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                Jump To
-              </p>
-              <p className="mt-0.5 text-lg font-semibold text-stone-text">{pickerYear}</p>
+              <div className="text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                  Jump To
+                </p>
+                <p className="mt-0.5 text-lg font-semibold text-stone-text">{pickerYear}</p>
+              </div>
+
+              <button
+                type="button"
+                aria-label="Next year"
+                disabled={pickerYear >= pickerMaxYear}
+                onClick={() => setPickerYear((current) => Math.min(pickerMaxYear, current + 1))}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+              >
+                <FiChevronRight className="h-4 w-4" />
+              </button>
             </div>
 
-            <button
-              type="button"
-              aria-label="Next year"
-              disabled={pickerYear >= pickerMaxYear}
-              onClick={() => setPickerYear((current) => Math.min(pickerMaxYear, current + 1))}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
-            >
-              <FiChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+            <div className="mt-2.5 grid grid-cols-4 gap-1">
+              {Array.from({ length: 12 }, (_, monthIndex) => {
+                const monthDate = new Date(pickerYear, monthIndex, 1)
+                const isSelectedMonth =
+                  visibleMonth.getFullYear() === pickerYear && visibleMonth.getMonth() === monthIndex
 
-          <div className="mt-2.5 grid grid-cols-4 gap-1">
-            {Array.from({ length: 12 }, (_, monthIndex) => {
-              const monthDate = new Date(pickerYear, monthIndex, 1)
-              const isSelectedMonth =
-                visibleMonth.getFullYear() === pickerYear && visibleMonth.getMonth() === monthIndex
+                return (
+                  <button
+                    key={monthIndex}
+                    type="button"
+                    onClick={() => {
+                      onVisibleMonthChange(monthDate)
+                      onSelectedDateKeyChange(null)
+                      setIsPickerOpen(false)
+                    }}
+                    className={`rounded-[11px] border px-1 py-1.5 text-xs font-semibold transition-colors ${
+                      isSelectedMonth
+                        ? "border-ember/20 bg-ember-soft text-ember"
+                        : "border-stone-border bg-stone-alt text-stone-secondary"
+                    }`}
+                  >
+                    {monthDate.toLocaleDateString(undefined, { month: "short" })}
+                  </button>
+                )
+              })}
+            </div>
 
-              return (
-                <button
-                  key={monthIndex}
-                  type="button"
-                  onClick={() => {
-                    onVisibleMonthChange(monthDate)
-                    onSelectedDateKeyChange(null)
-                    setIsPickerOpen(false)
-                  }}
-                  className={`rounded-[11px] border px-1 py-1.5 text-xs font-semibold transition-colors ${
-                    isSelectedMonth
-                      ? "border-ember/20 bg-ember-soft text-ember"
-                      : "border-stone-border bg-stone-alt text-stone-secondary"
-                  }`}
-                >
-                  {monthDate.toLocaleDateString(undefined, { month: "short" })}
-                </button>
-              )
-            })}
-          </div>
+            <div className="mt-2.5 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setIsPickerOpen(false)}
+                className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+              >
+                Close
+              </button>
+            </div>
+          </AnchoredPopover>
 
-          <div className="mt-2.5 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setIsPickerOpen(false)}
-              className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
-            >
-              Close
-            </button>
-          </div>
-        </AnchoredPopover>
+          <button
+            type="button"
+            aria-label="Next month"
+            onClick={() => {
+              onVisibleMonthChange(addMonths(visibleMonth, 1))
+              onSelectedDateKeyChange(null)
+            }}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
+          >
+            <FiChevronRight className="h-4 w-4" />
+          </button>
+        </div>
 
-        <button
-          type="button"
-          aria-label="Next month"
-          onClick={() => {
-            onVisibleMonthChange(addMonths(visibleMonth, 1))
-            onSelectedDateKeyChange(null)
-          }}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
-        >
-          <FiChevronRight className="h-4 w-4" />
-        </button>
-      </div>
-
-      <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-3">
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-3">
+          <div className="grid grid-cols-7 gap-1.5">
           {WEEKDAY_LABELS.map((label) => (
             <div
               key={label}
@@ -291,32 +291,50 @@ export default function LogbookCalendarScaffold({
               </button>
             )
           })}
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 space-y-2">
-        {selectedDateKey && selectedSummary.length === 0 ? (
-          <p className="text-sm text-stone-muted">
-            No climbs logged on {formatSummaryDate(selectedDateKey)}.
-          </p>
-        ) : selectedSummary.length === 0 ? (
-          <p className="text-sm text-stone-muted">No climbs logged this month.</p>
-        ) : (
-          selectedSummary.map(([dateKey, count]) => (
+      {selectedDateKey ? (
+        <>
+          <div className="mt-4 shrink-0">
             <div
-              key={dateKey}
               className={`flex items-center justify-between rounded-[18px] border px-3 py-2 text-sm ${
-                selectedDateKey === dateKey
+                selectedDateCount > 0
                   ? "border-ember/20 bg-ember-soft text-ember"
                   : "border-stone-border/70 bg-stone-alt text-stone-secondary"
               }`}
             >
-              <span>{formatSummaryDate(dateKey)}</span>
-              <span className="font-semibold text-stone-text">{count} climbs</span>
+              <span>{formatSummaryDate(selectedDateKey)}</span>
+              <span className="font-semibold text-stone-text">
+                {selectedDateCount} {selectedDateCount === 1 ? "climb" : "climbs"}
+              </span>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="h-full min-h-full">
+              {selectedDateContent}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="mt-4 space-y-2">
+          {monthSummary.length === 0 ? (
+            <p className="text-sm text-stone-muted">No climbs logged this month.</p>
+          ) : (
+            monthSummary.map(([dateKey, count]) => (
+              <div
+                key={dateKey}
+                className="flex items-center justify-between rounded-[18px] border border-stone-border/70 bg-stone-alt px-3 py-2 text-sm text-stone-secondary"
+              >
+                <span>{formatSummaryDate(dateKey)}</span>
+                <span className="font-semibold text-stone-text">{count} climbs</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </section>
   )
 }

@@ -61,6 +61,14 @@ export function normalizeTag(value: string): string {
   return value.trim().toLowerCase()
 }
 
+export function toLocalDateKey(value: string | Date) {
+  const date = typeof value === "string" ? new Date(value) : value
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, "0")
+  const day = `${date.getDate()}`.padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 export function getTagCategory(value: string): "wall" | "hold" | "movement" | null {
   const normalizedTag = normalizeTag(value)
 
@@ -200,6 +208,14 @@ export function getVisibleClimbs(climbs: Climb[], filters: LogbookFilters, sort:
     climbs.filter((climb) => doesClimbMatchFilters(climb, filters)),
     sort,
   )
+}
+
+export function getClimbsForDateKey(climbs: Climb[], dateKey: string | null): Climb[] {
+  if (!dateKey) {
+    return []
+  }
+
+  return climbs.filter((climb) => toLocalDateKey(climb.created_at) === dateKey)
 }
 
 export function getAttributeFilterSections() {

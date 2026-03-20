@@ -7,7 +7,9 @@ type LogbookClimbTileProps = {
   climb: Climb
   from: string
   showMeta: boolean
+  showLoggedDate?: boolean
   className?: string
+  fromState?: Record<string, unknown>
   onDelete?: (climbId: string) => Promise<void> | void
   onEdit?: (climb: Climb) => void
 }
@@ -24,10 +26,14 @@ export default function LogbookClimbTile({
   climb,
   from,
   showMeta,
+  showLoggedDate = true,
   className = "",
+  fromState,
   onDelete,
   onEdit,
 }: LogbookClimbTileProps) {
+  const metaParts = [climb.gym_name, showLoggedDate ? formatClimbDate(climb.created_at) : null].filter(Boolean)
+
   return (
     <div className={`relative ${className}`.trim()}>
       {onEdit && onDelete ? (
@@ -38,12 +44,12 @@ export default function LogbookClimbTile({
       ) : null}
       <Link
         to={`/climbs/${climb.id}`}
-        state={{ climb, from }}
+        state={{ climb, from, fromState }}
         className="block rounded-[20px] border border-stone-border/75 bg-stone-surface px-4 py-2 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-[#F8F4ED]"
       >
         <CompactClimbTileRow
           climb={climb}
-          metaText={showMeta ? [climb.gym_name, formatClimbDate(climb.created_at)].filter(Boolean).join(" • ") : null}
+          metaText={showMeta ? metaParts.join(" • ") : null}
         />
       </Link>
     </div>
