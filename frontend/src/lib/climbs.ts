@@ -379,7 +379,7 @@ export async function fetchLoggedGyms(userId: string): Promise<LoggedGymOption[]
 export async function fetchLoggedGrades(userId: string): Promise<LoggedGradeOption[]> {
   const { data, error } = await supabase
     .from('climbs')
-    .select('gym_grade, gym_grade_value')
+    .select('gym_grade, gym_grade_value', { distinct: true })
     .eq('user_id', userId)
     .not('gym_grade', 'is', null)
 
