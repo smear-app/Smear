@@ -62,6 +62,24 @@ export interface Climb {
   created_at: string
 }
 
+export function applyDraftToClimb(climb: Climb, draft: ClimbDraft): Climb {
+  return {
+    ...climb,
+    name: draft.name.trim() || null,
+    gym_id: draft.gymId || null,
+    gym_name: draft.gymName || null,
+    gym_grade: draft.gymGrade,
+    gym_grade_value: gradeToValue(draft.gymGrade),
+    personal_grade: draft.feltLike || null,
+    personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
+    send_type: draft.sendType.toLowerCase(),
+    tags: draft.tags.map((tag) => tag.toLowerCase()),
+    climbColor: draft.climbColor,
+    notes: draft.notes || null,
+    photo_url: draft.photo && !draft.photo.startsWith('blob:') ? draft.photo : climb.photo_url,
+  }
+}
+
 function toTitleCase(value: string) {
   return value
     .split(/[_\s-]+/)

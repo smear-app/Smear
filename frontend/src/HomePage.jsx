@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useLocation, useNavigate } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
@@ -6,44 +6,25 @@ import FloatingActionButton from "./components/FloatingActionButton"
 import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
 import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
-import { useAuth } from "./context/AuthContext"
 import { useGym } from "./context/GymContext"
-import { fetchPaginatedClimbs } from "./lib/climbs"
 
-function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
+function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { activeGym } = useGym()
-  const [climbs, setClimbs] = useState([])
-  const [totalClimbs, setTotalClimbs] = useState(0)
-  const [loadError, setLoadError] = useState(null)
   const [openingClimbId, setOpeningClimbId] = useState(null)
   const [returnTransitionClimbId, setReturnTransitionClimbId] = useState(() => location.state?.returnClimbId ?? null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
   const returningClimbId = location.state?.returnClimbId ?? null
   const returningClimb = location.state?.returnClimb ?? null
 
-  const displayClimbs =
-    returningClimb && !climbs.some((climb) => climb.id === returningClimb.id)
-      ? [returningClimb, ...climbs]
-      : climbs
-
-  useEffect(() => {
-    if (!user) return
-    setLoadError(null)
-    fetchPaginatedClimbs({
-      userId: user.id,
-      limit: 5,
-      offset: 0,
-      sort: "newest",
-    })
-      .then((page) => {
-        setClimbs(page.climbs)
-        setTotalClimbs(page.totalCount)
-      })
-      .catch((err) => setLoadError(err.message))
-  }, [user, refreshKey])
+  const displayClimbs = useMemo(
+    () =>
+      returningClimb && !climbs.some((climb) => climb.id === returningClimb.id)
+        ? [returningClimb, ...climbs]
+        : climbs,
+    [climbs, returningClimb],
+  )
 
   useEffect(() => {
     if (!returningClimbId) {

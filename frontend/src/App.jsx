@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
@@ -7,7 +7,7 @@ import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import FeedPage from "./pages/FeedPage"
-import { deleteClimb, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
+import { applyDraftToClimb, deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
 import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
@@ -22,6 +22,50 @@ function ProtectedApp() {
   const [isEditClimbOpen, setIsEditClimbOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingClimb, setEditingClimb] = useState(null)
+  const [recentClimbs, setRecentClimbs] = useState([])
+  const [recentClimbsTotal, setRecentClimbsTotal] = useState(0)
+  const [recentClimbsError, setRecentClimbsError] = useState(null)
+
+  const loadRecentClimbs = useCallback(
+    async ({ background = false } = {}) => {
+      if (!session) {
+        return
+      }
+
+      try {
+        if (!background) {
+          setRecentClimbsError(null)
+        }
+
+        const page = await fetchPaginatedClimbs({
+          userId: session.user.id,
+          limit: 5,
+          offset: 0,
+          sort: "newest",
+        })
+
+        setRecentClimbs(page.climbs)
+        setRecentClimbsTotal(page.totalCount)
+        setRecentClimbsError(null)
+      } catch (error) {
+        if (!background) {
+          setRecentClimbsError(error instanceof Error ? error.message : "Failed to load climbs")
+        }
+      }
+    },
+    [session],
+  )
+
+  useEffect(() => {
+    if (!session) {
+      setRecentClimbs([])
+      setRecentClimbsTotal(0)
+      setRecentClimbsError(null)
+      return
+    }
+
+    void loadRecentClimbs()
+  }, [loadRecentClimbs, session])
 
   if (loading) {
     return (
@@ -41,6 +85,7 @@ function ProtectedApp() {
 
     const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
     await insertClimb(draft, session.user.id, sessionId)
+    void loadRecentClimbs({ background: true })
   }
 
   function handleOpenLogClimb() {
@@ -60,10 +105,16 @@ function ProtectedApp() {
     }
 
     await updateClimb(draft, editingClimb.id, session.user.id)
+    setRecentClimbs((currentClimbs) =>
+      currentClimbs.map((climb) => (climb.id === editingClimb.id ? applyDraftToClimb(climb, draft) : climb)),
+    )
+    void loadRecentClimbs({ background: true })
   }
 
   async function handleDeleteLoggedClimb(climbId) {
     await deleteClimb(climbId, session.user.id)
+    setRecentClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
+    setRecentClimbsTotal((currentTotal) => Math.max(0, currentTotal - 1))
     setRefreshKey((k) => k + 1)
   }
 
@@ -85,7 +136,9 @@ function ProtectedApp() {
               onOpenLogClimb={handleOpenLogClimb}
               onEditClimb={handleEditClimb}
               onDeleteClimb={handleDeleteLoggedClimb}
-              refreshKey={refreshKey}
+              climbs={recentClimbs}
+              totalClimbs={recentClimbsTotal}
+              loadError={recentClimbsError}
             />
           }
         />
