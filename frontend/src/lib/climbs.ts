@@ -2,6 +2,8 @@ import { supabase } from './supabase'
 import type { LogbookSort } from './logbook'
 import { uploadToCloudinary } from './cloudinary'
 import { touchSession } from './sessions'
+import { uploadToCloudinary } from './cloudinary'
+import { touchSession } from './sessions'
 
 const GRADE_VALUES: Record<string, number> = {
   VB: -1, V0: 0, V1: 1, V2: 2, V3: 3, V4: 4, V5: 5,
@@ -22,6 +24,8 @@ export interface ClimbDraft {
   tags: string[]
   photo: string | null       // blob URL for preview only
   photoFile: File | null     // raw File for upload
+  photo: string | null       // blob URL for preview only
+  photoFile: File | null     // raw File for upload
   climbColor: string | null
   notes: string
 }
@@ -40,6 +44,7 @@ interface ClimbRow {
   tags: string[]
   photo_url: string | null
   hold_color: string | null
+  climb_color?: string | null
   notes: string | null
   created_at: string
 }
@@ -88,61 +93,10 @@ function toTitleCase(value: string) {
     .join(' ')
 }
 
-const getClimbColorStorageKey = (userId: string) => `smear.climb-color-overrides:${userId}`
-
-function readClimbColorOverrides(userId: string): Record<string, string> {
-  if (typeof window === 'undefined') return {}
-
-  try {
-    const rawValue = window.localStorage.getItem(getClimbColorStorageKey(userId))
-    const parsed = rawValue ? JSON.parse(rawValue) : {}
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function writeClimbColorOverrides(userId: string, overrides: Record<string, string>) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(getClimbColorStorageKey(userId), JSON.stringify(overrides))
-}
-
-function setStoredClimbColor(userId: string, climbId: string, climbColor: string | null) {
-  const overrides = readClimbColorOverrides(userId)
-
-  if (climbColor) {
-    overrides[climbId] = climbColor
-  } else {
-    delete overrides[climbId]
-  }
-
-  writeClimbColorOverrides(userId, overrides)
-}
-
-function isMissingColumnError(error: { code?: string; message?: string } | null, columnName: string): boolean {
-  if (!error) return false
-
-  const message = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
-  return message.includes(columnName.toLowerCase()) && message.includes('column')
-}
-
-function getMissingOptionalColumn(
-  error: { code?: string; message?: string } | null,
-  columnNames: string[],
-): string | null {
-  for (const columnName of columnNames) {
-    if (isMissingColumnError(error, columnName)) {
-      return columnName
-    }
-  }
-
-  return null
-}
-
 function mapClimbRow(row: ClimbRow): Climb {
   return {
     ...row,
-    climbColor: row.hold_color,
+    climbColor: row.hold_color ?? row.climb_color ?? null,
   }
 }
 
@@ -224,7 +178,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photoUrl = await uploadToCloudinary(draft.photoFile)
   }
 
-  const requiredClimbRecord = {
+  const { error } = await supabase.from('climbs').insert({
     user_id: userId,
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -235,35 +189,11 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map(t => t.toLowerCase()),
     photo_url: photoUrl,
+    hold_color: draft.climbColor || null,
     session_id: sessionId,
-  }
+  })
 
-  const optionalColumns = new Map<string, string | null>([
-    ['name', draft.name || null],
-    ['hold_color', draft.climbColor || null],
-    ['notes', draft.notes || null],
-  ])
-
-  while (true) {
-    const payload = {
-      ...requiredClimbRecord,
-      ...Object.fromEntries(optionalColumns),
-    }
-
-    const { error } = await supabase.from('climbs').insert(payload)
-
-    if (!error) {
-      break
-    }
-
-    const missingColumn = getMissingOptionalColumn(error, Array.from(optionalColumns.keys()))
-    if (!missingColumn) {
-      throw error
-    }
-
-    optionalColumns.delete(missingColumn)
-  }
-
+  if (error) throw error
   await touchSession(sessionId)
 }
 
@@ -292,50 +222,18 @@ export async function updateClimb(
     photoUrl = draft.photo
   }
 
-  const requiredUpdatePayload = {
-    ...baseClimbRecord,
-    photo_url: photoUrl,
-  }
-  const optionalColumns = new Map<string, string | null>([
-    ['name', draft.name || null],
-    ['hold_color', draft.climbColor],
-    ['notes', draft.notes || null],
-  ])
+  const attemptedUpdate = await supabase
+    .from('climbs')
+    .update({
+      ...baseClimbRecord,
+      photo_url: photoUrl,
+      hold_color: draft.climbColor || null,
+    })
+    .eq('user_id', userId)
+    .eq('id', climbId)
 
-  while (true) {
-    const payload = {
-      ...requiredUpdatePayload,
-      ...Object.fromEntries(optionalColumns),
-    }
-
-    const updateResult = await supabase
-      .from('climbs')
-      .update(payload)
-      .eq('user_id', climb.user_id)
-      .eq('id', climb.id)
-      .select('id')
-
-    if (!updateResult.error) {
-      const updatedRows = Array.isArray(updateResult.data) ? updateResult.data : []
-      if (updatedRows.length !== 1) {
-        throw new Error('Climb update matched no writable row')
-      }
-
-      const updatedClimb = await fetchClimbById(climb.user_id, climb.id)
-      if (!updatedClimb) {
-        throw new Error('Updated climb could not be reloaded')
-      }
-
-      setStoredClimbColor(updatedClimb.user_id, updatedClimb.id, updatedClimb.climbColor)
-      return updatedClimb
-    }
-
-    const missingColumn = getMissingOptionalColumn(updateResult.error, Array.from(optionalColumns.keys()))
-    if (!missingColumn) {
-      throw updateResult.error
-    }
-
-    optionalColumns.delete(missingColumn)
+  if (attemptedUpdate.error) {
+    throw attemptedUpdate.error
   }
 }
 
@@ -347,7 +245,6 @@ export async function deleteClimb(climbId: string, userId: string): Promise<void
     .eq('id', climbId)
 
   if (error) throw error
-  setStoredClimbColor(userId, climbId, null)
 }
 
 export async function fetchPaginatedClimbs({

@@ -40,6 +40,20 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalCli
     return () => window.clearTimeout(timeoutId)
   }, [returningClimbId])
 
+  useEffect(() => {
+    if (!returningClimbId) {
+      setReturnTransitionClimbId(null)
+      return undefined
+    }
+
+    setReturnTransitionClimbId(returningClimbId)
+    const timeoutId = window.setTimeout(() => {
+      setReturnTransitionClimbId(null)
+    }, 220)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [returningClimbId])
+
   return (
     <div className="min-h-screen bg-stone-bg">
       <main

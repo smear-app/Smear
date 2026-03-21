@@ -22,7 +22,14 @@ function TagChip({ isSelected, label, onClick, tone = "ember" }) {
   )
 }
 
-function TagsStep({ draft, onToggleTag, onSave, saveError, saveLabel = "Save Climb" }) {
+function TagsStep({
+  draft,
+  onToggleTag,
+  onSave,
+  saveError,
+  saveLabel = "Save Climb",
+  isSaving = false,
+}) {
   const canSaveFromTags = Array.isArray(draft.tags) && draft.tags.length > 0
   const scrollRef = useRef(null)
   const [showFade, setShowFade] = useState(false)
@@ -65,7 +72,11 @@ function TagsStep({ draft, onToggleTag, onSave, saveError, saveLabel = "Save Cli
                         label={tag}
                         isSelected={isSelected}
                         tone="ember"
-                        onClick={() => onToggleTag(tag)}
+                        onClick={() => {
+                          if (!isSaving) {
+                            onToggleTag(tag)
+                          }
+                        }}
                       />
                     )
                   })}
@@ -83,6 +94,8 @@ function TagsStep({ draft, onToggleTag, onSave, saveError, saveLabel = "Save Cli
       <div className="mt-3 min-h-[20px]">
         {saveError ? (
           <p className="text-center text-sm text-red-500">{saveError}</p>
+        ) : isSaving ? (
+          <p className="text-center text-sm text-stone-secondary">Saving climb...</p>
         ) : !canSaveFromTags ? (
           <p className="text-center text-sm text-stone-secondary">
             Select at least one tag to save this climb
@@ -93,18 +106,18 @@ function TagsStep({ draft, onToggleTag, onSave, saveError, saveLabel = "Save Cli
       <button
         type="button"
         onClick={() => {
-          if (canSaveFromTags) {
+          if (canSaveFromTags && !isSaving) {
             onSave()
           }
         }}
-        disabled={!canSaveFromTags}
+        disabled={!canSaveFromTags || isSaving}
         className={`mt-3 rounded-full px-6 py-4 text-base font-semibold text-stone-surface transition-all duration-200 ${
-          canSaveFromTags
+          canSaveFromTags && !isSaving
             ? "bg-ember hover:bg-ember-dark active:scale-[0.98]"
             : "cursor-not-allowed bg-stone-border text-stone-muted opacity-80"
         }`}
       >
-        {saveLabel}
+        {isSaving ? "Saving…" : saveLabel}
       </button>
     </div>
   )
