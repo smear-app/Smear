@@ -13,6 +13,7 @@ export function gradeToValue(grade: string): number {
 }
 
 export interface ClimbDraft {
+  name: string
   gymId: string
   gymName: string
   gymGrade: string
@@ -22,6 +23,7 @@ export interface ClimbDraft {
   photo: string | null       // blob URL for preview only
   photoFile: File | null     // raw File for upload
   climbColor: string | null
+  notes: string
 }
 
 interface ClimbRow {
@@ -99,11 +101,24 @@ function setStoredClimbColor(userId: string, climbId: string, climbColor: string
   writeClimbColorOverrides(userId, overrides)
 }
 
-function isMissingClimbColorColumnError(error: { code?: string; message?: string } | null): boolean {
+function isMissingColumnError(error: { code?: string; message?: string } | null, columnName: string): boolean {
   if (!error) return false
 
   const message = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
-  return message.includes('climb_color') && message.includes('column')
+  return message.includes(columnName.toLowerCase()) && message.includes('column')
+}
+
+function getMissingOptionalColumn(
+  error: { code?: string; message?: string } | null,
+  columnNames: string[],
+): string | null {
+  for (const columnName of columnNames) {
+    if (isMissingColumnError(error, columnName)) {
+      return columnName
+    }
+  }
+
+  return null
 }
 
 function mapClimbRow(row: ClimbRow): Climb {
@@ -191,7 +206,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photoUrl = await uploadToCloudinary(draft.photoFile)
   }
 
-  const { error } = await supabase.from('climbs').insert({
+  const requiredClimbRecord = {
     user_id: userId,
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -202,11 +217,35 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map(t => t.toLowerCase()),
     photo_url: photoUrl,
-    hold_color: draft.climbColor || null,
     session_id: sessionId,
-  })
+  }
 
-  if (error) throw error
+  const optionalColumns = new Map<string, string | null>([
+    ['name', draft.name || null],
+    ['hold_color', draft.climbColor || null],
+    ['notes', draft.notes || null],
+  ])
+
+  while (true) {
+    const payload = {
+      ...requiredClimbRecord,
+      ...Object.fromEntries(optionalColumns),
+    }
+
+    const { error } = await supabase.from('climbs').insert(payload)
+
+    if (!error) {
+      break
+    }
+
+    const missingColumn = getMissingOptionalColumn(error, Array.from(optionalColumns.keys()))
+    if (!missingColumn) {
+      throw error
+    }
+
+    optionalColumns.delete(missingColumn)
+  }
+
   await touchSession(sessionId)
 }
 
@@ -232,35 +271,39 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
     photoUrl = draft.photo
   }
 
-  const attemptedUpdate = await supabase
-    .from('climbs')
-    .update({
-      ...baseClimbRecord,
-      photo_url: photoUrl,
-      hold_color: draft.climbColor,
-    })
-    .eq('user_id', userId)
-    .eq('id', climbId)
-
-  if (!attemptedUpdate.error) {
-    setStoredClimbColor(userId, climbId, draft.climbColor)
-    return
+  const requiredUpdatePayload = {
+    ...baseClimbRecord,
+    photo_url: photoUrl,
   }
+  const optionalColumns = new Map<string, string | null>([
+    ['name', draft.name || null],
+    ['hold_color', draft.climbColor],
+    ['notes', draft.notes || null],
+  ])
 
-  if (!isMissingClimbColorColumnError(attemptedUpdate.error)) {
-    throw attemptedUpdate.error
+  while (true) {
+    const payload = {
+      ...requiredUpdatePayload,
+      ...Object.fromEntries(optionalColumns),
+    }
+
+    const updateResult = await supabase
+      .from('climbs')
+      .update(payload)
+      .eq('user_id', userId)
+      .eq('id', climbId)
+
+    if (!updateResult.error) {
+      break
+    }
+
+    const missingColumn = getMissingOptionalColumn(updateResult.error, Array.from(optionalColumns.keys()))
+    if (!missingColumn) {
+      throw updateResult.error
+    }
+
+    optionalColumns.delete(missingColumn)
   }
-
-  const fallbackUpdate = await supabase
-    .from('climbs')
-    .update({
-      ...baseClimbRecord,
-      photo_url: photoUrl,
-    })
-    .eq('user_id', userId)
-    .eq('id', climbId)
-
-  if (fallbackUpdate.error) throw fallbackUpdate.error
 
   setStoredClimbColor(userId, climbId, draft.climbColor)
 }
@@ -382,6 +425,7 @@ export async function fetchLoggedGrades(userId: string): Promise<LoggedGradeOpti
 
 export function toClimbDraft(climb: Climb): ClimbDraft {
   return {
+    name: climb.name ?? '',
     gymId: climb.gym_id ?? '',
     gymName: climb.gym_name ?? '',
     gymGrade: climb.gym_grade,
@@ -391,5 +435,6 @@ export function toClimbDraft(climb: Climb): ClimbDraft {
     photo: climb.photo_url,
     photoFile: null,
     climbColor: climb.climbColor,
+    notes: climb.notes ?? '',
   }
 }

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
 import HomePage from "./HomePage"
+import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import FeedPage from "./pages/FeedPage"
@@ -18,6 +19,7 @@ function ProtectedApp() {
   const { session, loading } = useAuth()
   const { activeGym } = useGym()
   const [isLogClimbOpen, setIsLogClimbOpen] = useState(false)
+  const [isEditClimbOpen, setIsEditClimbOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [editingClimb, setEditingClimb] = useState(null)
 
@@ -49,7 +51,15 @@ function ProtectedApp() {
 
   function handleEditClimb(climb) {
     setEditingClimb(climb)
-    setIsLogClimbOpen(true)
+    setIsEditClimbOpen(true)
+  }
+
+  async function handleSaveEditedClimb(draft) {
+    if (!editingClimb) {
+      return
+    }
+
+    await updateClimb(draft, editingClimb.id, session.user.id)
   }
 
   async function handleDeleteLoggedClimb(climbId) {
@@ -59,6 +69,7 @@ function ProtectedApp() {
 
   function handleDone() {
     setIsLogClimbOpen(false)
+    setIsEditClimbOpen(false)
     setEditingClimb(null)
     setRefreshKey((k) => k + 1)
   }
@@ -98,13 +109,22 @@ function ProtectedApp() {
         isOpen={isLogClimbOpen}
         onClose={() => {
           setIsLogClimbOpen(false)
-          setEditingClimb(null)
         }}
         onSave={handleSaveClimb}
         onDone={handleDone}
         activeGym={editingClimb?.gym_id ? { id: editingClimb.gym_id, name: editingClimb.gym_name } : activeGym}
+        initialDraft={null}
+        mode="create"
+      />
+      <EditClimbModal
+        isOpen={isEditClimbOpen}
+        onClose={() => {
+          setIsEditClimbOpen(false)
+          setEditingClimb(null)
+        }}
+        onSave={handleSaveEditedClimb}
+        onDone={handleDone}
         initialDraft={editingClimb ? toClimbDraft(editingClimb) : null}
-        mode={editingClimb ? "edit" : "create"}
       />
     </div>
   )
