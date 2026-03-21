@@ -395,9 +395,6 @@ export default function EditClimbModal({
                       }}
                       className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
                     >
-                      <option value="" disabled>
-                        Select gym
-                      </option>
                       {gymOptions.map((gym) => (
                         <option key={gym.id} value={gym.id}>
                           {gym.name}
