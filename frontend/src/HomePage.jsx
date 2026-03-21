@@ -19,6 +19,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
   const [totalClimbs, setTotalClimbs] = useState(0)
   const [loadError, setLoadError] = useState(null)
   const [openingClimbId, setOpeningClimbId] = useState(null)
+  const [returnTransitionClimbId, setReturnTransitionClimbId] = useState(() => location.state?.returnClimbId ?? null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
   const returningClimbId = location.state?.returnClimbId ?? null
   const returningClimb = location.state?.returnClimb ?? null
@@ -43,6 +44,20 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
       })
       .catch((err) => setLoadError(err.message))
   }, [user, refreshKey])
+
+  useEffect(() => {
+    if (!returningClimbId) {
+      setReturnTransitionClimbId(null)
+      return undefined
+    }
+
+    setReturnTransitionClimbId(returningClimbId)
+    const timeoutId = window.setTimeout(() => {
+      setReturnTransitionClimbId(null)
+    }, 220)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [returningClimbId])
 
   return (
     <div className="min-h-screen bg-stone-bg">
@@ -100,7 +115,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, refreshKey }) {
                   onDelete={onDeleteClimb}
                   onEdit={onEditClimb}
                   isOpening={openingClimbId === climb.id}
-                  isReturning={returningClimbId === climb.id}
+                  isReturning={returnTransitionClimbId === climb.id}
                   onOpen={() => {
                     if (openingClimbId) {
                       return

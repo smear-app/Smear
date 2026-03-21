@@ -7,6 +7,7 @@ import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import FeedPage from "./pages/FeedPage"
 import { deleteClimb, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
+import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -36,7 +37,8 @@ function ProtectedApp() {
       return
     }
 
-    await insertClimb(draft, session.user.id)
+    const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
+    await insertClimb(draft, session.user.id, sessionId)
   }
 
   function handleOpenLogClimb() {

@@ -18,7 +18,7 @@ function PhotoStep({ draft, onChange, onContinue }) {
       URL.revokeObjectURL(draft.photo)
     }
 
-    // Store a previewable image URL in the draft so it survives step changes.
+    onChange("photoFile", file)
     onChange("photo", URL.createObjectURL(file))
   }
 

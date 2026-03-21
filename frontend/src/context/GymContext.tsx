@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
@@ -17,6 +18,7 @@ import {
   type GymRecord,
   upsertGymId,
 } from "../lib/gyms"
+import { loadGymPreferences, saveGymPreferences } from "../lib/gymPreferences"
 
 interface GymContextValue {
   activeGym: GymRecord | null
@@ -55,22 +57,45 @@ export function GymProvider({
   const [bookmarkedGymIds, setBookmarkedGymIds] = useState<string[]>([])
   const [recentHistoryGymIds, setRecentHistoryGymIds] = useState<string[]>([])
   const [hiddenGymIds, setHiddenGymIds] = useState<string[]>([])
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Hydrate the gym cache from Supabase then restore stored selections
+  // Hydrate gym cache and preferences (Supabase preferred, localStorage fallback)
   useEffect(() => {
-    loadAllGymsIntoCache().then(() => {
-      const stored = readStoredGyms(storageUserId)
-      if (stored) {
-        const initial = buildGymState(stored)
-        setActiveGymId(initial.activeGym?.id ?? null)
-        setBookmarkedGymIds(initial.bookmarkedGymIds)
-        setRecentHistoryGymIds(initial.recentHistoryGymIds)
-        setHiddenGymIds(initial.hiddenGymIds)
+    loadAllGymsIntoCache().then(async () => {
+      let restoredFromSupabase = false
+
+      if (storageUserId) {
+        const prefs = await loadGymPreferences(storageUserId)
+        if (prefs) {
+          setBookmarkedGymIds(prefs.bookmarkedGymIds)
+          setRecentHistoryGymIds(prefs.recentGymIds)
+          restoredFromSupabase = true
+        }
       }
+
+      if (!restoredFromSupabase) {
+        const stored = readStoredGyms(storageUserId)
+        if (stored) {
+          const initial = buildGymState(stored)
+          setActiveGymId(initial.activeGym?.id ?? null)
+          setBookmarkedGymIds(initial.bookmarkedGymIds)
+          setRecentHistoryGymIds(initial.recentHistoryGymIds)
+          setHiddenGymIds(initial.hiddenGymIds)
+        }
+      } else {
+        // Still restore activeGymId and hiddenGymIds from localStorage
+        const stored = readStoredGyms(storageUserId)
+        if (stored) {
+          setActiveGymId(stored.activeGymId ?? null)
+          setHiddenGymIds(stored.hiddenGymIds ?? [])
+        }
+      }
+
       setIsHydrated(true)
     })
   }, [storageUserId])
 
+  // Persist to localStorage immediately
   useEffect(() => {
     if (!isHydrated || !storageUserId) return
 
@@ -84,6 +109,32 @@ export function GymProvider({
       }),
     )
   }, [activeGymId, bookmarkedGymIds, hiddenGymIds, isHydrated, recentHistoryGymIds, storageUserId])
+
+  // Debounced sync of persisted fields to Supabase (only when persisted fields change)
+  useEffect(() => {
+    if (!isHydrated || !storageUserId) return
+
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current)
+      syncTimeoutRef.current = null
+    }
+
+    syncTimeoutRef.current = setTimeout(() => {
+      // Fire-and-forget but avoid unhandled promise rejections
+      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch((error) => {
+        // Log so failures are visible during development
+        // eslint-disable-next-line no-console
+        console.error('Failed to save gym preferences', error)
+      })
+    }, 1000)
+
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current)
+        syncTimeoutRef.current = null
+      }
+    }
+  }, [bookmarkedGymIds, recentHistoryGymIds, isHydrated, storageUserId])
 
   const value = useMemo(() => {
     const state = buildGymState({
