@@ -38,6 +38,7 @@ interface ClimbRow {
   tags: string[]
   photo_url: string | null
   hold_color: string | null
+  climb_color?: string | null
   notes: string | null
   created_at: string
 }
@@ -68,48 +69,10 @@ function toTitleCase(value: string) {
     .join(' ')
 }
 
-const getClimbColorStorageKey = (userId: string) => `smear.climb-color-overrides:${userId}`
-
-function readClimbColorOverrides(userId: string): Record<string, string> {
-  if (typeof window === 'undefined') return {}
-
-  try {
-    const rawValue = window.localStorage.getItem(getClimbColorStorageKey(userId))
-    const parsed = rawValue ? JSON.parse(rawValue) : {}
-    return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch {
-    return {}
-  }
-}
-
-function writeClimbColorOverrides(userId: string, overrides: Record<string, string>) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(getClimbColorStorageKey(userId), JSON.stringify(overrides))
-}
-
-function setStoredClimbColor(userId: string, climbId: string, climbColor: string | null) {
-  const overrides = readClimbColorOverrides(userId)
-
-  if (climbColor) {
-    overrides[climbId] = climbColor
-  } else {
-    delete overrides[climbId]
-  }
-
-  writeClimbColorOverrides(userId, overrides)
-}
-
-function isMissingClimbColorColumnError(error: { code?: string; message?: string } | null): boolean {
-  if (!error) return false
-
-  const message = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
-  return message.includes('climb_color') && message.includes('column')
-}
-
 function mapClimbRow(row: ClimbRow): Climb {
   return {
     ...row,
-    climbColor: row.hold_color,
+    climbColor: row.hold_color ?? row.climb_color ?? null,
   }
 }
 
@@ -237,32 +200,14 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
     .update({
       ...baseClimbRecord,
       photo_url: photoUrl,
-      hold_color: draft.climbColor,
+      hold_color: draft.climbColor || null,
     })
     .eq('user_id', userId)
     .eq('id', climbId)
 
-  if (!attemptedUpdate.error) {
-    setStoredClimbColor(userId, climbId, draft.climbColor)
-    return
-  }
-
-  if (!isMissingClimbColorColumnError(attemptedUpdate.error)) {
+  if (attemptedUpdate.error) {
     throw attemptedUpdate.error
   }
-
-  const fallbackUpdate = await supabase
-    .from('climbs')
-    .update({
-      ...baseClimbRecord,
-      photo_url: photoUrl,
-    })
-    .eq('user_id', userId)
-    .eq('id', climbId)
-
-  if (fallbackUpdate.error) throw fallbackUpdate.error
-
-  setStoredClimbColor(userId, climbId, draft.climbColor)
 }
 
 export async function deleteClimb(climbId: string, userId: string): Promise<void> {
@@ -273,7 +218,6 @@ export async function deleteClimb(climbId: string, userId: string): Promise<void
     .eq('id', climbId)
 
   if (error) throw error
-  setStoredClimbColor(userId, climbId, null)
 }
 
 export async function fetchPaginatedClimbs({
