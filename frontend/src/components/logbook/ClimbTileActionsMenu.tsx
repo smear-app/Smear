@@ -35,7 +35,7 @@ export default function ClimbTileActionsMenu({
   }
 
   return (
-    <div ref={containerRef} className="absolute inset-y-0 right-1.5 flex items-center">
+    <div ref={containerRef} className="absolute inset-y-0 right-1.5 z-10 flex items-center">
       <div className="relative">
         <button
           type="button"
