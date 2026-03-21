@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { FiCamera, FiX } from "react-icons/fi"
+import { FiCamera, FiChevronDown, FiMapPin, FiX } from "react-icons/fi"
 import ColorChipSelector from "./ColorChipSelector"
+import { useAuth } from "../context/AuthContext"
+import { fetchLoggedGyms } from "../lib/climbs"
 import { GRADE_OPTIONS, SEND_OPTIONS, TAG_SECTIONS } from "../lib/climbFormOptions"
 
 const EMPTY_DRAFT = {
@@ -23,64 +25,58 @@ const EDIT_SECTIONS = [
   {
     id: "canonical",
     title: "Climb details",
-    description: "Core climb details that can become read-only once this log is linked to a canonical climb.",
     category: "canonical",
   },
   {
     id: "performance",
-    title: "Grade / completion info",
-    description: "How this climb was graded and how the attempt went.",
+    title: "Grade Info",
     category: "mixed",
   },
   {
     id: "personal",
-    title: "Personal notes / feel",
-    description: "Personal notes and tags that should stay editable even after canonical data is locked later.",
+    title: "Notes",
     category: "personal",
   },
 ]
 
 function EditSection({
   title,
-  description,
   children,
 }) {
   return (
     <section className="rounded-[26px] border border-stone-border bg-stone-surface px-4 py-4 shadow-[0_10px_24px_rgba(89,68,51,0.05)]">
-      <div className="mb-3">
+      <div className="mb-2.5">
         <h3 className="text-sm font-semibold text-stone-text">{title}</h3>
-        <p className="mt-1 text-xs leading-5 text-stone-muted">{description}</p>
       </div>
       <div className="space-y-3">{children}</div>
     </section>
   )
 }
 
-function TextField({
+function CompactSelectorRow({
   label,
   value,
-  onChange,
-  placeholder,
-  readOnly = false,
+  children,
+  disabled = false,
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-        {label}
-      </span>
-      <input
-        type="text"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        className={`w-full rounded-[18px] border px-3.5 py-3 text-sm text-stone-text outline-none transition-colors ${
-          readOnly
-            ? "border-stone-border/60 bg-stone-alt/70 text-stone-secondary"
-            : "border-stone-border bg-stone-alt focus:border-ember/30"
-        }`}
-      />
-    </label>
+    <div
+      className={`relative overflow-hidden rounded-[18px] border px-3.5 py-3 transition-colors ${
+        disabled
+          ? "border-stone-border/60 bg-stone-alt/70 text-stone-secondary"
+          : "border-stone-border bg-stone-alt"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+          {label}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm text-stone-text">{value}</span>
+        <FiChevronDown className="h-4 w-4 shrink-0 text-stone-secondary" />
+      </div>
+      {children}
+    </div>
   )
 }
 
@@ -154,10 +150,12 @@ export default function EditClimbModal({
   initialDraft,
   canEditCanonicalFields = true,
 }) {
+  const { user } = useAuth()
   const [isRendered, setIsRendered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [saveError, setSaveError] = useState(null)
+  const [availableGyms, setAvailableGyms] = useState([])
   const previousPhotoRef = useRef(null)
   const initialGymRef = useRef({ id: "", name: "" })
 
@@ -221,6 +219,30 @@ export default function EditClimbModal({
     }
   }, [])
 
+  useEffect(() => {
+    if (!isOpen || !user) {
+      return undefined
+    }
+
+    let cancelled = false
+
+    void fetchLoggedGyms(user.id)
+      .then((gyms) => {
+        if (!cancelled) {
+          setAvailableGyms(gyms)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableGyms([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, user])
+
   const handleChange = (field, value) => {
     setDraft((currentDraft) => {
       if (field === "gymName") {
@@ -241,6 +263,25 @@ export default function EditClimbModal({
       }
     })
   }
+
+  const gymOptions = useMemo(() => {
+    const optionsById = new Map()
+
+    for (const gym of availableGyms) {
+      if (gym.id && gym.name) {
+        optionsById.set(gym.id, gym)
+      }
+    }
+
+    if (draft.gymId && draft.gymName && !optionsById.has(draft.gymId)) {
+      optionsById.set(draft.gymId, {
+        id: draft.gymId,
+        name: draft.gymName,
+      })
+    }
+
+    return Array.from(optionsById.values())
+  }, [availableGyms, draft.gymId, draft.gymName])
 
   const handleToggleTag = (tag) => {
     setDraft((currentDraft) => ({
@@ -307,9 +348,6 @@ export default function EditClimbModal({
           <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Edit Climb</p>
-              <p className="mt-1 text-sm text-stone-secondary">
-                Update any field from one screen. Canonical fields can be locked later without changing this layout.
-              </p>
             </div>
             <button
               type="button"
@@ -324,20 +362,41 @@ export default function EditClimbModal({
           <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
             <div className="space-y-4">
               <EditSection {...EDIT_SECTIONS[0]}>
-                <TextField
-                  label="Route name"
-                  value={draft.name}
-                  onChange={(value) => handleChange("name", value)}
-                  placeholder="Optional route name"
-                  readOnly={!canEditCanonicalFields}
-                />
-                <TextField
-                  label="Gym"
-                  value={draft.gymName}
-                  onChange={(value) => handleChange("gymName", value)}
-                  placeholder="Gym name"
-                  readOnly={!canEditCanonicalFields}
-                />
+                <label className="block">
+                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                    Gym
+                  </span>
+                  <CompactSelectorRow
+                    label="Gym"
+                    value={draft.gymName || "Select gym"}
+                    disabled={!canEditCanonicalFields}
+                  >
+                    <select
+                      value={draft.gymId || ""}
+                      disabled={!canEditCanonicalFields}
+                      aria-label="Gym"
+                      onChange={(event) => {
+                        const selectedGym = gymOptions.find((gym) => gym.id === event.target.value)
+
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          gymId: selectedGym?.id ?? "",
+                          gymName: selectedGym?.name ?? "",
+                        }))
+                      }}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
+                    >
+                      <option value="" disabled>
+                        Select gym
+                      </option>
+                      {gymOptions.map((gym) => (
+                        <option key={gym.id} value={gym.id}>
+                          {gym.name}
+                        </option>
+                      ))}
+                    </select>
+                  </CompactSelectorRow>
+                </label>
 
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
@@ -358,10 +417,7 @@ export default function EditClimbModal({
                       </button>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold text-stone-text">Climb photo</p>
-                        <p className="mt-1 text-xs leading-5 text-stone-secondary">
-                          Swap in a new photo or keep the existing one. This stays separate from the standard create flow.
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-2.5 flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => document.getElementById("edit-climb-photo-input")?.click()}
