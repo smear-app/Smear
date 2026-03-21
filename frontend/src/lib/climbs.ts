@@ -2,8 +2,6 @@ import { supabase } from './supabase'
 import type { LogbookSort } from './logbook'
 import { uploadToCloudinary } from './cloudinary'
 import { touchSession } from './sessions'
-import { uploadToCloudinary } from './cloudinary'
-import { touchSession } from './sessions'
 
 const GRADE_VALUES: Record<string, number> = {
   VB: -1, V0: 0, V1: 1, V2: 2, V3: 3, V4: 4, V5: 5,
@@ -22,8 +20,6 @@ export interface ClimbDraft {
   feltLike: string
   sendType: string
   tags: string[]
-  photo: string | null       // blob URL for preview only
-  photoFile: File | null     // raw File for upload
   photo: string | null       // blob URL for preview only
   photoFile: File | null     // raw File for upload
   climbColor: string | null
@@ -91,6 +87,26 @@ function toTitleCase(value: string) {
     .filter(Boolean)
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`)
     .join(' ')
+}
+
+function isMissingColumnError(error: { code?: string; message?: string } | null, columnName: string): boolean {
+  if (!error) return false
+
+  const message = `${error.code ?? ''} ${error.message ?? ''}`.toLowerCase()
+  return message.includes(columnName.toLowerCase()) && message.includes('column')
+}
+
+function getMissingOptionalColumn(
+  error: { code?: string; message?: string } | null,
+  columnNames: string[],
+): string | null {
+  for (const columnName of columnNames) {
+    if (isMissingColumnError(error, columnName)) {
+      return columnName
+    }
+  }
+
+  return null
 }
 
 function mapClimbRow(row: ClimbRow): Climb {
@@ -210,31 +226,56 @@ export async function updateClimb(
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
     tags: draft.tags.map((tag) => tag.toLowerCase()),
-    // photo_url will be set below; draft.photo may be a blob URL (preview)
   }
 
-  // If a new raw file is present, upload it and persist the returned URL
   let photoUrl: string | null = null
   if (draft.photoFile) {
     photoUrl = await uploadToCloudinary(draft.photoFile)
   } else if (draft.photo && !draft.photo.startsWith('blob:')) {
-    // Keep existing remote URL when photo is a remote URL
     photoUrl = draft.photo
   }
 
-  const attemptedUpdate = await supabase
-    .from('climbs')
-    .update({
-      ...baseClimbRecord,
-      photo_url: photoUrl,
-      hold_color: draft.climbColor || null,
-    })
-    .eq('user_id', userId)
-    .eq('id', climbId)
-
-  if (attemptedUpdate.error) {
-    throw attemptedUpdate.error
+  const requiredUpdatePayload = {
+    ...baseClimbRecord,
+    photo_url: photoUrl,
   }
+
+  const optionalColumns = new Map<string, string | null>([
+    ['name', draft.name || null],
+    ['hold_color', draft.climbColor || null],
+    ['notes', draft.notes || null],
+  ])
+
+  while (true) {
+    const payload = {
+      ...requiredUpdatePayload,
+      ...Object.fromEntries(optionalColumns),
+    }
+
+    const updateResult = await supabase
+      .from('climbs')
+      .update(payload)
+      .eq('user_id', climb.user_id)
+      .eq('id', climb.id)
+
+    if (!updateResult.error) {
+      break
+    }
+
+    const missingColumn = getMissingOptionalColumn(updateResult.error, Array.from(optionalColumns.keys()))
+    if (!missingColumn) {
+      throw updateResult.error
+    }
+
+    optionalColumns.delete(missingColumn)
+  }
+
+  const updatedClimb = await fetchClimbById(climb.user_id, climb.id)
+  if (!updatedClimb) {
+    throw new Error('Updated climb could not be reloaded')
+  }
+
+  return updatedClimb
 }
 
 export async function deleteClimb(climbId: string, userId: string): Promise<void> {
