@@ -85,6 +85,7 @@ function ProtectedApp() {
 
     const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
     await insertClimb(draft, session.user.id, sessionId)
+    void loadRecentClimbs({ background: true })
   }
 
   function handleOpenLogClimb() {

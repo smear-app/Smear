@@ -155,6 +155,7 @@ export default function EditClimbModal({
   const [isVisible, setIsVisible] = useState(false)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [saveError, setSaveError] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
   const [availableGyms, setAvailableGyms] = useState([])
   const previousPhotoRef = useRef(null)
   const initialGymRef = useRef({ id: "", name: "" })
@@ -167,6 +168,7 @@ export default function EditClimbModal({
     previousPhotoRef.current = nextDraft.photo
     initialGymRef.current = { id: nextDraft.gymId, name: nextDraft.gymName }
     setDraft(nextDraft)
+    setIsSaving(false)
   }
 
   useEffect(() => {
@@ -307,12 +309,19 @@ export default function EditClimbModal({
   }
 
   const handleSave = async () => {
+    if (isSaving) {
+      return
+    }
+
     setSaveError(null)
+    setIsSaving(true)
 
     try {
       await onSave(draft)
+      setIsSaving(false)
       onDone()
     } catch (error) {
+      setIsSaving(false)
       setSaveError(error instanceof Error ? error.message : "Failed to save climb")
     }
   }
@@ -571,12 +580,12 @@ export default function EditClimbModal({
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={!canSave}
+                disabled={!canSave || isSaving}
                 className={`flex-1 rounded-full px-4 py-3 text-sm font-semibold text-stone-surface ${
-                  canSave ? "bg-ember" : "bg-stone-border text-stone-muted"
+                  canSave && !isSaving ? "bg-ember" : "bg-stone-border text-stone-muted"
                 }`}
               >
-                Save Climb
+                {isSaving ? "Saving..." : "Save Climb"}
               </button>
             </div>
           </div>
