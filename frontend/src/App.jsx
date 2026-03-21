@@ -7,7 +7,7 @@ import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import FeedPage from "./pages/FeedPage"
-import { applyDraftToClimb, deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
+import { deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
 import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
@@ -79,7 +79,7 @@ function ProtectedApp() {
 
   async function handleSaveClimb(draft) {
     if (editingClimb) {
-      await updateClimb(draft, editingClimb.id, session.user.id)
+      await updateClimb(draft, editingClimb)
       return
     }
 
@@ -104,10 +104,11 @@ function ProtectedApp() {
       return
     }
 
-    await updateClimb(draft, editingClimb.id, session.user.id)
+    const updatedClimb = await updateClimb(draft, editingClimb)
     setRecentClimbs((currentClimbs) =>
-      currentClimbs.map((climb) => (climb.id === editingClimb.id ? applyDraftToClimb(climb, draft) : climb)),
+      currentClimbs.map((climb) => (climb.id === updatedClimb.id ? updatedClimb : climb)),
     )
+    setEditingClimb(updatedClimb)
     void loadRecentClimbs({ background: true })
   }
 

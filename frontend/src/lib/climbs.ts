@@ -267,7 +267,10 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
   await touchSession(sessionId)
 }
 
-export async function updateClimb(draft: ClimbDraft, climbId: string, userId: string): Promise<void> {
+export async function updateClimb(
+  draft: ClimbDraft,
+  climb: Pick<Climb, 'id' | 'user_id'>,
+): Promise<Climb> {
   const baseClimbRecord = {
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -308,11 +311,23 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
     const updateResult = await supabase
       .from('climbs')
       .update(payload)
-      .eq('user_id', userId)
-      .eq('id', climbId)
+      .eq('user_id', climb.user_id)
+      .eq('id', climb.id)
+      .select('id')
 
     if (!updateResult.error) {
-      break
+      const updatedRows = Array.isArray(updateResult.data) ? updateResult.data : []
+      if (updatedRows.length !== 1) {
+        throw new Error('Climb update matched no writable row')
+      }
+
+      const updatedClimb = await fetchClimbById(climb.user_id, climb.id)
+      if (!updatedClimb) {
+        throw new Error('Updated climb could not be reloaded')
+      }
+
+      setStoredClimbColor(updatedClimb.user_id, updatedClimb.id, updatedClimb.climbColor)
+      return updatedClimb
     }
 
     const missingColumn = getMissingOptionalColumn(updateResult.error, Array.from(optionalColumns.keys()))
@@ -322,8 +337,6 @@ export async function updateClimb(draft: ClimbDraft, climbId: string, userId: st
 
     optionalColumns.delete(missingColumn)
   }
-
-  setStoredClimbColor(userId, climbId, draft.climbColor)
 }
 
 export async function deleteClimb(climbId: string, userId: string): Promise<void> {
