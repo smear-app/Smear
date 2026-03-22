@@ -1,19 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-
-const TAG_SECTIONS = [
-  {
-    title: "Hold type",
-    options: ["Crimp", "Sloper", "Pinch", "Pocket", "Jug"],
-  },
-  {
-    title: "Movement",
-    options: ["Dynamic", "Static", "Balance", "Compression", "Tension"],
-  },
-  {
-    title: "Wall angle",
-    options: ["Slab", "Vertical", "Overhang", "Cave"],
-  },
-]
+import { TAG_SECTIONS } from "../lib/climbFormOptions"
 
 function TagChip({ isSelected, label, onClick, tone = "ember" }) {
   const selectedClassName =

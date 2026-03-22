@@ -8,6 +8,7 @@ import SuccessStep from "./SuccessStep"
 import TagsStep from "./TagsStep"
 
 const EMPTY_DRAFT = {
+  name: "",
   gymId: "",
   gymName: "",
   photo: null,
@@ -17,6 +18,7 @@ const EMPTY_DRAFT = {
   feltLike: "",
   sendType: "",
   tags: [],
+  notes: "",
 }
 
 const CLOSE_ANIMATION_MS = 280

@@ -1,4 +1,4 @@
-const SEND_OPTIONS = ["Flash", "Send", "Attempt"]
+import { SEND_OPTIONS } from "../lib/climbFormOptions"
 
 function getOptionStyles(option, isSelected) {
   if (!isSelected) {

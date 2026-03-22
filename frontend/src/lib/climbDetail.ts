@@ -30,8 +30,7 @@ export function buildClimbDetailData(climb: Climb): ClimbDetailData {
     gymName: climb.gym_name,
     referenceImageUrl: climb.photo_url,
     detailTags: climb.tags.map(toTitleCase),
-    // TODO: Replace this null placeholder with persisted user-specific notes once the backend supports them.
-    userNotes: null,
+    userNotes: climb.notes?.trim() || null,
     sendType: climb.send_type,
     loggedAt: climb.created_at,
   }

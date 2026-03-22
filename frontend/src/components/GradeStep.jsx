@@ -1,18 +1,4 @@
-const GRADE_OPTIONS = [
-  "VB",
-  "V0",
-  "V1",
-  "V2",
-  "V3",
-  "V4",
-  "V5",
-  "V6",
-  "V7",
-  "V8",
-  "V9",
-  "V10",
-  "V10+",
-]
+import { GRADE_OPTIONS } from "../lib/climbFormOptions"
 
 function GradeSelectorRow({ label, value, onSelect }) {
   return (
