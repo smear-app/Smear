@@ -234,6 +234,7 @@ export default function LogbookPage({
     error,
     canLoadMore,
     loadMore,
+    removeClimb,
     isChronological,
   } = useLogbookHistory({
     userId: user?.id,
@@ -241,6 +242,11 @@ export default function LogbookPage({
     sort,
     reloadKey: refreshKey,
   })
+
+  const handleDeleteClimb = async (climbId: string) => {
+    removeClimb(climbId)
+    await onDeleteClimb(climbId)
+  }
 
   useEffect(() => {
     const nextParams = new URLSearchParams()
@@ -702,7 +708,7 @@ export default function LogbookPage({
                   showMeta
                   showLoggedDate={false}
                   fromState={calendarReturnState}
-                  onDelete={onDeleteClimb}
+                  onDelete={handleDeleteClimb}
                   onEdit={onEditClimb}
                   emptyState={
                     <div className="flex h-full min-h-full w-full items-center justify-center self-stretch rounded-[22px] border border-dashed border-stone-border/80 bg-stone-surface/65 px-4 py-6 text-center text-sm text-stone-secondary">
@@ -753,7 +759,7 @@ export default function LogbookPage({
                         climbs={session.climbs}
                         from={logbookReturnPath}
                         showMeta={false}
-                        onDelete={onDeleteClimb}
+                        onDelete={handleDeleteClimb}
                         onEdit={onEditClimb}
                       />
                     </div>
@@ -764,7 +770,7 @@ export default function LogbookPage({
                     climbs={climbs}
                     from={logbookReturnPath}
                     showMeta
-                    onDelete={onDeleteClimb}
+                    onDelete={handleDeleteClimb}
                     onEdit={onEditClimb}
                   />
                 )}

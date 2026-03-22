@@ -116,7 +116,6 @@ function ProtectedApp() {
     await deleteClimb(climbId, session.user.id)
     setRecentClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
     setRecentClimbsTotal((currentTotal) => Math.max(0, currentTotal - 1))
-    setRefreshKey((k) => k + 1)
   }
 
   function handleDone() {
