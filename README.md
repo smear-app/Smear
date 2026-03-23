@@ -1,4 +1,4 @@
-# smear-app
+# smear.app
 
 **Smear** is a mobile-first climbing progression app for indoor climbers. Log your sends, track your grades, and build a detailed picture of your climbing style over time.
 
@@ -22,13 +22,15 @@ Most climbers mentally track their progress, but the picture is fuzzy. Smear mak
 
 ---
 
-## Roadmap
 
-| Phase | Focus |
-|-------|-------|
-| MVP | Auth, climb logging, profile, basic progress graphs, XP/levels |
-| Next | Social follows, gym management, leaderboards, monthly challenges |
-| Long-term | ML-powered route suggestions, gym API integrations |
+## Team
+
+| Name | GitHub | Role |
+|------|--------|------|
+| Brandon Senaha | [@Bsenaha](https://github.com/Bsenaha) | Co-founder |
+| Jaden Phan | [@jphan10](https://github.com/jphan10) | Co-founder |
+| Nathan Nguyen | ... | Founding Engineer |
+
 
 ---
 
@@ -52,13 +54,4 @@ The frontend talks to Supabase directly for all climb and gym data. The FastAPI 
 |------|-------------|
 | `smear-app/smear` | Main monorepo — React frontend + FastAPI backend |
 
----
 
-## Team
-
-| Name | GitHub | Role |
-|------|--------|------|
-| Jaden Phan | [@jphan10](https://github.com/jphan10) | Co-founder |
-| Brandon Senaha | [@Bsenaha](https://github.com/Bsenaha) | Co-founder |
-
----
