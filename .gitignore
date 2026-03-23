@@ -8,3 +8,4 @@ CLAUDE.md
 .env*.local
 
 backend/.env
+frontend/ios/

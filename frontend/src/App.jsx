@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import { Analytics } from "@vercel/analytics/react"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
@@ -210,6 +211,7 @@ export default function App() {
   return (
     <AuthProvider>
       <GymScopedApp />
+      <Analytics />
     </AuthProvider>
   )
 }
