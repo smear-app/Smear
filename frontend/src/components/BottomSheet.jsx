@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 const CLOSE_DRAG_THRESHOLD_PX = 132
 const CLOSE_VELOCITY_THRESHOLD = 0.55
 const CLOSE_ANIMATION_MS = 300
+const REOPEN_VELOCITY_THRESHOLD = -0.2
 
 function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   const sheetRef = useRef(null)
@@ -13,8 +14,11 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     pointerId: null,
     startY: 0,
     startTime: 0,
+    lastY: 0,
+    lastTime: 0,
   })
   const dragOffsetRef = useRef(0)
+  const releaseVelocityRef = useRef(0)
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isClosingFromDrag, setIsClosingFromDrag] = useState(false)
@@ -40,7 +44,10 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
         pointerId: null,
         startY: 0,
         startTime: 0,
+        lastY: 0,
+        lastTime: 0,
       }
+      releaseVelocityRef.current = 0
     }
   }, [isVisible])
 
@@ -156,7 +163,10 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       pointerId: null,
       startY: 0,
       startTime: 0,
+      lastY: 0,
+      lastTime: 0,
     }
+    releaseVelocityRef.current = 0
     setIsDragging(false)
     setIsClosingFromDrag(false)
     updateDragOffset(0)
@@ -184,6 +194,8 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       pointerId: null,
       startY: 0,
       startTime: 0,
+      lastY: 0,
+      lastTime: 0,
     }
     setIsDragging(false)
     setIsClosingFromDrag(true)
@@ -203,15 +215,20 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   const finishDrag = () => {
     const elapsedMs = Math.max(1, performance.now() - pointerStateRef.current.startTime)
     const velocity = dragOffsetRef.current / elapsedMs
+    const releaseVelocity = releaseVelocityRef.current
+    const crossedCloseThreshold = dragOffsetRef.current >= CLOSE_DRAG_THRESHOLD_PX
+    const hasUpwardReleaseIntent = crossedCloseThreshold && releaseVelocity <= REOPEN_VELOCITY_THRESHOLD
     const shouldClose =
-      dragOffsetRef.current >= CLOSE_DRAG_THRESHOLD_PX ||
-      (dragOffsetRef.current >= 24 && velocity >= CLOSE_VELOCITY_THRESHOLD)
+      !hasUpwardReleaseIntent &&
+      (crossedCloseThreshold || (dragOffsetRef.current >= 24 && velocity >= CLOSE_VELOCITY_THRESHOLD))
 
     if (shouldDebugNativeSheet) {
       console.debug("[BottomSheet] drag end", {
         closeLabel,
         dragOffset: dragOffsetRef.current,
         velocity,
+        releaseVelocity,
+        hasUpwardReleaseIntent,
         shouldClose,
       })
     }
@@ -233,8 +250,11 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       pointerId: event.pointerId,
       startY: event.clientY,
       startTime: performance.now(),
+      lastY: event.clientY,
+      lastTime: performance.now(),
     }
 
+    releaseVelocityRef.current = 0
     setIsDragging(true)
     updateDragOffset(0)
     event.currentTarget.setPointerCapture(event.pointerId)
@@ -244,6 +264,12 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     if (pointerStateRef.current.pointerId !== event.pointerId) {
       return
     }
+
+    const now = performance.now()
+    const elapsedMs = Math.max(1, now - pointerStateRef.current.lastTime)
+    releaseVelocityRef.current = (event.clientY - pointerStateRef.current.lastY) / elapsedMs
+    pointerStateRef.current.lastY = event.clientY
+    pointerStateRef.current.lastTime = now
 
     const deltaY = Math.max(0, event.clientY - pointerStateRef.current.startY)
     updateDragOffset(deltaY)
@@ -276,8 +302,11 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       pointerId: null,
       startY: touch.clientY,
       startTime: performance.now(),
+      lastY: touch.clientY,
+      lastTime: performance.now(),
     }
 
+    releaseVelocityRef.current = 0
     if (shouldDebugNativeSheet) {
       console.debug("[BottomSheet] drag start", {
         closeLabel,
@@ -302,6 +331,12 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     if (!touch) {
       return
     }
+
+    const now = performance.now()
+    const elapsedMs = Math.max(1, now - pointerStateRef.current.lastTime)
+    releaseVelocityRef.current = (touch.clientY - pointerStateRef.current.lastY) / elapsedMs
+    pointerStateRef.current.lastY = touch.clientY
+    pointerStateRef.current.lastTime = now
 
     const deltaY = Math.max(0, touch.clientY - pointerStateRef.current.startY)
     updateDragOffset(deltaY)
