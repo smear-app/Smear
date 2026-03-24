@@ -1,9 +1,11 @@
+import { Capacitor } from "@capacitor/core"
 import { useEffect, useRef, useState } from "react"
 
 const CLOSE_DRAG_THRESHOLD_PX = 96
 const CLOSE_VELOCITY_THRESHOLD = 0.55
 
 function BottomSheet({ isVisible, onClose, closeLabel, children }) {
+  const sheetRef = useRef(null)
   const pointerStateRef = useRef({
     pointerId: null,
     startY: 0,
@@ -13,9 +15,8 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
 
-  const isNativeIOS =
-    typeof document !== "undefined" &&
-    document.documentElement.dataset.platform === "capacitor-ios"
+  const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
+  const shouldDebugNativeSheet = import.meta.env.DEV && isNativeIOS
 
   useEffect(() => {
     if (!isVisible) {
@@ -29,6 +30,108 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       }
     }
   }, [isVisible])
+
+  useEffect(() => {
+    if (!isNativeIOS || !isVisible || typeof window === "undefined") {
+      return
+    }
+
+    const scrollY = window.scrollY
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverflow = document.body.style.overflow
+    const previousBodyPosition = document.body.style.position
+    const previousBodyTop = document.body.style.top
+    const previousBodyWidth = document.body.style.width
+    let lastTouchY = 0
+
+    const findScrollableAncestor = (startNode) => {
+      let node = startNode instanceof Element ? startNode : null
+
+      while (node && sheetRef.current?.contains(node)) {
+        const styles = window.getComputedStyle(node)
+        const overflowY = styles.overflowY
+        const canScroll =
+          (overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight
+
+        if (canScroll) {
+          return node
+        }
+
+        node = node.parentElement
+      }
+
+      return null
+    }
+
+    const handleDocumentTouchStart = (event) => {
+      const touch = event.touches[0]
+      lastTouchY = touch ? touch.clientY : 0
+    }
+
+    const handleDocumentTouchMove = (event) => {
+      const touch = event.touches[0]
+
+      if (!touch) {
+        return
+      }
+
+      const target = event.target
+
+      if (!sheetRef.current?.contains(target)) {
+        event.preventDefault()
+        return
+      }
+
+      const scrollableAncestor = findScrollableAncestor(target)
+
+      if (!scrollableAncestor) {
+        event.preventDefault()
+        lastTouchY = touch.clientY
+        return
+      }
+
+      const deltaY = touch.clientY - lastTouchY
+      const isPullingDown = deltaY > 0
+      const isPushingUp = deltaY < 0
+      const atTop = scrollableAncestor.scrollTop <= 0
+      const atBottom =
+        scrollableAncestor.scrollTop + scrollableAncestor.clientHeight >= scrollableAncestor.scrollHeight - 1
+
+      if ((isPullingDown && atTop) || (isPushingUp && atBottom)) {
+        event.preventDefault()
+      }
+
+      lastTouchY = touch.clientY
+    }
+
+    document.documentElement.style.overflow = "hidden"
+    document.body.style.overflow = "hidden"
+    document.body.style.position = "fixed"
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = "100%"
+
+    if (shouldDebugNativeSheet) {
+      console.debug("[BottomSheet] iOS scroll lock enabled", { closeLabel, scrollY })
+    }
+
+    document.addEventListener("touchstart", handleDocumentTouchStart, { passive: true, capture: true })
+    document.addEventListener("touchmove", handleDocumentTouchMove, { passive: false, capture: true })
+
+    return () => {
+      document.removeEventListener("touchstart", handleDocumentTouchStart, true)
+      document.removeEventListener("touchmove", handleDocumentTouchMove, true)
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+      document.body.style.position = previousBodyPosition
+      document.body.style.top = previousBodyTop
+      document.body.style.width = previousBodyWidth
+      window.scrollTo({ top: scrollY, left: 0, behavior: "auto" })
+
+      if (shouldDebugNativeSheet) {
+        console.debug("[BottomSheet] iOS scroll lock released", { closeLabel, scrollY })
+      }
+    }
+  }, [closeLabel, isNativeIOS, isVisible, shouldDebugNativeSheet])
 
   const updateDragOffset = (nextOffset) => {
     dragOffsetRef.current = nextOffset
@@ -51,6 +154,15 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     const shouldClose =
       dragOffsetRef.current >= CLOSE_DRAG_THRESHOLD_PX ||
       (dragOffsetRef.current >= 24 && velocity >= CLOSE_VELOCITY_THRESHOLD)
+
+    if (shouldDebugNativeSheet) {
+      console.debug("[BottomSheet] drag end", {
+        closeLabel,
+        dragOffset: dragOffsetRef.current,
+        velocity,
+        shouldClose,
+      })
+    }
 
     resetDrag()
 
@@ -113,6 +225,16 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       startTime: performance.now(),
     }
 
+    if (shouldDebugNativeSheet) {
+      console.debug("[BottomSheet] drag start", {
+        closeLabel,
+        target:
+          event.target instanceof Element
+            ? `${event.target.tagName.toLowerCase()}.${event.target.className || ""}`
+            : String(event.target),
+      })
+    }
+
     setIsDragging(true)
     updateDragOffset(0)
   }
@@ -142,7 +264,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="fixed inset-0 z-40" style={{ overscrollBehavior: isNativeIOS ? "contain" : "auto" }}>
       <button
         type="button"
         aria-label={closeLabel}
@@ -154,10 +276,14 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
 
       <div className="absolute inset-x-0 bottom-0 flex justify-center">
         <div
-          className={`flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] ${
+          ref={sheetRef}
+          className={`relative flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] ${
             isDragging ? "" : "transition-transform duration-300"
           } ${isVisible ? "translate-y-0" : "translate-y-full"}`}
-          style={isVisible && dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined}
+          style={{
+            ...(isVisible && dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined),
+            overscrollBehavior: isNativeIOS ? "contain" : "auto",
+          }}
         >
           <div
             aria-hidden="true"
@@ -169,9 +295,10 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onTouchCancel={handleTouchEnd}
-            className="flex min-h-11 items-center justify-center py-3"
+            className="absolute left-1/2 top-0 z-10 h-12 w-40 -translate-x-1/2"
             style={{ touchAction: isNativeIOS ? "none" : "auto" }}
-          >
+          />
+          <div className="pointer-events-none flex items-center justify-center pt-3">
             <span className="h-1.5 w-14 rounded-full bg-stone-border" />
           </div>
           {children}
