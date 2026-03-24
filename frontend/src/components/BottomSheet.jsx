@@ -3,9 +3,12 @@ import { useEffect, useRef, useState } from "react"
 
 const CLOSE_DRAG_THRESHOLD_PX = 96
 const CLOSE_VELOCITY_THRESHOLD = 0.55
+const CLOSE_ANIMATION_MS = 300
 
 function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   const sheetRef = useRef(null)
+  const closeTimeoutRef = useRef(null)
+  const closeAnimationFrameRef = useRef(null)
   const pointerStateRef = useRef({
     pointerId: null,
     startY: 0,
@@ -14,15 +17,25 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   const dragOffsetRef = useRef(0)
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
+  const [isClosingFromDrag, setIsClosingFromDrag] = useState(false)
 
   const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
   const shouldDebugNativeSheet = import.meta.env.DEV && isNativeIOS
 
   useEffect(() => {
     if (!isVisible) {
+      if (closeAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(closeAnimationFrameRef.current)
+        closeAnimationFrameRef.current = null
+      }
+      if (closeTimeoutRef.current !== null) {
+        window.clearTimeout(closeTimeoutRef.current)
+        closeTimeoutRef.current = null
+      }
       dragOffsetRef.current = 0
       setDragOffset(0)
       setIsDragging(false)
+      setIsClosingFromDrag(false)
       pointerStateRef.current = {
         pointerId: null,
         startY: 0,
@@ -145,7 +158,46 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       startTime: 0,
     }
     setIsDragging(false)
+    setIsClosingFromDrag(false)
     updateDragOffset(0)
+  }
+
+  const getCloseOffset = () => {
+    const sheetHeight = sheetRef.current?.getBoundingClientRect().height
+
+    if (sheetHeight && Number.isFinite(sheetHeight)) {
+      return sheetHeight
+    }
+
+    if (typeof window !== "undefined") {
+      return window.innerHeight
+    }
+
+    return CLOSE_DRAG_THRESHOLD_PX
+  }
+
+  const animateDragClose = () => {
+    const startOffset = dragOffsetRef.current
+    const closeOffset = getCloseOffset()
+
+    pointerStateRef.current = {
+      pointerId: null,
+      startY: 0,
+      startTime: 0,
+    }
+    setIsDragging(false)
+    setIsClosingFromDrag(true)
+    updateDragOffset(startOffset)
+
+    closeAnimationFrameRef.current = window.requestAnimationFrame(() => {
+      closeAnimationFrameRef.current = null
+      updateDragOffset(closeOffset)
+    })
+
+    closeTimeoutRef.current = window.setTimeout(() => {
+      closeTimeoutRef.current = null
+      onClose()
+    }, CLOSE_ANIMATION_MS)
   }
 
   const finishDrag = () => {
@@ -164,15 +216,16 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       })
     }
 
-    resetDrag()
-
     if (shouldClose) {
-      onClose()
+      animateDragClose()
+      return
     }
+
+    resetDrag()
   }
 
   const handlePointerDown = (event) => {
-    if (isNativeIOS || !isVisible) {
+    if (isNativeIOS || !isVisible || isClosingFromDrag) {
       return
     }
 
@@ -209,7 +262,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   }
 
   const handleTouchStart = (event) => {
-    if (!isNativeIOS || !isVisible) {
+    if (!isNativeIOS || !isVisible || isClosingFromDrag) {
       return
     }
 
@@ -281,7 +334,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
             isDragging ? "" : "transition-transform duration-300"
           } ${isVisible ? "translate-y-0" : "translate-y-full"}`}
           style={{
-            ...(isVisible && dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined),
+            ...(dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined),
             overscrollBehavior: isNativeIOS ? "contain" : "auto",
           }}
         >
