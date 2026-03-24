@@ -30,7 +30,7 @@
   }
 
   html[data-platform="capacitor-ios"] .app-safe-fixed-bottom {
-    padding-bottom: max(0px, calc(var(--native-safe-bottom) - 0.25rem));
+    padding-bottom: max(0px, calc(var(--native-safe-bottom) - 0.5rem));
   }
 
   html[data-platform="capacitor-ios"] .app-safe-fab {
