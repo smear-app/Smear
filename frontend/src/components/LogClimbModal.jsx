@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import GradeStep from "./GradeStep"
+import BottomSheet from "./BottomSheet"
 import LogClimbHeader from "./LogClimbHeader"
 import PhotoStep from "./PhotoStep"
 import SendStep from "./SendStep"
@@ -178,42 +179,24 @@ function LogClimbModal({
   }
 
   return (
-    <div className="fixed inset-0 z-40">
-      <button
-        type="button"
-        aria-label="Close log climb"
-        onClick={onClose}
-        className={`absolute inset-0 bg-[#2E2A26]/35 transition-opacity duration-300 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
-      <div className="absolute inset-x-0 bottom-0 flex justify-center">
-        <div
-          className={`flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] transition-transform duration-300 ${
-            isVisible ? "translate-y-0" : "translate-y-full"
-          }`}
-        >
-          <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-stone-border" />
-          {currentStep < SUCCESS_STEP && (
-            <>
-              <LogClimbHeader
-                currentStep={currentStep}
-                title={mode === "edit" ? "Edit Log" : "Log Climb"}
-                onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-                onClose={onClose}
-              />
-              <div className="px-6 pb-1 text-center text-sm text-slate-500">
-                {mode === "edit" ? "Editing at " : "Logging at "}
-                <span className="font-semibold text-slate-900">{draft.gymName}</span>
-              </div>
-              <StepProgress currentStep={currentStep} />
-            </>
-          )}
-          <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
-        </div>
-      </div>
-    </div>
+    <BottomSheet isVisible={isVisible} onClose={onClose} closeLabel="Close log climb">
+      {currentStep < SUCCESS_STEP && (
+        <>
+          <LogClimbHeader
+            currentStep={currentStep}
+            title={mode === "edit" ? "Edit Log" : "Log Climb"}
+            onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+            onClose={onClose}
+          />
+          <div className="px-6 pb-1 text-center text-sm text-slate-500">
+            {mode === "edit" ? "Editing at " : "Logging at "}
+            <span className="font-semibold text-slate-900">{draft.gymName}</span>
+          </div>
+          <StepProgress currentStep={currentStep} />
+        </>
+      )}
+      <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
+    </BottomSheet>
   )
 }
 
