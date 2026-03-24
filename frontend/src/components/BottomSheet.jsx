@@ -1,7 +1,7 @@
 import { Capacitor } from "@capacitor/core"
 import { useEffect, useRef, useState } from "react"
 
-const CLOSE_DRAG_THRESHOLD_PX = 96
+const CLOSE_DRAG_THRESHOLD_PX = 132
 const CLOSE_VELOCITY_THRESHOLD = 0.55
 const CLOSE_ANIMATION_MS = 300
 
