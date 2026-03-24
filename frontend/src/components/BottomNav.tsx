@@ -25,7 +25,7 @@ const BottomNav = () => {
             }
             aria-label={label}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-[1.375rem] w-[1.375rem]" />
             <span>{label}</span>
           </NavLink>
         ))}
