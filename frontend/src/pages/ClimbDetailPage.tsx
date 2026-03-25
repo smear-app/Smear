@@ -251,24 +251,36 @@ export default function ClimbDetailPage() {
 
   return (
     <div className="min-h-[100dvh] bg-stone-bg">
-      <div
-        ref={pageScrollRef}
-        className="mx-auto h-[100dvh] max-w-[420px] overflow-y-auto bg-stone-bg"
-        style={{
-          WebkitOverflowScrolling: "touch",
-          overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
-        }}
-        onScroll={(event) => {
-          setPageScrollTop(event.currentTarget.scrollTop)
-        }}
-      >
+      <div className="relative mx-auto h-[100dvh] max-w-[420px]">
+        {/* Keep the back button outside the scroll flow so it stays fixed and interactive
+            above the hero/card composition on both web and iOS. */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-30 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <BackButton
+            onClick={handleBack}
+            ariaLabel="Back"
+            size="sm"
+            className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
+          />
+        </div>
+
         <div
-          className="relative min-h-full"
+          ref={pageScrollRef}
+          className="h-[100dvh] overflow-y-auto bg-stone-bg"
           style={{
-            visibility: detail && !isDefaultAnchorReady ? "hidden" : "visible",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
+          }}
+          onScroll={(event) => {
+            setPageScrollTop(event.currentTarget.scrollTop)
           }}
         >
-          <style>{`
+          <div
+            className="relative min-h-full"
+            style={{
+              visibility: detail && !isDefaultAnchorReady ? "hidden" : "visible",
+            }}
+          >
+            <style>{`
             @keyframes climb-detail-hero-enter {
               0% {
                 opacity: 0;
@@ -303,104 +315,96 @@ export default function ClimbDetailPage() {
             }
           `}</style>
 
-          <div className="sticky top-0 z-0 h-0">
-            <div className="relative" style={heroAnimationStyle}>
-              <ClimbDetailHero
-                imageUrl={detail?.referenceImageUrl}
-                height={heroHeight}
-                imageScale={imageScale}
-                objectPosition={IMAGE_FOCAL_POINT}
-              />
-              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-                <BackButton
-                  onClick={handleBack}
-                  ariaLabel="Back"
-                  size="sm"
-                  className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
+            <div className="sticky top-0 z-0 h-0">
+              <div className="relative" style={heroAnimationStyle}>
+                <ClimbDetailHero
+                  imageUrl={detail?.referenceImageUrl}
+                  height={heroHeight}
+                  imageScale={imageScale}
+                  objectPosition={IMAGE_FOCAL_POINT}
                 />
               </div>
             </div>
-          </div>
 
-          <div aria-hidden="true" style={{ height: cardAnchorSpacerHeight }} />
+            <div aria-hidden="true" style={{ height: cardAnchorSpacerHeight }} />
 
-          <main
-            className="relative z-10 -mt-7 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
-            style={cardAnimationStyle}
-          >
-            {/* The card remains one normal-flow unit. The shared page scroll moves the whole card
-                and its contents together, so the summary tile never drifts inside the shell. */}
-            {loading ? (
-              <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
-                Loading climb details…
-              </div>
-            ) : loadError || !detail ? (
-              <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-red-500 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
-                {loadError ?? "Climb not found."}
-              </div>
-            ) : (
-              <>
-                <section
-                  ref={summaryTileRef}
-                  className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
-                  style={{
-                    viewTransitionName: isCardOpenTransition || isClosing ? "active-climb-card" : "none",
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <ClimbIdentityBlock
-                        gymGrade={detail.gymGrade}
-                        climbColor={detail.climbColor}
-                        officialName={detail.officialName}
-                      />
-                      <div className="mt-3 space-y-1.5">
-                        {detail.gymName ? (
-                          <div className="flex items-center gap-2 text-sm text-stone-muted">
-                            <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
-                            <span>{detail.gymName}</span>
-                          </div>
-                        ) : null}
-                        <div className="flex items-center gap-2 text-sm text-stone-muted">
-                          <FiCalendar className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
-                          <span>{new Date(detail.loggedAt).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <ClimbStatusPill sendType={detail.sendType} className="shrink-0" />
+            <main className="relative z-10 -mt-7" style={cardAnimationStyle}>
+              <div className="rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6">
+                {/* The scrolling card shell and all tiles live in one composed container, so the
+                    default state and the animated states use the same card/content composition. */}
+                {loading ? (
+                  <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+                    Loading climb details…
                   </div>
-                </section>
+                ) : loadError || !detail ? (
+                  <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-red-500 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+                    {loadError ?? "Climb not found."}
+                  </div>
+                ) : (
+                  <>
+                    <section
+                      ref={summaryTileRef}
+                      className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+                      style={{
+                        viewTransitionName: isCardOpenTransition || isClosing ? "active-climb-card" : "none",
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <ClimbIdentityBlock
+                            gymGrade={detail.gymGrade}
+                            climbColor={detail.climbColor}
+                            officialName={detail.officialName}
+                          />
+                          <div className="mt-3 space-y-1.5">
+                            {detail.gymName ? (
+                              <div className="flex items-center gap-2 text-sm text-stone-muted">
+                                <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                                <span>{detail.gymName}</span>
+                              </div>
+                            ) : null}
+                            <div className="flex items-center gap-2 text-sm text-stone-muted">
+                              <FiCalendar className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                              <span>{new Date(detail.loggedAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <ClimbStatusPill sendType={detail.sendType} className="shrink-0" />
+                      </div>
+                    </section>
 
-                <div className="mt-5">
-                  <ClimbTagsSection tags={detail.detailTags} />
-                </div>
+                    <div className="mt-5">
+                      <ClimbTagsSection tags={detail.detailTags} />
+                    </div>
 
-                <div className="mt-5">
-                  <ClimbNotesSection notes={detail.userNotes} />
-                </div>
+                    <div className="mt-5">
+                      <ClimbNotesSection notes={detail.userNotes} />
+                    </div>
 
-                <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
-                    Coming Later
-                  </p>
-                  <p className="mt-3 leading-6">
-                    Ratings, community ascents, and comments will live here once we split official
-                    community data from user-specific climb history.
-                  </p>
-                  {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
-                  {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
-                </section>
-              </>
-            )}
+                    <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+                        Coming Later
+                      </p>
+                      <p className="mt-3 leading-6">
+                        Ratings, community ascents, and comments will live here once we split official
+                        community data from user-specific climb history.
+                      </p>
+                      {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
+                      {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
+                    </section>
+                  </>
+                )}
 
-            <div
-              ref={safeAreaProbeRef}
-              aria-hidden="true"
-              style={{
-                height: "env(safe-area-inset-bottom)",
-              }}
-            />
-          </main>
+                <div
+                  ref={safeAreaProbeRef}
+                  aria-hidden="true"
+                  style={{
+                    height: "env(safe-area-inset-bottom)",
+                  }}
+                />
+              </div>
+            </main>
+          </div>
         </div>
       </div>
     </div>
