@@ -14,6 +14,28 @@
   body {
     @apply bg-stone-bg text-stone-text font-sans;
   }
+
+  html[data-platform="capacitor-ios"] {
+    --native-safe-top: env(safe-area-inset-top);
+    --native-safe-bottom: env(safe-area-inset-bottom);
+  }
+
+  html[data-platform="capacitor-ios"] .app-safe-shell {
+    min-height: 100dvh;
+    padding-top: var(--native-safe-top);
+  }
+
+  html[data-platform="capacitor-ios"] .app-safe-shell__main {
+    min-height: calc(100dvh - var(--native-safe-top));
+  }
+
+  html[data-platform="capacitor-ios"] .app-safe-fixed-bottom {
+    padding-bottom: max(0px, calc(var(--native-safe-bottom) - 0.5rem));
+  }
+
+  html[data-platform="capacitor-ios"] .app-safe-fab {
+    bottom: calc(4.75rem + var(--native-safe-bottom));
+  }
 }
 
 @layer base {
