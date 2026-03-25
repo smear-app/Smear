@@ -11,21 +11,21 @@ const navItems = [
 
 const BottomNav = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-border bg-stone-surface/95 backdrop-blur">
-      <div className="mx-auto flex max-w-[420px] items-center justify-between px-6 py-3">
+    <nav className="app-safe-fixed-bottom fixed bottom-0 left-0 right-0 z-30 border-t border-stone-border bg-stone-surface/95 px-5 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-[380px] items-center justify-between py-3">
         {navItems.map(({ label, icon: Icon, to }) => (
           <NavLink
             key={label}
             to={to}
             end={to === "/"}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-1 text-[11px] font-medium ${
+              `flex flex-1 flex-col items-center justify-center gap-0.5 text-[13px] font-medium ${
                 isActive ? "text-ember" : "text-stone-muted"
               }`
             }
             aria-label={label}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-[1.625rem] w-[1.625rem]" />
             <span>{label}</span>
           </NavLink>
         ))}

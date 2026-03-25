@@ -14,8 +14,8 @@ export default function ProfilePage() {
   }, [user])
 
   return (
-    <div className="min-h-screen bg-stone-bg">
-      <main className="mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
+    <div className="app-safe-shell min-h-screen bg-stone-bg">
+      <main className="app-safe-shell__main mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
         <div className="flex items-start justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">Profile</p>

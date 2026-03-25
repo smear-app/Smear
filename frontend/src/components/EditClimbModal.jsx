@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { FiCamera, FiChevronDown, FiMapPin, FiX } from "react-icons/fi"
+import BottomSheet from "./BottomSheet"
 import ColorChipSelector from "./ColorChipSelector"
 import { useAuth } from "../context/AuthContext"
 import { fetchLoggedGyms } from "../lib/climbs"
@@ -336,40 +337,23 @@ export default function EditClimbModal({
   }
 
   return (
-    <div className="fixed inset-0 z-40">
-      <button
-        type="button"
-        aria-label="Close edit climb"
-        onClick={onClose}
-        className={`absolute inset-0 bg-stone-text/35 transition-opacity duration-300 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
-      <div className="absolute inset-x-0 bottom-0 flex justify-center">
-        <div
-          className={`flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] transition-transform duration-300 ${
-            isVisible ? "translate-y-0" : "translate-y-full"
-          }`}
+    <BottomSheet isVisible={isVisible} onClose={onClose} closeLabel="Close edit climb">
+      <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Edit Climb</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary"
+          aria-label="Close edit climb"
         >
-          <div className="mx-auto mt-3 h-1.5 w-14 rounded-full bg-stone-border" />
+          <FiX className="h-4.5 w-4.5" />
+        </button>
+      </div>
 
-          <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-4">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Edit Climb</p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary"
-              aria-label="Close edit climb"
-            >
-              <FiX className="h-4.5 w-4.5" />
-            </button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
-            <div className="space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+        <div className="space-y-4">
               <EditSection {...EDIT_SECTIONS[0]}>
                 <label className="block">
                   <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
@@ -584,10 +568,8 @@ export default function EditClimbModal({
               >
                 {isSaving ? "Saving..." : "Save Climb"}
               </button>
-            </div>
-          </div>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   )
 }

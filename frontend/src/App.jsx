@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
+import { Capacitor } from "@capacitor/core"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
@@ -209,6 +210,29 @@ function GymScopedApp() {
 }
 
 export default function App() {
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return
+    }
+
+    const platform = Capacitor.getPlatform()
+    const isNativePlatform = Capacitor.isNativePlatform()
+
+    if (platform === "ios" && isNativePlatform) {
+      const viewportMeta = document.querySelector('meta[name="viewport"]')
+
+      if (viewportMeta && !viewportMeta.content.includes("viewport-fit=cover")) {
+        viewportMeta.content = `${viewportMeta.content}, viewport-fit=cover`
+      }
+
+      document.documentElement.dataset.platform = "capacitor-ios"
+
+      return () => {
+        delete document.documentElement.dataset.platform
+      }
+    }
+  }, [])
+
   return (
     <AuthProvider>
       <GymScopedApp />

@@ -2,7 +2,7 @@ import { FiPlus } from "react-icons/fi"
 
 function FloatingActionButton({ onClick, disabled = false }) {
   return (
-    <div className="fixed bottom-20 left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 px-5">
+    <div className="app-safe-fab fixed bottom-20 left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 px-5">
       <button
         type="button"
         aria-label="Log a climb"
