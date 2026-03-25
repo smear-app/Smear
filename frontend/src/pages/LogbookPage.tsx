@@ -387,9 +387,9 @@ export default function LogbookPage({
   }
 
   return (
-    <div className="min-h-screen bg-stone-bg">
+    <div className="app-safe-shell min-h-screen bg-stone-bg">
       <main
-        className="mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-[calc(6.25rem+env(safe-area-inset-bottom))] pt-6"
+        className="app-safe-shell__main mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-[calc(6.25rem+env(safe-area-inset-bottom))] pt-6"
         style={{
           animation: isOpeningFromHome ? "logbook-stack-enter 280ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
         }}

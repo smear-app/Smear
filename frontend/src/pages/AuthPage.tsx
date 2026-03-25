@@ -54,7 +54,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-bg px-5">
+    <div className="app-safe-shell flex min-h-screen items-center justify-center bg-stone-bg px-5">
       <div className="w-full max-w-[420px]">
         <h1 className="mb-8 text-center text-3xl font-bold text-stone-text">Smear</h1>
 

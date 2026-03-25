@@ -55,9 +55,9 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalCli
   }, [returningClimbId])
 
   return (
-    <div className="min-h-screen bg-stone-bg">
+    <div className="app-safe-shell min-h-screen bg-stone-bg">
       <main
-        className="mx-auto max-w-[420px] px-5 pb-32 pt-6"
+        className="app-safe-shell__main mx-auto max-w-[420px] px-5 pb-32 pt-6"
         style={{
           animation: isReturningFromLogbook ? "home-stack-return 280ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
         }}
