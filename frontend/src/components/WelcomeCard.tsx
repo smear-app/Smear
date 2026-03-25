@@ -22,8 +22,8 @@ const WelcomeCard = () => {
     <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 shadow-[0_12px_28px_rgba(89,68,51,0.07)]">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-500">Welcome Back</p>
-          <p className="truncate text-2xl font-bold text-gray-900">
+          <p className="text-xs font-medium text-stone-secondary">Welcome Back</p>
+          <p className="truncate text-2xl font-bold text-stone-text">
             {displayName ?? "Climber"}
           </p>
         </div>
