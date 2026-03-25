@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
+import type { ReactNode } from "react"
 
 export type Theme = "light" | "dark" | "system"
 
@@ -49,14 +50,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (media) {
-      if ("addEventListener" in media) media.addEventListener("change", handler)
-      else media.addListener(handler)
+      media.addEventListener("change", handler)
     }
 
     return () => {
       if (media) {
-        if ("removeEventListener" in media) media.removeEventListener("change", handler)
-        else media.removeListener(handler)
+        media.removeEventListener("change", handler)
       }
     }
   }, [theme])

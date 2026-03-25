@@ -136,7 +136,7 @@ export default function LogbookCalendarScaffold({
               onVisibleMonthChange(addMonths(visibleMonth, -1))
               onSelectedDateKeyChange(null)
             }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
           >
             <FiChevronLeft className="h-4 w-4" />
           </button>
@@ -158,7 +158,7 @@ export default function LogbookCalendarScaffold({
                     return nextOpen
                   })
                 }
-                className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-stone-alt"
+                className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
               >
                 <span>{formatMonthHeading(visibleMonth)}</span>
                 <FiChevronDown
@@ -173,7 +173,7 @@ export default function LogbookCalendarScaffold({
                 aria-label="Previous year"
                 disabled={pickerYear <= pickerMinYear}
                 onClick={() => setPickerYear((current) => Math.max(pickerMinYear, current - 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
               >
                 <FiChevronLeft className="h-4 w-4" />
               </button>
@@ -190,7 +190,7 @@ export default function LogbookCalendarScaffold({
                 aria-label="Next year"
                 disabled={pickerYear >= pickerMaxYear}
                 onClick={() => setPickerYear((current) => Math.min(pickerMaxYear, current + 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
               >
                 <FiChevronRight className="h-4 w-4" />
               </button>
@@ -227,7 +227,7 @@ export default function LogbookCalendarScaffold({
               <button
                 type="button"
                 onClick={() => setIsPickerOpen(false)}
-                className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-stone-alt"
+                className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
               >
                 Close
               </button>
@@ -241,13 +241,13 @@ export default function LogbookCalendarScaffold({
               onVisibleMonthChange(addMonths(visibleMonth, 1))
               onSelectedDateKeyChange(null)
             }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
           >
             <FiChevronRight className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-stone-alt p-3">
+        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-stone-surface dark:bg-stone-alt p-3">
           <div className="grid grid-cols-7 gap-1.5">
           {WEEKDAY_LABELS.map((label) => (
             <div
@@ -270,13 +270,13 @@ export default function LogbookCalendarScaffold({
                 key={dayKey}
                 type="button"
                 onClick={() => onSelectedDateKeyChange(selectedDateKey === dayKey ? null : dayKey)}
-                className={`relative aspect-square rounded-[14px] border text-sm transition-colors ${
+                className={`relative aspect-square rounded-[14px] border text-sm transition-all ${
                   isSelected
                     ? "border-ember/25 bg-ember-soft text-ember"
                     : isToday
-                      ? "border-ember/70 bg-stone-surface text-stone-text"
+                      ? "border-ember bg-stone-alt text-stone-text ring-0.5 ring-ember dark:bg-stone-bg dark:ring-ember"
                     : climbCount > 0
-                      ? "border-stone-border/80 bg-stone-surface text-stone-text"
+                      ? "border-stone-border/80 bg-stone-alt text-stone-text dark:border-stone-border/60 dark:bg-stone-bg"
                       : "border-stone-border/60 bg-stone-surface/70 text-stone-secondary"
                 } ${isInVisibleMonth ? "" : "opacity-45"}`}
               >
