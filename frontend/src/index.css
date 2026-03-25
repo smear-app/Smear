@@ -23,9 +23,9 @@
   }
 
   .dark {
-    --stone-bg: #0B0F12;
-    --stone-surface: #0F1416;
-    --stone-alt: #0A0C0D;
+    --stone-bg: #252528;
+    --stone-surface: #1c1c1e;
+    --stone-alt: #202022;
     --stone-border: #2F3334;
     --stone-text: #FFFFFF;
     --stone-secondary: #C9CECF;

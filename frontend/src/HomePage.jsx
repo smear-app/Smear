@@ -186,7 +186,7 @@ function ClimbCard({ climb, isOpening, isReturning, onDelete, onEdit, onOpen }) 
           onOpen()
         }}
         className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
-          isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
+          isPressed ? "bg-[#F0EBE4]" : "bg-stone-alt"
         }`}
         style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
       >
