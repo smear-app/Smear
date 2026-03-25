@@ -77,4 +77,8 @@
   .climb-card-interactive:hover {
     background-color: #f0ebe4;
   }
+  
+  .dark .climb-card-interactive:hover {
+    background-color: #1a1f22;
+  }
 }
