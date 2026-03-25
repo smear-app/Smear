@@ -50,13 +50,17 @@ function useObservedHeight<T extends HTMLElement>(ref: RefObject<T | null>) {
   useLayoutEffect(() => {
     const node = ref.current
 
-    if (!node || typeof ResizeObserver === "undefined") {
-      setHeight(node?.getBoundingClientRect().height ?? 0)
+    if (!node) {
+      setHeight(0)
       return
     }
 
     const updateHeight = () => setHeight(node.getBoundingClientRect().height)
     updateHeight()
+
+    if (typeof ResizeObserver === "undefined") {
+      return
+    }
 
     const resizeObserver = new ResizeObserver(updateHeight)
     resizeObserver.observe(node)
@@ -81,14 +85,11 @@ export default function ClimbDetailPage() {
     status: "idle",
   })
   const [isClosing, setIsClosing] = useState(false)
-  const [cardScrollTop, setCardScrollTop] = useState(0)
-  const [isScrollPrimed, setIsScrollPrimed] = useState(false)
-  const viewportRef = useRef<HTMLDivElement | null>(null)
-  const cardScrollRef = useRef<HTMLElement | null>(null)
+  const [pageScrollTop, setPageScrollTop] = useState(0)
+  const [isDefaultAnchorReady, setIsDefaultAnchorReady] = useState(false)
+  const pageScrollRef = useRef<HTMLDivElement | null>(null)
   const summaryTileRef = useRef<HTMLElement | null>(null)
-  const cardContentRef = useRef<HTMLDivElement | null>(null)
   const safeAreaProbeRef = useRef<HTMLDivElement | null>(null)
-  const initializedDetailIdRef = useRef<string | null>(null)
   const isCardOpenTransition = locationState.transition === "card-open"
   const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
   const fetchedClimb =
@@ -108,9 +109,13 @@ export default function ClimbDetailPage() {
       fetchedState.status === "idle")
 
   useEffect(() => {
-    initializedDetailIdRef.current = null
-    setCardScrollTop(0)
-    setIsScrollPrimed(false)
+    setIsDefaultAnchorReady(false)
+
+    if (pageScrollRef.current) {
+      pageScrollRef.current.scrollTop = 0
+    }
+
+    setPageScrollTop(0)
   }, [climbId])
 
   useEffect(() => {
@@ -158,29 +163,21 @@ export default function ClimbDetailPage() {
   const detail = useMemo(() => (climb ? buildClimbDetailData(climb) : null), [climb])
   const hasImage = Boolean(detail?.referenceImageUrl)
   const initialHeroHeight = hasImage ? IMAGE_HEADER_INITIAL : IMAGE_HEADER_PLACEHOLDER
-  const viewportHeight = useObservedHeight(viewportRef)
+  const viewportHeight = useObservedHeight(pageScrollRef)
   const summaryTileHeight = useObservedHeight(summaryTileRef)
-  const measuredSafeAreaBottom = useObservedHeight(safeAreaProbeRef)
-  const cardContentHeight = useObservedHeight(cardContentRef)
-  const bottomSpacing = SUMMARY_BOTTOM_GAP + measuredSafeAreaBottom
-  const collapsedCardHeight = summaryTileHeight > 0 ? summaryTileHeight + bottomSpacing : 0
+  const safeAreaBottom = useObservedHeight(safeAreaProbeRef)
+  const bottomSpacing = SUMMARY_BOTTOM_GAP + safeAreaBottom
   const defaultCardTop = initialHeroHeight - CARD_HERO_OVERLAP
-  const defaultCardHeight = viewportHeight > 0 ? Math.max(0, viewportHeight - defaultCardTop) : 0
-  const totalCardHeight = cardContentHeight + bottomSpacing
-  const maxScrollableContentOffset = Math.max(0, totalCardHeight - summaryTileHeight - CARD_TOP_PADDING)
-  const scrollProgressRange = Math.max(
-    0,
-    Math.min(
-      Math.max(0, defaultCardHeight - collapsedCardHeight - CARD_TOP_PADDING),
-      maxScrollableContentOffset,
-    ),
-  )
-  const anchoredScrollTop = clamp(cardScrollTop, 0, scrollProgressRange)
-  const cardHeroProgress = scrollProgressRange > 0 ? 1 - anchoredScrollTop / scrollProgressRange : 0
-  const restingCardOffset = scrollProgressRange * (1 - cardHeroProgress)
-  const cardTopInset = lerp(CARD_TOP_PADDING, 0, cardHeroProgress)
-  const cardSpacerHeight = restingCardOffset
-  const cardVisibleHeight = collapsedCardHeight + cardTopInset + restingCardOffset
+  const collapsedCardTop =
+    viewportHeight > 0 && summaryTileHeight > 0
+      ? Math.max(defaultCardTop, viewportHeight - bottomSpacing - summaryTileHeight - CARD_TOP_PADDING)
+      : defaultCardTop
+  const defaultAnchorOffset = Math.max(0, collapsedCardTop - defaultCardTop)
+  const boundedHeroScrollTop = clamp(pageScrollTop, 0, defaultAnchorOffset)
+  // Default lives at the measured anchor. The hero only uses the bounded range above it;
+  // deeper page scroll immediately becomes the normal details-reading path.
+  const heroProgress =
+    defaultAnchorOffset > 0 ? 1 - boundedHeroScrollTop / defaultAnchorOffset : 0
   const maxImageHeightAvailable =
     viewportHeight > 0 && summaryTileHeight > 0
       ? Math.max(
@@ -191,31 +188,21 @@ export default function ClimbDetailPage() {
           ),
         )
       : initialHeroHeight
-  const heroHeight = lerp(initialHeroHeight, maxImageHeightAvailable, cardHeroProgress)
-  const imageScale = hasImage ? lerp(1, HERO_MAX_IMAGE_SCALE, cardHeroProgress) : 1
-  const heroLayoutReady =
-    Boolean(detail) &&
-    viewportHeight > 0 &&
-    summaryTileHeight > 0 &&
-    cardContentHeight > 0 &&
-    isScrollPrimed
-  const interactiveCardVisibleHeight = heroLayoutReady ? cardVisibleHeight : defaultCardHeight
+  // Preserve the existing image interpolation behavior and only correct the scroll-domain around it.
+  const heroHeight = lerp(initialHeroHeight, maxImageHeightAvailable, heroProgress)
+  const imageScale = hasImage ? lerp(1, HERO_MAX_IMAGE_SCALE, heroProgress) : 1
+  const cardAnchorSpacerHeight = initialHeroHeight + defaultAnchorOffset
+  const isLayoutMeasured = !detail || (viewportHeight > 0 && summaryTileHeight > 0)
 
   useLayoutEffect(() => {
-    if (!detail || !cardScrollRef.current || !viewportHeight || !summaryTileHeight || !cardContentHeight) {
+    if (!pageScrollRef.current || !detail || !isLayoutMeasured || isDefaultAnchorReady) {
       return
     }
 
-    if (initializedDetailIdRef.current === detail.id) {
-      return
-    }
-
-    const nextScrollTop = scrollProgressRange
-    cardScrollRef.current.scrollTop = nextScrollTop
-    setCardScrollTop(nextScrollTop)
-    setIsScrollPrimed(true)
-    initializedDetailIdRef.current = detail.id
-  }, [cardContentHeight, detail, scrollProgressRange, summaryTileHeight, viewportHeight])
+    pageScrollRef.current.scrollTop = defaultAnchorOffset
+    setPageScrollTop(defaultAnchorOffset)
+    setIsDefaultAnchorReady(true)
+  }, [defaultAnchorOffset, detail, isDefaultAnchorReady, isLayoutMeasured])
 
   const handleBack = () => {
     if (!detail || isClosing) {
@@ -264,151 +251,147 @@ export default function ClimbDetailPage() {
 
   return (
     <div className="min-h-[100dvh] bg-stone-bg">
-      <div ref={viewportRef} className="relative mx-auto h-[100dvh] max-w-[420px] overflow-hidden bg-stone-bg">
-        <style>{`
-          @keyframes climb-detail-hero-enter {
-            0% {
-              opacity: 0;
-              transform: scale(0.985);
+      <div
+        ref={pageScrollRef}
+        className="mx-auto h-[100dvh] max-w-[420px] overflow-y-auto bg-stone-bg"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
+        }}
+        onScroll={(event) => {
+          setPageScrollTop(event.currentTarget.scrollTop)
+        }}
+      >
+        <div
+          className="relative min-h-full"
+          style={{
+            visibility: detail && !isDefaultAnchorReady ? "hidden" : "visible",
+          }}
+        >
+          <style>{`
+            @keyframes climb-detail-hero-enter {
+              0% {
+                opacity: 0;
+                transform: scale(0.985);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1);
+              }
             }
-            100% {
-              opacity: 1;
-              transform: scale(1);
-            }
-          }
 
-          @keyframes climb-detail-content-enter {
-            0% {
-              opacity: 0;
-              transform: translateY(12px);
+            @keyframes climb-detail-content-enter {
+              0% {
+                opacity: 0;
+                transform: translateY(12px);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0);
+              }
             }
-            100% {
-              opacity: 1;
-              transform: translateY(0);
+
+            @keyframes climb-detail-content-exit {
+              0% {
+                opacity: 1;
+                transform: translateY(0);
+              }
+              100% {
+                opacity: 0;
+                transform: translateY(8px);
+              }
             }
-          }
+          `}</style>
 
-          @keyframes climb-detail-content-exit {
-            0% {
-              opacity: 1;
-              transform: translateY(0);
-            }
-            100% {
-              opacity: 0;
-              transform: translateY(8px);
-            }
-          }
-        `}</style>
-
-        <div className="absolute inset-x-0 top-0 z-0" style={heroAnimationStyle}>
-          <ClimbDetailHero
-            imageUrl={detail?.referenceImageUrl}
-            height={heroHeight}
-            imageScale={imageScale}
-            objectPosition={IMAGE_FOCAL_POINT}
-          />
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-          <BackButton
-            onClick={handleBack}
-            ariaLabel="Back"
-            size="sm"
-            className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
-          />
-        </div>
-
-        {loading ? (
-          <main
-            className="absolute inset-x-0 bottom-0 z-10 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
-            style={{ height: Math.max(defaultCardHeight, 280), ...cardAnimationStyle }}
-          >
-            <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
-              Loading climb details…
+          <div className="sticky top-0 z-0 h-0">
+            <div className="relative" style={heroAnimationStyle}>
+              <ClimbDetailHero
+                imageUrl={detail?.referenceImageUrl}
+                height={heroHeight}
+                imageScale={imageScale}
+                objectPosition={IMAGE_FOCAL_POINT}
+              />
+              <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+                <BackButton
+                  onClick={handleBack}
+                  ariaLabel="Back"
+                  size="sm"
+                  className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
+                />
+              </div>
             </div>
-          </main>
-        ) : loadError || !detail ? (
-          <main
-            className="absolute inset-x-0 bottom-0 z-10 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
-            style={{ height: Math.max(defaultCardHeight, 280), ...cardAnimationStyle }}
-          >
-            <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-red-500 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
-              {loadError ?? "Climb not found."}
-            </div>
-          </main>
-        ) : (
-          <main
-            ref={cardScrollRef}
-            className="absolute inset-x-0 bottom-0 z-10 overflow-y-auto rounded-t-[32px] bg-stone-bg px-5"
-            style={{
-              height: Math.max(interactiveCardVisibleHeight, collapsedCardHeight || 0),
-              paddingTop: cardTopInset,
-              paddingBottom: `calc(${SUMMARY_BOTTOM_GAP}px + env(safe-area-inset-bottom))`,
-              WebkitOverflowScrolling: "touch",
-              overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
-              ...cardAnimationStyle,
-              visibility: heroLayoutReady ? "visible" : "hidden",
-            }}
-            onScroll={(event) => {
-              setCardScrollTop(event.currentTarget.scrollTop)
-            }}
-          >
-            {/* The measured scrollTop becomes one normalized progress value, and that progress drives
-                the spacer, card shell height, and hero interpolation over the same layout-defined range. */}
-            <div style={{ height: cardSpacerHeight }} aria-hidden="true" />
+          </div>
 
-            <div ref={cardContentRef}>
-              <section
-                ref={summaryTileRef}
-                className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
-                style={{
-                  viewTransitionName: isCardOpenTransition || isClosing ? "active-climb-card" : "none",
-                }}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <ClimbIdentityBlock
-                      gymGrade={detail.gymGrade}
-                      climbColor={detail.climbColor}
-                      officialName={detail.officialName}
-                    />
-                    <div className="mt-3 space-y-1.5">
-                      {detail.gymName ? (
+          <div aria-hidden="true" style={{ height: cardAnchorSpacerHeight }} />
+
+          <main
+            className="relative z-10 -mt-7 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
+            style={cardAnimationStyle}
+          >
+            {/* The card remains one normal-flow unit. The shared page scroll moves the whole card
+                and its contents together, so the summary tile never drifts inside the shell. */}
+            {loading ? (
+              <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+                Loading climb details…
+              </div>
+            ) : loadError || !detail ? (
+              <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-red-500 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
+                {loadError ?? "Climb not found."}
+              </div>
+            ) : (
+              <>
+                <section
+                  ref={summaryTileRef}
+                  className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+                  style={{
+                    viewTransitionName: isCardOpenTransition || isClosing ? "active-climb-card" : "none",
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <ClimbIdentityBlock
+                        gymGrade={detail.gymGrade}
+                        climbColor={detail.climbColor}
+                        officialName={detail.officialName}
+                      />
+                      <div className="mt-3 space-y-1.5">
+                        {detail.gymName ? (
+                          <div className="flex items-center gap-2 text-sm text-stone-muted">
+                            <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                            <span>{detail.gymName}</span>
+                          </div>
+                        ) : null}
                         <div className="flex items-center gap-2 text-sm text-stone-muted">
-                          <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
-                          <span>{detail.gymName}</span>
+                          <FiCalendar className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
+                          <span>{new Date(detail.loggedAt).toLocaleDateString()}</span>
                         </div>
-                      ) : null}
-                      <div className="flex items-center gap-2 text-sm text-stone-muted">
-                        <FiCalendar className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
-                        <span>{new Date(detail.loggedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
+                    <ClimbStatusPill sendType={detail.sendType} className="shrink-0" />
                   </div>
-                  <ClimbStatusPill sendType={detail.sendType} className="shrink-0" />
+                </section>
+
+                <div className="mt-5">
+                  <ClimbTagsSection tags={detail.detailTags} />
                 </div>
-              </section>
 
-              <div className="mt-5">
-                <ClimbTagsSection tags={detail.detailTags} />
-              </div>
+                <div className="mt-5">
+                  <ClimbNotesSection notes={detail.userNotes} />
+                </div>
 
-              <div className="mt-5">
-                <ClimbNotesSection notes={detail.userNotes} />
-              </div>
-
-              <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
-                  Coming Later
-                </p>
-                <p className="mt-3 leading-6">
-                  Ratings, community ascents, and comments will live here once we split official
-                  community data from user-specific climb history.
-                </p>
-                {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
-                {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
-              </section>
-            </div>
+                <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+                    Coming Later
+                  </p>
+                  <p className="mt-3 leading-6">
+                    Ratings, community ascents, and comments will live here once we split official
+                    community data from user-specific climb history.
+                  </p>
+                  {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
+                  {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
+                </section>
+              </>
+            )}
 
             <div
               ref={safeAreaProbeRef}
@@ -418,7 +401,7 @@ export default function ClimbDetailPage() {
               }}
             />
           </main>
-        )}
+        </div>
       </div>
     </div>
   )
