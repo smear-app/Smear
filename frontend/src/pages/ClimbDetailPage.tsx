@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import { Capacitor } from "@capacitor/core"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react"
 import { FiCalendar, FiMapPin } from "react-icons/fi"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
 import BackButton from "../components/BackButton"
@@ -26,10 +27,45 @@ type FetchedClimbState = {
   status: "idle" | "success" | "error"
 }
 
-const IMAGE_HEADER_EXPANDED = 336
-const IMAGE_HEADER_COLLAPSED = 172
-const PLACEHOLDER_HEADER_EXPANDED = 168
-const PLACEHOLDER_HEADER_COLLAPSED = 116
+const IMAGE_HEADER_INITIAL = 336
+const IMAGE_HEADER_PLACEHOLDER = 168
+const CARD_HERO_OVERLAP = 28
+const CARD_TOP_PADDING = 24
+const SUMMARY_BOTTOM_GAP = 18
+const HERO_SUMMARY_UNDERLAP = 24
+const HERO_MAX_IMAGE_SCALE = 1.08
+const IMAGE_FOCAL_POINT = "50% 38%"
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function lerp(start: number, end: number, progress: number) {
+  return start + (end - start) * progress
+}
+
+function useObservedHeight<T extends HTMLElement>(ref: RefObject<T | null>) {
+  const [height, setHeight] = useState(0)
+
+  useLayoutEffect(() => {
+    const node = ref.current
+
+    if (!node || typeof ResizeObserver === "undefined") {
+      setHeight(node?.getBoundingClientRect().height ?? 0)
+      return
+    }
+
+    const updateHeight = () => setHeight(node.getBoundingClientRect().height)
+    updateHeight()
+
+    const resizeObserver = new ResizeObserver(updateHeight)
+    resizeObserver.observe(node)
+
+    return () => resizeObserver.disconnect()
+  }, [ref])
+
+  return height
+}
 
 export default function ClimbDetailPage() {
   const { climbId } = useParams()
@@ -44,9 +80,17 @@ export default function ClimbDetailPage() {
     requestedClimbId: null,
     status: "idle",
   })
-  const [scrollY, setScrollY] = useState(0)
   const [isClosing, setIsClosing] = useState(false)
+  const [cardScrollTop, setCardScrollTop] = useState(0)
+  const [isScrollPrimed, setIsScrollPrimed] = useState(false)
+  const viewportRef = useRef<HTMLDivElement | null>(null)
+  const cardScrollRef = useRef<HTMLElement | null>(null)
+  const summaryTileRef = useRef<HTMLElement | null>(null)
+  const cardContentRef = useRef<HTMLDivElement | null>(null)
+  const safeAreaProbeRef = useRef<HTMLDivElement | null>(null)
+  const initializedDetailIdRef = useRef<string | null>(null)
   const isCardOpenTransition = locationState.transition === "card-open"
+  const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
   const fetchedClimb =
     fetchedState.requestedClimbId === climbId && fetchedState.status === "success"
       ? fetchedState.climb
@@ -64,16 +108,10 @@ export default function ClimbDetailPage() {
       fetchedState.status === "idle")
 
   useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" })
+    initializedDetailIdRef.current = null
+    setCardScrollTop(0)
+    setIsScrollPrimed(false)
   }, [climbId])
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY)
-
-    handleScroll()
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
 
   useEffect(() => {
     if (!user || !climbId) {
@@ -119,9 +157,65 @@ export default function ClimbDetailPage() {
 
   const detail = useMemo(() => (climb ? buildClimbDetailData(climb) : null), [climb])
   const hasImage = Boolean(detail?.referenceImageUrl)
-  const expandedHeight = hasImage ? IMAGE_HEADER_EXPANDED : PLACEHOLDER_HEADER_EXPANDED
-  const collapsedHeight = hasImage ? IMAGE_HEADER_COLLAPSED : PLACEHOLDER_HEADER_COLLAPSED
-  const headerHeight = Math.max(collapsedHeight, expandedHeight - scrollY * 0.45)
+  const initialHeroHeight = hasImage ? IMAGE_HEADER_INITIAL : IMAGE_HEADER_PLACEHOLDER
+  const viewportHeight = useObservedHeight(viewportRef)
+  const summaryTileHeight = useObservedHeight(summaryTileRef)
+  const measuredSafeAreaBottom = useObservedHeight(safeAreaProbeRef)
+  const cardContentHeight = useObservedHeight(cardContentRef)
+  const bottomSpacing = SUMMARY_BOTTOM_GAP + measuredSafeAreaBottom
+  const collapsedCardHeight = summaryTileHeight > 0 ? summaryTileHeight + bottomSpacing : 0
+  const defaultCardTop = initialHeroHeight - CARD_HERO_OVERLAP
+  const defaultCardHeight = viewportHeight > 0 ? Math.max(0, viewportHeight - defaultCardTop) : 0
+  const totalCardHeight = cardContentHeight + bottomSpacing
+  const maxScrollableContentOffset = Math.max(0, totalCardHeight - summaryTileHeight - CARD_TOP_PADDING)
+  const scrollProgressRange = Math.max(
+    0,
+    Math.min(
+      Math.max(0, defaultCardHeight - collapsedCardHeight - CARD_TOP_PADDING),
+      maxScrollableContentOffset,
+    ),
+  )
+  const anchoredScrollTop = clamp(cardScrollTop, 0, scrollProgressRange)
+  const cardHeroProgress = scrollProgressRange > 0 ? 1 - anchoredScrollTop / scrollProgressRange : 0
+  const restingCardOffset = scrollProgressRange * (1 - cardHeroProgress)
+  const cardTopInset = lerp(CARD_TOP_PADDING, 0, cardHeroProgress)
+  const cardSpacerHeight = restingCardOffset
+  const cardVisibleHeight = collapsedCardHeight + cardTopInset + restingCardOffset
+  const maxImageHeightAvailable =
+    viewportHeight > 0 && summaryTileHeight > 0
+      ? Math.max(
+          initialHeroHeight,
+          Math.min(
+            viewportHeight,
+            viewportHeight - bottomSpacing - summaryTileHeight + HERO_SUMMARY_UNDERLAP,
+          ),
+        )
+      : initialHeroHeight
+  const heroHeight = lerp(initialHeroHeight, maxImageHeightAvailable, cardHeroProgress)
+  const imageScale = hasImage ? lerp(1, HERO_MAX_IMAGE_SCALE, cardHeroProgress) : 1
+  const heroLayoutReady =
+    Boolean(detail) &&
+    viewportHeight > 0 &&
+    summaryTileHeight > 0 &&
+    cardContentHeight > 0 &&
+    isScrollPrimed
+  const interactiveCardVisibleHeight = heroLayoutReady ? cardVisibleHeight : defaultCardHeight
+
+  useLayoutEffect(() => {
+    if (!detail || !cardScrollRef.current || !viewportHeight || !summaryTileHeight || !cardContentHeight) {
+      return
+    }
+
+    if (initializedDetailIdRef.current === detail.id) {
+      return
+    }
+
+    const nextScrollTop = scrollProgressRange
+    cardScrollRef.current.scrollTop = nextScrollTop
+    setCardScrollTop(nextScrollTop)
+    setIsScrollPrimed(true)
+    initializedDetailIdRef.current = detail.id
+  }, [cardContentHeight, detail, scrollProgressRange, summaryTileHeight, viewportHeight])
 
   const handleBack = () => {
     if (!detail || isClosing) {
@@ -152,9 +246,25 @@ export default function ClimbDetailPage() {
     }, 80)
   }
 
+  const heroAnimationStyle = {
+    animation: isClosing
+      ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
+      : isCardOpenTransition
+        ? "climb-detail-hero-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)"
+        : "none",
+  } as const
+
+  const cardAnimationStyle = {
+    animation: isClosing
+      ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
+      : isCardOpenTransition
+        ? "climb-detail-content-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+        : "none",
+  } as const
+
   return (
     <div className="min-h-[100dvh] bg-stone-bg">
-      <div className="mx-auto max-w-[420px]">
+      <div ref={viewportRef} className="relative mx-auto h-[100dvh] max-w-[420px] overflow-hidden bg-stone-bg">
         <style>{`
           @keyframes climb-detail-hero-enter {
             0% {
@@ -189,54 +299,70 @@ export default function ClimbDetailPage() {
             }
           }
         `}</style>
-        <div className="sticky top-0 z-0">
-          <div
-            className="relative"
-            style={{
-              animation: isClosing
-                ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
-                : isCardOpenTransition
-                  ? "climb-detail-hero-enter 180ms cubic-bezier(0.22, 1, 0.36, 1)"
-                  : "none",
-            }}
-          >
-            <ClimbDetailHero imageUrl={detail?.referenceImageUrl} height={headerHeight} />
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
-              <BackButton
-                onClick={handleBack}
-                ariaLabel="Back"
-                size="sm"
-                className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
-              />
-            </div>
-          </div>
+
+        <div className="absolute inset-x-0 top-0 z-0" style={heroAnimationStyle}>
+          <ClimbDetailHero
+            imageUrl={detail?.referenceImageUrl}
+            height={heroHeight}
+            imageScale={imageScale}
+            objectPosition={IMAGE_FOCAL_POINT}
+          />
         </div>
 
-        <main
-          className="relative z-10 -mt-7 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
-          style={{
-            animation: isClosing
-              ? "climb-detail-content-exit 160ms cubic-bezier(0.55, 0, 0.55, 0.2)"
-              : isCardOpenTransition
-                ? "climb-detail-content-enter 200ms cubic-bezier(0.22, 1, 0.36, 1)"
-                : "none",
-          }}
-        >
-          {loading ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <BackButton
+            onClick={handleBack}
+            ariaLabel="Back"
+            size="sm"
+            className="pointer-events-auto bg-stone-surface/92 backdrop-blur"
+          />
+        </div>
+
+        {loading ? (
+          <main
+            className="absolute inset-x-0 bottom-0 z-10 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
+            style={{ height: Math.max(defaultCardHeight, 280), ...cardAnimationStyle }}
+          >
             <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
               Loading climb details…
             </div>
-          ) : loadError || !detail ? (
+          </main>
+        ) : loadError || !detail ? (
+          <main
+            className="absolute inset-x-0 bottom-0 z-10 rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6"
+            style={{ height: Math.max(defaultCardHeight, 280), ...cardAnimationStyle }}
+          >
             <div className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-8 text-center text-sm text-red-500 shadow-[0_14px_34px_rgba(89,68,51,0.05)]">
               {loadError ?? "Climb not found."}
             </div>
-          ) : (
-            <>
+          </main>
+        ) : (
+          <main
+            ref={cardScrollRef}
+            className="absolute inset-x-0 bottom-0 z-10 overflow-y-auto rounded-t-[32px] bg-stone-bg px-5"
+            style={{
+              height: Math.max(interactiveCardVisibleHeight, collapsedCardHeight || 0),
+              paddingTop: cardTopInset,
+              paddingBottom: `calc(${SUMMARY_BOTTOM_GAP}px + env(safe-area-inset-bottom))`,
+              WebkitOverflowScrolling: "touch",
+              overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
+              ...cardAnimationStyle,
+              visibility: heroLayoutReady ? "visible" : "hidden",
+            }}
+            onScroll={(event) => {
+              setCardScrollTop(event.currentTarget.scrollTop)
+            }}
+          >
+            {/* The measured scrollTop becomes one normalized progress value, and that progress drives
+                the spacer, card shell height, and hero interpolation over the same layout-defined range. */}
+            <div style={{ height: cardSpacerHeight }} aria-hidden="true" />
+
+            <div ref={cardContentRef}>
               <section
+                ref={summaryTileRef}
                 className="rounded-[30px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
                 style={{
-                  viewTransitionName:
-                    isCardOpenTransition || isClosing ? "active-climb-card" : "none",
+                  viewTransitionName: isCardOpenTransition || isClosing ? "active-climb-card" : "none",
                 }}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -282,9 +408,17 @@ export default function ClimbDetailPage() {
                 {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
                 {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
               </section>
-            </>
-          )}
-        </main>
+            </div>
+
+            <div
+              ref={safeAreaProbeRef}
+              aria-hidden="true"
+              style={{
+                height: "env(safe-area-inset-bottom)",
+              }}
+            />
+          </main>
+        )}
       </div>
     </div>
   )

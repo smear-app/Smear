@@ -1,9 +1,16 @@
 type ClimbDetailHeroProps = {
   imageUrl?: string | null
   height: number
+  imageScale?: number
+  objectPosition?: string
 }
 
-export default function ClimbDetailHero({ imageUrl, height }: ClimbDetailHeroProps) {
+export default function ClimbDetailHero({
+  imageUrl,
+  height,
+  imageScale = 1,
+  objectPosition = "50% 38%",
+}: ClimbDetailHeroProps) {
   if (!imageUrl) {
     return (
       <header
@@ -32,7 +39,16 @@ export default function ClimbDetailHero({ imageUrl, height }: ClimbDetailHeroPro
       className="relative overflow-hidden rounded-b-[36px] border-b border-stone-border bg-stone-alt"
       style={{ height }}
     >
-      <img src={imageUrl} alt="Climb reference" className="h-full w-full object-cover" />
+      <img
+        src={imageUrl}
+        alt="Climb reference"
+        className="h-full w-full object-cover"
+        style={{
+          objectPosition,
+          transform: `scale(${imageScale})`,
+          transformOrigin: "50% 38%",
+        }}
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-[#2E2A26]/45 via-[#2E2A26]/12 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2E2A26]/35 to-transparent" />
     </header>
