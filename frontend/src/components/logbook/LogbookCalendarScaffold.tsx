@@ -136,7 +136,7 @@ export default function LogbookCalendarScaffold({
               onVisibleMonthChange(addMonths(visibleMonth, -1))
               onSelectedDateKeyChange(null)
             }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt"
           >
             <FiChevronLeft className="h-4 w-4" />
           </button>
@@ -158,7 +158,7 @@ export default function LogbookCalendarScaffold({
                     return nextOpen
                   })
                 }
-                className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+                className="inline-flex items-center gap-1 rounded-full border border-stone-border bg-stone-alt px-3 py-1.5 text-base font-semibold text-stone-text transition-colors hover:bg-stone-alt"
               >
                 <span>{formatMonthHeading(visibleMonth)}</span>
                 <FiChevronDown
@@ -173,7 +173,7 @@ export default function LogbookCalendarScaffold({
                 aria-label="Previous year"
                 disabled={pickerYear <= pickerMinYear}
                 onClick={() => setPickerYear((current) => Math.max(pickerMinYear, current - 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt disabled:opacity-40"
               >
                 <FiChevronLeft className="h-4 w-4" />
               </button>
@@ -190,7 +190,7 @@ export default function LogbookCalendarScaffold({
                 aria-label="Next year"
                 disabled={pickerYear >= pickerMaxYear}
                 onClick={() => setPickerYear((current) => Math.min(pickerMaxYear, current + 1))}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD] disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt disabled:opacity-40"
               >
                 <FiChevronRight className="h-4 w-4" />
               </button>
@@ -227,7 +227,7 @@ export default function LogbookCalendarScaffold({
               <button
                 type="button"
                 onClick={() => setIsPickerOpen(false)}
-                className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-[#EFE7DD]"
+                className="inline-flex rounded-[11px] border border-stone-border bg-stone-alt px-2.5 py-1.5 text-sm font-semibold text-stone-text transition-colors hover:bg-stone-alt"
               >
                 Close
               </button>
@@ -241,13 +241,13 @@ export default function LogbookCalendarScaffold({
               onVisibleMonthChange(addMonths(visibleMonth, 1))
               onSelectedDateKeyChange(null)
             }}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-[#EFE7DD]"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors hover:bg-stone-alt"
           >
             <FiChevronRight className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-3">
+        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-stone-alt p-3">
           <div className="grid grid-cols-7 gap-1.5">
           {WEEKDAY_LABELS.map((label) => (
             <div

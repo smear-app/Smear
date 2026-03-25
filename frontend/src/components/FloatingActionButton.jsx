@@ -10,9 +10,9 @@ function FloatingActionButton({ onClick, disabled = false }) {
         onClick={onClick}
         className={`ml-auto flex h-14 w-14 items-center justify-center rounded-full text-stone-surface transition-all duration-200 ${
           disabled
-            ? "cursor-not-allowed bg-slate-300 shadow-[0_12px_24px_rgba(148,163,184,0.24)]"
+            ? "cursor-not-allowed bg-stone-surface shadow-[0_12px_24px_rgba(148,163,184,0.24)]"
             : "bg-ember shadow-[0_16px_32px_rgba(201,86,26,0.32)] hover:scale-[1.02] hover:bg-ember-dark active:scale-95"
-        }`}
+        }` }
       >
         <FiPlus className="h-6 w-6" />
       </button>

@@ -45,7 +45,7 @@ export default function LogbookClimbTile({
       <Link
         to={`/climbs/${climb.id}`}
         state={{ climb, from, fromState }}
-        className="block rounded-[20px] border border-stone-border/75 bg-stone-surface px-4 py-2 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-[#F8F4ED]"
+        className="block rounded-[20px] border border-stone-border/75 bg-stone-surface px-4 py-2 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-stone-alt"
       >
         <CompactClimbTileRow
           climb={climb}

@@ -341,7 +341,7 @@ export default function EditClimbModal({
         type="button"
         aria-label="Close edit climb"
         onClick={onClose}
-        className={`absolute inset-0 bg-[#2E2A26]/35 transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-stone-text/35 transition-opacity duration-300 ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
       />

@@ -33,8 +33,8 @@ export default function ClimbDetailHero({ imageUrl, height }: ClimbDetailHeroPro
       style={{ height }}
     >
       <img src={imageUrl} alt="Climb reference" className="h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#2E2A26]/45 via-[#2E2A26]/12 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#2E2A26]/35 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-stone-text/45 via-stone-text/12 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-stone-text/35 to-transparent" />
     </header>
   )
 }
