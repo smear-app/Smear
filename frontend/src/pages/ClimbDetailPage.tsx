@@ -33,7 +33,7 @@ const CARD_HERO_OVERLAP = 28
 const CARD_TOP_PADDING = 24
 const SUMMARY_BOTTOM_GAP = 18
 const HERO_SUMMARY_UNDERLAP = 24
-const HERO_MAX_IMAGE_SCALE = 1.08
+const HERO_MAX_IMAGE_SCALE = 1
 const IMAGE_FOCAL_POINT = "50% 38%"
 
 function clamp(value: number, min: number, max: number) {
