@@ -14,18 +14,18 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 const STORAGE_KEY = "smear:theme"
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setThemeState] = useState<Theme>("system")
-
-  useEffect(() => {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system"
     try {
       const saved = localStorage.getItem(STORAGE_KEY) as Theme | null
       if (saved === "light" || saved === "dark" || saved === "system") {
-        setThemeState(saved)
+        return saved
       }
-    } catch (e) {
+    } catch {
       /* ignore */
     }
-  }, [])
+    return "system"
+  })
 
   useEffect(() => {
     const apply = (t: Theme) => {
@@ -63,7 +63,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const setTheme = (t: Theme) => {
     try {
       localStorage.setItem(STORAGE_KEY, t)
-    } catch (e) {
+    } catch {
       /* ignore */
     }
     setThemeState(t)
@@ -74,7 +74,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       const next = prev === "light" ? "dark" : prev === "dark" ? "system" : "light"
       try {
         localStorage.setItem(STORAGE_KEY, next)
-      } catch (e) {
+      } catch {
         /* ignore */
       }
       return next
@@ -88,6 +88,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider")
