@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
 import { fetchReferralCode } from "../lib/auth"
 import BottomNav from "../components/BottomNav"
+import ThemeToggle from "../components/ThemeToggle"
 
 export default function ProfilePage() {
   const { user, logout } = useAuth()
@@ -15,8 +16,15 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-stone-bg">
       <main className="mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">Profile</p>
-        <h1 className="mt-1 text-2xl font-bold text-stone-text">Your account</h1>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">Profile</p>
+            <h1 className="mt-1 text-2xl font-bold text-stone-text">Your account</h1>
+          </div>
+          <div className="ml-2">
+            <ThemeToggle />
+          </div>
+        </div>
 
         <div className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-6 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center gap-4">
