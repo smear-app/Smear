@@ -35,6 +35,10 @@ const SUMMARY_BOTTOM_GAP = 18
 const HERO_SUMMARY_UNDERLAP = 24
 const HERO_MAX_IMAGE_SCALE = 1
 const IMAGE_FOCAL_POINT = "50% 38%"
+const IOS_MAX_HERO_OVERSCROLL_DAMPING = 0.5
+const IOS_MAX_STATE_CARD_TOP_NUDGE = 32
+const IOS_MAX_HERO_APPROACH_RANGE = 72
+const IOS_MAX_HERO_APPROACH_OFFSET = 12
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
@@ -168,9 +172,18 @@ export default function ClimbDetailPage() {
   const safeAreaBottom = useObservedHeight(safeAreaProbeRef)
   const bottomSpacing = SUMMARY_BOTTOM_GAP + safeAreaBottom
   const defaultCardTop = initialHeroHeight - CARD_HERO_OVERLAP
+  // iOS rests a few pixels too high at max; nudge only that platform so the summary
+  // tile remains the sole visible tile without changing the shared/web layout path.
   const collapsedCardTop =
     viewportHeight > 0 && summaryTileHeight > 0
-      ? Math.max(defaultCardTop, viewportHeight - bottomSpacing - summaryTileHeight - CARD_TOP_PADDING)
+      ? Math.max(
+          defaultCardTop,
+          viewportHeight -
+            bottomSpacing -
+            summaryTileHeight -
+            CARD_TOP_PADDING +
+            (isNativeIOS ? IOS_MAX_STATE_CARD_TOP_NUDGE : 0),
+        )
       : defaultCardTop
   const defaultAnchorOffset = Math.max(0, collapsedCardTop - defaultCardTop)
   const boundedHeroScrollTop = clamp(pageScrollTop, 0, defaultAnchorOffset)
@@ -193,6 +206,19 @@ export default function ClimbDetailPage() {
   const imageScale = hasImage ? lerp(1, HERO_MAX_IMAGE_SCALE, heroProgress) : 1
   const cardAnchorSpacerHeight = initialHeroHeight + defaultAnchorOffset
   const isLayoutMeasured = !detail || (viewportHeight > 0 && summaryTileHeight > 0)
+  const iosTopApproachProgress =
+    isNativeIOS && pageScrollTop > 0
+      ? clamp(1 - pageScrollTop / IOS_MAX_HERO_APPROACH_RANGE, 0, 1)
+      : 0
+  const iosTopApproachCompensation =
+    iosTopApproachProgress > 0
+      ? Math.sin(iosTopApproachProgress * Math.PI) * IOS_MAX_HERO_APPROACH_OFFSET
+      : 0
+  // Safari reports negative scrollTop during top rubber-banding; counter a small portion
+  // of that motion on iOS so the max-state elastic pull feels slightly firmer.
+  const iosTopOverscrollCompensation =
+    isNativeIOS && pageScrollTop < 0 ? -pageScrollTop * IOS_MAX_HERO_OVERSCROLL_DAMPING : 0
+  const iosTopResistanceCompensation = iosTopApproachCompensation + iosTopOverscrollCompensation
 
   useLayoutEffect(() => {
     if (!pageScrollRef.current || !detail || !isLayoutMeasured || isDefaultAnchorReady) {
@@ -277,6 +303,10 @@ export default function ClimbDetailPage() {
           <div
             className="relative min-h-full"
             style={{
+              transform:
+                iosTopResistanceCompensation > 0
+                  ? `translateY(-${iosTopResistanceCompensation}px)`
+                  : undefined,
               visibility: detail && !isDefaultAnchorReady ? "hidden" : "visible",
             }}
           >
