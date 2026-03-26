@@ -31,6 +31,7 @@ interface UseLogbookHistoryResult {
   error: string | null
   canLoadMore: boolean
   loadMore: () => void
+  removeClimb: (climbId: string) => void
   isChronological: boolean
 }
 
@@ -126,6 +127,11 @@ export function useLogbookHistory({
     reloadKey,
   ])
 
+  const removeClimb = (climbId: string) => {
+    setLoadedClimbs((prev) => prev.filter((c) => c.id !== climbId))
+    setTotalCount((prev) => Math.max(0, prev - 1))
+  }
+
   const loadMore = () => {
     if (!userId || isLoading || isLoadingMore || loadedClimbs.length >= totalCount) {
       return
@@ -192,6 +198,7 @@ export function useLogbookHistory({
     error,
     canLoadMore: loadedClimbs.length < totalCount,
     loadMore,
+    removeClimb,
     isChronological: chronological,
   }
 }
