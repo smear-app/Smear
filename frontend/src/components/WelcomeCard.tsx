@@ -29,7 +29,7 @@ const WelcomeCard = () => {
         </div>
         <div
           aria-label="Default user avatar"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface shadow-[0_12px_24px_rgba(201,86,26,0.25)]"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface"
         >
           <FiUser className="h-6 w-6" />
         </div>
