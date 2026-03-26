@@ -55,21 +55,38 @@ function useObservedHeight<T extends HTMLElement>(ref: RefObject<T | null>) {
     const node = ref.current
 
     if (!node) {
-      setHeight(0)
       return
     }
 
-    const updateHeight = () => setHeight(node.getBoundingClientRect().height)
-    updateHeight()
+    const frameId = window.requestAnimationFrame(() => {
+      setHeight(node.getBoundingClientRect().height)
+    })
 
     if (typeof ResizeObserver === "undefined") {
-      return
+      const updateHeight = () => setHeight(node.getBoundingClientRect().height)
+      window.addEventListener("resize", updateHeight)
+
+      return () => {
+        if (frameId !== null) {
+          window.cancelAnimationFrame(frameId)
+        }
+
+        window.removeEventListener("resize", updateHeight)
+      }
     }
 
-    const resizeObserver = new ResizeObserver(updateHeight)
+    const resizeObserver = new ResizeObserver(() => {
+      setHeight(node.getBoundingClientRect().height)
+    })
     resizeObserver.observe(node)
 
-    return () => resizeObserver.disconnect()
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId)
+      }
+
+      resizeObserver.disconnect()
+    }
   }, [ref])
 
   return height
@@ -77,6 +94,7 @@ function useObservedHeight<T extends HTMLElement>(ref: RefObject<T | null>) {
 
 export default function ClimbDetailPage() {
   const { climbId } = useParams()
+  const currentClimbSession = climbId ?? null
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -89,13 +107,18 @@ export default function ClimbDetailPage() {
     status: "idle",
   })
   const [isClosing, setIsClosing] = useState(false)
-  const [pageScrollTop, setPageScrollTop] = useState(0)
-  const [isDefaultAnchorReady, setIsDefaultAnchorReady] = useState(false)
+  const [pageScrollState, setPageScrollState] = useState({
+    observed: false,
+    scrollTop: 0,
+    sessionId: null as string | null,
+  })
   const pageScrollRef = useRef<HTMLDivElement | null>(null)
   const summaryTileRef = useRef<HTMLElement | null>(null)
   const safeAreaProbeRef = useRef<HTMLDivElement | null>(null)
+  const defaultAnchorPrimedForRef = useRef<string | null>(null)
   const isCardOpenTransition = locationState.transition === "card-open"
   const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
+
   const fetchedClimb =
     fetchedState.requestedClimbId === climbId && fetchedState.status === "success"
       ? fetchedState.climb
@@ -111,16 +134,6 @@ export default function ClimbDetailPage() {
     (!user ||
       fetchedState.requestedClimbId !== climbId ||
       fetchedState.status === "idle")
-
-  useEffect(() => {
-    setIsDefaultAnchorReady(false)
-
-    if (pageScrollRef.current) {
-      pageScrollRef.current.scrollTop = 0
-    }
-
-    setPageScrollTop(0)
-  }, [climbId])
 
   useEffect(() => {
     if (!user || !climbId) {
@@ -186,7 +199,12 @@ export default function ClimbDetailPage() {
         )
       : defaultCardTop
   const defaultAnchorOffset = Math.max(0, collapsedCardTop - defaultCardTop)
-  const boundedHeroScrollTop = clamp(pageScrollTop, 0, defaultAnchorOffset)
+  const hasObservedPageScroll =
+    pageScrollState.observed && pageScrollState.sessionId === currentClimbSession
+  const effectivePageScrollTop = hasObservedPageScroll
+    ? pageScrollState.scrollTop
+    : defaultAnchorOffset
+  const boundedHeroScrollTop = clamp(effectivePageScrollTop, 0, defaultAnchorOffset)
   // Default lives at the measured anchor. The hero only uses the bounded range above it;
   // deeper page scroll immediately becomes the normal details-reading path.
   const heroProgress =
@@ -207,8 +225,8 @@ export default function ClimbDetailPage() {
   const cardAnchorSpacerHeight = initialHeroHeight + defaultAnchorOffset
   const isLayoutMeasured = !detail || (viewportHeight > 0 && summaryTileHeight > 0)
   const iosTopApproachProgress =
-    isNativeIOS && pageScrollTop > 0
-      ? clamp(1 - pageScrollTop / IOS_MAX_HERO_APPROACH_RANGE, 0, 1)
+    isNativeIOS && effectivePageScrollTop > 0
+      ? clamp(1 - effectivePageScrollTop / IOS_MAX_HERO_APPROACH_RANGE, 0, 1)
       : 0
   const iosTopApproachCompensation =
     iosTopApproachProgress > 0
@@ -217,18 +235,24 @@ export default function ClimbDetailPage() {
   // Safari reports negative scrollTop during top rubber-banding; counter a small portion
   // of that motion on iOS so the max-state elastic pull feels slightly firmer.
   const iosTopOverscrollCompensation =
-    isNativeIOS && pageScrollTop < 0 ? -pageScrollTop * IOS_MAX_HERO_OVERSCROLL_DAMPING : 0
+    isNativeIOS && effectivePageScrollTop < 0
+      ? -effectivePageScrollTop * IOS_MAX_HERO_OVERSCROLL_DAMPING
+      : 0
   const iosTopResistanceCompensation = iosTopApproachCompensation + iosTopOverscrollCompensation
 
   useLayoutEffect(() => {
-    if (!pageScrollRef.current || !detail || !isLayoutMeasured || isDefaultAnchorReady) {
+    if (
+      !pageScrollRef.current ||
+      !detail ||
+      !isLayoutMeasured ||
+      defaultAnchorPrimedForRef.current === currentClimbSession
+    ) {
       return
     }
 
     pageScrollRef.current.scrollTop = defaultAnchorOffset
-    setPageScrollTop(defaultAnchorOffset)
-    setIsDefaultAnchorReady(true)
-  }, [defaultAnchorOffset, detail, isDefaultAnchorReady, isLayoutMeasured])
+    defaultAnchorPrimedForRef.current = currentClimbSession
+  }, [currentClimbSession, defaultAnchorOffset, detail, isLayoutMeasured])
 
   const handleBack = () => {
     if (!detail || isClosing) {
@@ -291,13 +315,18 @@ export default function ClimbDetailPage() {
 
         <div
           ref={pageScrollRef}
+          key={climbId ?? "climb-detail-scroll"}
           className="h-[100dvh] overflow-y-auto bg-stone-bg"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehaviorY: isNativeIOS ? "contain" : "auto",
           }}
           onScroll={(event) => {
-            setPageScrollTop(event.currentTarget.scrollTop)
+            setPageScrollState({
+              observed: true,
+              scrollTop: event.currentTarget.scrollTop,
+              sessionId: currentClimbSession,
+            })
           }}
         >
           <div
@@ -307,7 +336,7 @@ export default function ClimbDetailPage() {
                 iosTopResistanceCompensation > 0
                   ? `translateY(-${iosTopResistanceCompensation}px)`
                   : undefined,
-              visibility: detail && !isDefaultAnchorReady ? "hidden" : "visible",
+              visibility: "visible",
             }}
           >
             <style>{`
