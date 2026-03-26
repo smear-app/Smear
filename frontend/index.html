@@ -1,6 +1,31 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function () {
+        try {
+          const key = 'smear:theme'
+          const saved = localStorage.getItem(key)
+          const setDark = (on) => {
+            if (on) {
+              document.documentElement.classList.add('dark')
+              document.documentElement.style.colorScheme = 'dark'
+            } else {
+              document.documentElement.classList.remove('dark')
+              document.documentElement.style.colorScheme = 'light'
+            }
+          }
+          if (saved === 'dark') {
+            setDark(true)
+          } else if (saved === 'light') {
+            setDark(false)
+          } else {
+            const m = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
+            setDark(m && m.matches)
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

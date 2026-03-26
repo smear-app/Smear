@@ -113,7 +113,7 @@ function SuccessStep({ draft, onDone, title = "Climb logged!" }) {
         {/* Reward accent: layered, blurred chalk shapes kept quiet and behind the icon. */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#f5efe4] blur-xl"
+          className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full bg-stone-alt blur-xl"
           style={{
             opacity: 0,
             animation: isVisible ? `chalk-puff 620ms ${CHALK_EASE} 120ms both` : "none",
@@ -121,7 +121,7 @@ function SuccessStep({ draft, onDone, title = "Climb logged!" }) {
         />
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-[42%] top-[48%] h-10 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e9dfcf] blur-lg"
+          className="pointer-events-none absolute left-[42%] top-[48%] h-10 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ember-soft blur-lg"
           style={{
             opacity: 0,
             animation: isVisible ? `chalk-puff 560ms ${CHALK_EASE} 160ms both` : "none",

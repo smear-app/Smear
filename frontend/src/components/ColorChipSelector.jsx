@@ -34,7 +34,7 @@ function ColorChipSelector({ value, onChange, options, className = "" }) {
                 style={{
                   backgroundColor: option.hex,
                   border: option.borderHex ? `1px solid ${option.borderHex}` : "none",
-                  color: option.id === "white" || option.id === "yellow" ? "#2E2A26" : "#F7F5F2",
+                  color: option.id === "white" || option.id === "yellow" ? "var(--stone-text)" : "var(--stone-surface)",
                 }}
               >
                 {isSelected ? "✓" : ""}

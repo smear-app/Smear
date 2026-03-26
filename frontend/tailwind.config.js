@@ -1,26 +1,27 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
       colors: {
         stone: {
-          bg: "#F3F1ED",
-          surface: "#F7F5F2",
-          alt: "#ECE7E1",
-          border: "#D8D0C7",
-          text: "#2E2A26",
-          secondary: "#7A7168",
-          muted: "#9A9086",
+          bg: 'var(--stone-bg)',
+          surface: 'var(--stone-surface)',
+          alt: 'var(--stone-alt)',
+          border: 'var(--stone-border)',
+          text: 'var(--stone-text)',
+          secondary: 'var(--stone-secondary)',
+          muted: 'var(--stone-muted)',
         },
         ember: {
-          DEFAULT: "#AB5329",
-          dark: "#8A4220",
-          soft: "#EEDCD2",
+          DEFAULT: 'var(--ember)',
+          dark: 'var(--ember-dark)',
+          soft: 'var(--ember-soft)',
         },
         lichen: {
-          DEFAULT: "#6E8B57",
-          soft: "#DCE6D5",
+          DEFAULT: 'var(--lichen)',
+          soft: 'var(--lichen-soft)',
         },
       },
       fontFamily: {

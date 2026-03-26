@@ -4,11 +4,45 @@
 
 @layer base {
   :root {
+    --stone-bg: #F3F1ED;
+    --stone-surface: #F7F5F2;
+    --stone-alt: #ECE7E1;
+    --stone-border: #D8D0C7;
+    --stone-text: #2E2A26;
+    --stone-secondary: #7A7168;
+    --stone-muted: #9A9086;
+
+    --ember: #AB5329;
+    --ember-dark: #8A4220;
+    --ember-soft: #EEDCD2;
+
+    --lichen: #6E8B57;
+    --lichen-soft: #DCE6D5;
+
     color-scheme: light;
   }
 
+  .dark {
+    --stone-bg: #252528;
+    --stone-surface: #1c1c1e;
+    --stone-alt: #202022;
+    --stone-border: #2F3334;
+    --stone-text: #FFFFFF;
+    --stone-secondary: #C9CECF;
+    --stone-muted: #9EA5A6;
+
+    --ember: #FFB79A;
+    --ember-dark: #8A4220;
+    --ember-soft: #ab53291f;
+
+    --lichen: #7FA67B;
+    --lichen-soft: #DCE6D5;
+
+    color-scheme: dark;
+  }
+
   html {
-    background-color: #f3f1ed;
+    background-color: var(--stone-bg);
   }
 
   body {
@@ -64,5 +98,9 @@
 @media (hover: hover) and (pointer: fine) {
   .climb-card-interactive:hover {
     background-color: #f0ebe4;
+  }
+  
+  .dark .climb-card-interactive:hover {
+    background-color: #1a1f22;
   }
 }

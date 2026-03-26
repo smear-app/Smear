@@ -247,7 +247,7 @@ export default function LogbookCalendarScaffold({
           </button>
         </div>
 
-        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-[#F6F1EA] p-3">
+        <div className="mt-4 rounded-[24px] border border-stone-border/80 bg-stone-surface dark:bg-stone-alt p-3">
           <div className="grid grid-cols-7 gap-1.5">
           {WEEKDAY_LABELS.map((label) => (
             <div
@@ -270,13 +270,13 @@ export default function LogbookCalendarScaffold({
                 key={dayKey}
                 type="button"
                 onClick={() => onSelectedDateKeyChange(selectedDateKey === dayKey ? null : dayKey)}
-                className={`relative aspect-square rounded-[14px] border text-sm transition-colors ${
+                className={`relative aspect-square rounded-[14px] border text-sm transition-all ${
                   isSelected
                     ? "border-ember/25 bg-ember-soft text-ember"
                     : isToday
-                      ? "border-ember/70 bg-stone-surface text-stone-text"
+                      ? "border-ember bg-stone-alt text-stone-text ring-0.5 ring-ember dark:bg-stone-bg dark:ring-ember"
                     : climbCount > 0
-                      ? "border-stone-border/80 bg-stone-surface text-stone-text"
+                      ? "border-stone-border/80 bg-stone-alt text-stone-text dark:border-stone-border/60 dark:bg-stone-bg"
                       : "border-stone-border/60 bg-stone-surface/70 text-stone-secondary"
                 } ${isInVisibleMonth ? "" : "opacity-45"}`}
               >

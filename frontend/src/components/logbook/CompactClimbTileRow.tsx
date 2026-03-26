@@ -83,7 +83,7 @@ export default function CompactClimbTileRow({
             </div>
             {primaryAttribute && canShowChip ? (
               <div className={`mt-1 flex min-w-0 items-center ${config.chipSlotClass}`}>
-                <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border/70 bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
+                <span className="inline-flex min-w-0 max-w-full items-center rounded-full border border-stone-border bg-stone-alt px-2 py-0.5 leading-none text-[10px] font-medium text-stone-secondary">
                   <span className="truncate">{formatTagLabel(primaryAttribute)}</span>
                 </span>
               </div>

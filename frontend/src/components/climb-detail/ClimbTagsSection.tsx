@@ -56,7 +56,7 @@ export default function ClimbTagsSection({ tags }: ClimbTagsSectionProps) {
   const groupedTags = groupTags(tags)
 
   return (
-    <section className="rounded-[28px] border border-stone-border/90 bg-[#F6F1EA] px-5 py-3.5 shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
+    <section className="rounded-[28px] border border-stone-border/90 bg-stone-alt px-5 py-3.5 shadow-[0_12px_28px_rgba(89,68,51,0.035)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
         Climb Tags
       </p>
