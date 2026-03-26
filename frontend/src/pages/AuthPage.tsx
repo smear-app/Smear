@@ -142,7 +142,7 @@ function Field({ label, type, value, onChange, required, placeholder }: FieldPro
         onChange={e => onChange(e.target.value)}
         required={required}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-stone-border bg-stone-alt px-4 py-3 text-sm text-stone-text outline-none transition-colors placeholder:text-stone-muted focus:border-ember/50 focus:bg-stone-surface"
+        className="app-native-text-entry w-full rounded-xl border border-stone-border bg-stone-alt px-4 py-3 text-stone-text outline-none transition-colors placeholder:text-stone-muted focus:border-ember/50 focus:bg-stone-surface"
       />
     </div>
   )

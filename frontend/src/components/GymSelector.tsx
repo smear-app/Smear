@@ -201,7 +201,7 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search gyms, cities, or chains"
-                className="w-full bg-transparent text-sm text-stone-text outline-none placeholder:text-stone-muted"
+                className="app-native-text-entry w-full bg-transparent text-stone-text outline-none placeholder:text-stone-muted"
               />
             </label>
 

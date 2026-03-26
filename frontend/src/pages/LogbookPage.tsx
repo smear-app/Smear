@@ -488,7 +488,7 @@ export default function LogbookPage({
                       value={draftFilters.gymId}
                       onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
                       aria-label="Gym"
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      className="app-native-text-entry absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     >
                       <option value="all">All gyms</option>
                       {availableGyms.map((gym) => (
