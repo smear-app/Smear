@@ -32,13 +32,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!session?.user) { setDisplayName(null); return }
+    let cancelled = false
+
+    const userId = session?.user?.id ?? null
+    if (!userId) {
+      queueMicrotask(() => {
+        if (!cancelled) setDisplayName(null)
+      })
+      return () => { cancelled = true }
+    }
+
     supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", session.user.id)
+      .from('profiles')
+      .select('display_name')
+      .eq('id', userId)
       .single()
-      .then(({ data }) => setDisplayName(data?.display_name ?? null))
+      .then(({ data }) => {
+        if (!cancelled) setDisplayName(data?.display_name ?? null)
+      })
+      .catch(() => {
+        if (!cancelled) setDisplayName(null)
+      })
+
+    return () => { cancelled = true }
   }, [session?.user?.id])
 
   async function logout() {
