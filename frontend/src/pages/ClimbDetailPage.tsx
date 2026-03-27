@@ -388,7 +388,7 @@ export default function ClimbDetailPage() {
             <div aria-hidden="true" style={{ height: cardAnchorSpacerHeight }} />
 
             <main className="relative z-10 -mt-7" style={cardAnimationStyle}>
-              <div className="rounded-t-[32px] bg-stone-bg px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6">
+              <div className="rounded-t-[32px] bg-stone-bg px-5 pb-24 pt-6">
                 {/* The scrolling card shell and all tiles live in one composed container, so the
                     default state and the animated states use the same card/content composition. */}
                 {loading ? (
@@ -453,21 +453,17 @@ export default function ClimbDetailPage() {
                     </section>
                   </>
                 )}
-
-              <section className="mt-5 rounded-[28px] border border-dashed border-stone-border/90 bg-[#F6F1EA] px-5 py-4 text-sm text-stone-muted shadow-[0_12px_28px_rgba(89,68,51,0.035)] dark:border-stone-border/50 dark:bg-stone-alt dark:shadow-[0_12px_28px_rgba(0,0,0,0.2)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted dark:text-stone-secondary">
-                  Coming Later
-                </p>
-                <p className="mt-3 leading-6 dark:text-stone-secondary">
-                  Ratings, community ascents, and comments will live here once we split official
-                  community data from user-specific climb history.
-                </p>
-                {/* TODO: Add community ratings and ascents once the backend exposes official climb records. */}
-                {/* TODO: Add comments when social discussion data is modeled separately from personal notes. */}
-              </section>
-            </>
-          )}
-        </main>
+                <div
+                  ref={safeAreaProbeRef}
+                  aria-hidden="true"
+                  style={{
+                    height: "env(safe-area-inset-bottom)",
+                  }}
+                />
+              </div>
+            </main>
+          </div>
+        </div>
       </div>
     </div>
   )
