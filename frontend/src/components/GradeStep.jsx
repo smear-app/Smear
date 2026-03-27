@@ -1,4 +1,6 @@
+import ColorChipSelector from "./ColorChipSelector"
 import { GRADE_OPTIONS } from "../lib/climbFormOptions"
+import { getClimbColorPalette } from "../lib/climbColors"
 
 function GradeSelectorRow({ label, value, onSelect }) {
   return (
@@ -37,7 +39,9 @@ function GradeSelectorRow({ label, value, onSelect }) {
 }
 
 function GradeStep({ draft, onChange, onContinue }) {
-  const canContinueFromGrade = draft.gymGrade !== "" && draft.feltLike !== ""
+  const colorOptions = getClimbColorPalette()
+  const canContinueFromGrade =
+    draft.gymGrade !== "" && draft.feltLike !== "" && draft.climbColor !== null
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-5">
@@ -52,12 +56,23 @@ function GradeStep({ draft, onChange, onContinue }) {
           value={draft.feltLike}
           onSelect={(grade) => onChange("feltLike", grade)}
         />
+        <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+            Climb Color
+          </p>
+          <ColorChipSelector
+            className="mt-3"
+            options={colorOptions}
+            value={draft.climbColor}
+            onChange={(value) => onChange("climbColor", value)}
+          />
+        </div>
       </div>
 
       <div className="mt-6 min-h-[20px]">
         {!canContinueFromGrade ? (
           <p className="text-center text-sm text-stone-secondary">
-            Select both Gym Grade and Felt Like to continue
+            Select Gym Grade, Felt Like, and Climb Color to continue
           </p>
         ) : null}
       </div>
