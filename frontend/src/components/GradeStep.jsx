@@ -57,11 +57,10 @@ function GradeStep({ draft, onChange, onContinue }) {
           onSelect={(grade) => onChange("feltLike", grade)}
         />
         <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
+          <h3 className="mb-4 text-sm font-semibold text-stone-text">
             Climb Color
-          </p>
+          </h3>
           <ColorChipSelector
-            className="mt-3"
             options={colorOptions}
             value={draft.climbColor}
             onChange={(value) => onChange("climbColor", value)}
@@ -70,11 +69,14 @@ function GradeStep({ draft, onChange, onContinue }) {
       </div>
 
       <div className="mt-6 min-h-[20px]">
-        {!canContinueFromGrade ? (
-          <p className="text-center text-sm text-stone-secondary">
-            Select Gym Grade, Felt Like, and Climb Color to continue
-          </p>
-        ) : null}
+        <p
+          aria-hidden={canContinueFromGrade}
+          className={`text-center text-sm text-stone-secondary transition-opacity duration-200 ${
+            canContinueFromGrade ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          Complete all selections to continue
+        </p>
       </div>
 
       <button
