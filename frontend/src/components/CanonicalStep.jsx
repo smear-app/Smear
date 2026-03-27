@@ -313,7 +313,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
                     key={selectedId}
                     src={sel.candidate.photo_url}
                     alt="Selected climb"
-                    className="mt-4 h-44 w-full rounded-2xl object-cover"
+                    className="mt-4 h-72 w-full rounded-2xl object-cover"
                   />
                 ) : (
                   <div className="mt-4 flex h-44 w-full items-center justify-center rounded-2xl bg-stone-border/30">
