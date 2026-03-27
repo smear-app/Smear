@@ -1,9 +1,9 @@
-const STEP_LABELS = ["Photo", "Grade", "Send", "Tags"]
+const STEP_LABELS = ["Photo", "Grade", "Send", "Tags", "Route"]
 
 function StepProgress({ currentStep }) {
   return (
     <div className="px-5 pb-5">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-5 gap-2">
         {STEP_LABELS.map((label, index) => {
           const isActive = index <= currentStep
 
