@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import GradeStep from "./GradeStep"
 import BottomSheet from "./BottomSheet"
+import CanonicalStep from "./CanonicalStep"
 import LogClimbHeader from "./LogClimbHeader"
 import PhotoStep from "./PhotoStep"
 import SendStep from "./SendStep"
@@ -20,11 +21,14 @@ const EMPTY_DRAFT = {
   sendType: "",
   tags: [],
   notes: "",
+  canonicalClimbId: null,
+  confidenceScore: null,
+  overrideSignal: false,
 }
 
 const CLOSE_ANIMATION_MS = 280
 
-const SUCCESS_STEP = 4
+const SUCCESS_STEP = 5
 
 function LogClimbModal({
   isOpen,
@@ -148,26 +152,30 @@ function LogClimbModal({
               : [...currentDraft.tags, tag],
           }))
         }
-        onSave={async () => {
-          if (isSaving) {
-            return
-          }
-
+        onSave={() => setCurrentStep(4)}
+        saveError={null}
+        saveLabel="Continue"
+        isSaving={false}
+      />,
+      <CanonicalStep
+        draft={draft}
+        onChange={(field, value) =>
+          setDraft((currentDraft) => ({ ...currentDraft, [field]: value }))
+        }
+        onSave={async (finalDraft) => {
+          if (isSaving) return
           setSaveError(null)
           setIsSaving(true)
-
           try {
-            await onSave(draft)
+            await onSave(finalDraft)
             setIsSaving(false)
             setCurrentStep(SUCCESS_STEP)
           } catch (err) {
             setIsSaving(false)
             setSaveError(err instanceof Error ? err.message : "Failed to save climb")
+            throw err
           }
         }}
-        saveError={saveError}
-        saveLabel={mode === "edit" ? "Save Changes" : "Save Climb"}
-        isSaving={isSaving}
       />,
       <SuccessStep draft={draft} onDone={onDone} title={mode === "edit" ? "Log updated!" : "Climb logged!"} />,
     ],

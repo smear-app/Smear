@@ -24,6 +24,9 @@ export interface ClimbDraft {
   photoFile: File | null     // raw File for upload
   climbColor: string | null
   notes: string
+  canonicalClimbId: string | null
+  confidenceScore: number | null
+  overrideSignal: boolean
 }
 
 interface ClimbRow {
@@ -43,6 +46,7 @@ interface ClimbRow {
   climb_color?: string | null
   notes: string | null
   created_at: string
+  canonical_climbs?: { photo_url: string | null } | null
 }
 
 export interface Climb {
@@ -112,6 +116,7 @@ function getMissingOptionalColumn(
 function mapClimbRow(row: ClimbRow): Climb {
   return {
     ...row,
+    photo_url: row.photo_url ?? row.canonical_climbs?.photo_url ?? null,
     climbColor: row.hold_color ?? row.climb_color ?? null,
   }
 }
@@ -194,7 +199,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photoUrl = await uploadToCloudinary(draft.photoFile)
   }
 
-  const { error } = await supabase.from('climbs').insert({
+  const requiredPayload = {
     user_id: userId,
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -207,9 +212,26 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photo_url: photoUrl,
     hold_color: draft.climbColor || null,
     session_id: sessionId,
-  })
+  }
 
-  if (error) throw error
+  const optionalColumns = new Map<string, string | number | boolean | null>([
+    ['canonical_climb_id', draft.canonicalClimbId || null],
+    ['confidence_score', draft.confidenceScore ?? null],
+    ['override_signal', draft.overrideSignal ?? false],
+  ])
+
+  while (true) {
+    const payload = { ...requiredPayload, ...Object.fromEntries(optionalColumns) }
+    const { error } = await supabase.from('climbs').insert(payload)
+
+    if (!error) break
+
+    const missingColumn = getMissingOptionalColumn(error, Array.from(optionalColumns.keys()))
+    if (!missingColumn) throw error
+
+    optionalColumns.delete(missingColumn)
+  }
+
   await touchSession(sessionId)
 }
 
@@ -302,7 +324,7 @@ export async function fetchPaginatedClimbs({
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
   let query = supabase
     .from('climbs')
-    .select('*', { count: 'exact' })
+    .select('*, canonical_climbs(photo_url)', { count: 'exact' })
     .eq('user_id', userId)
 
   query = applyOptionalFilters(query, { gymId, sendTypes, wallTypes, holdTypes, movementTypes, grades })
@@ -338,7 +360,7 @@ export async function fetchRecentClimbs(userId: string, limit = 5): Promise<Clim
 export async function fetchClimbById(userId: string, climbId: string): Promise<Climb | null> {
   const { data, error } = await supabase
     .from('climbs')
-    .select('*')
+    .select('*, canonical_climbs(photo_url)')
     .eq('user_id', userId)
     .eq('id', climbId)
     .maybeSingle()
@@ -405,5 +427,8 @@ export function toClimbDraft(climb: Climb): ClimbDraft {
     photoFile: null,
     climbColor: climb.climbColor,
     notes: climb.notes ?? '',
+    canonicalClimbId: null,
+    confidenceScore: null,
+    overrideSignal: false,
   }
 }
