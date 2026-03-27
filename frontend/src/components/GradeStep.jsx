@@ -12,7 +12,11 @@ function GradeSelectorRow({ label, value, onSelect }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto pb-1">
+      <div
+        data-horizontal-scroll="true"
+        className="overflow-x-auto pb-1"
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+      >
         <div className="flex min-w-max gap-2">
           {GRADE_OPTIONS.map((grade) => {
             const isSelected = value === grade

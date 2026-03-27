@@ -62,9 +62,11 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     const previousBodyPosition = document.body.style.position
     const previousBodyTop = document.body.style.top
     const previousBodyWidth = document.body.style.width
+    let touchStartX = 0
+    let touchStartY = 0
     let lastTouchY = 0
 
-    const findScrollableAncestor = (startNode) => {
+    const findVerticalScrollableAncestor = (startNode) => {
       let node = startNode instanceof Element ? startNode : null
 
       while (node && sheetRef.current?.contains(node)) {
@@ -83,8 +85,24 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       return null
     }
 
+    const findHorizontalScrollableAncestor = (startNode) => {
+      let node = startNode instanceof Element ? startNode : null
+
+      while (node && sheetRef.current?.contains(node)) {
+        if (node instanceof HTMLElement && node.dataset.horizontalScroll === "true") {
+          return node
+        }
+
+        node = node.parentElement
+      }
+
+      return null
+    }
+
     const handleDocumentTouchStart = (event) => {
       const touch = event.touches[0]
+      touchStartX = touch ? touch.clientX : 0
+      touchStartY = touch ? touch.clientY : 0
       lastTouchY = touch ? touch.clientY : 0
     }
 
@@ -102,7 +120,17 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
         return
       }
 
-      const scrollableAncestor = findScrollableAncestor(target)
+      const horizontalScrollableAncestor = findHorizontalScrollableAncestor(target)
+      const gestureDeltaX = touch.clientX - touchStartX
+      const gestureDeltaY = touch.clientY - touchStartY
+      const isHorizontalGesture = Math.abs(gestureDeltaX) > Math.abs(gestureDeltaY)
+
+      if (horizontalScrollableAncestor && isHorizontalGesture) {
+        lastTouchY = touch.clientY
+        return
+      }
+
+      const scrollableAncestor = findVerticalScrollableAncestor(target)
 
       if (!scrollableAncestor) {
         event.preventDefault()
