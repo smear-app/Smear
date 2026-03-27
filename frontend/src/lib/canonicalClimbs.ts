@@ -48,9 +48,9 @@ export async function queryFingerprintCandidates(
  * Never stored — used only to drive UI ordering and auto-selection.
  *
  * Signals:
- *   Tag overlap  (50pts max) — jaccard similarity between userTags and canonical_tags
+ *   Tag overlap  (65pts max) — jaccard similarity between userTags and canonical_tags
  *   Recency      (30pts max) — decays by half every 30 days from last_logged_at
- *   Log volume   (20pts max) — log(send_count + 1) normalized, capped
+ *   Log volume   (5pts max)  — log(send_count + 1) normalized, capped
  */
 export function computeConfidenceScore(candidate: CanonicalClimb, userTags: string[]): number {
   // Tag overlap — jaccard similarity
@@ -60,7 +60,7 @@ export function computeConfidenceScore(candidate: CanonicalClimb, userTags: stri
   if (canonicalSet.size > 0 || userSet.size > 0) {
     const intersection = [...userSet].filter((t) => canonicalSet.has(t)).length
     const union = new Set([...canonicalSet, ...userSet]).size
-    tagScore = union > 0 ? (intersection / union) * 50 : 0
+    tagScore = union > 0 ? (intersection / union) * 65 : 0
   }
 
   // Recency — half-life of 30 days
@@ -68,8 +68,8 @@ export function computeConfidenceScore(candidate: CanonicalClimb, userTags: stri
     (Date.now() - new Date(candidate.last_logged_at).getTime()) / (1000 * 60 * 60 * 24)
   const recencyScore = 30 * Math.pow(0.5, daysSinceLogged / 30)
 
-  // Log volume — log scale, max 20pts at ~55 sends
-  const volumeScore = Math.min(20, (Math.log(candidate.send_count + 1) / Math.log(56)) * 20)
+  // Log volume — log scale, max 5pts at ~55 sends
+  const volumeScore = Math.min(5, (Math.log(candidate.send_count + 1) / Math.log(56)) * 5)
 
   return Math.min(100, Math.round(tagScore + recencyScore + volumeScore))
 }
