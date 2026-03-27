@@ -144,13 +144,14 @@ function CanonicalStep({ draft, onChange, onSave }) {
       setError(null)
 
       try {
-        const gradeValue = gradeToValue(draft.gymGrade)
-        const candidates = await queryFingerprintCandidates(
-          draft.gymId,
-          gradeValue,
-          draft.climbColor ?? "",
-        )
+        const { gymId, gymGrade, climbColor } = draft || {}
+        if (!gymId || !gymGrade || !climbColor) {
+          setError("Missing required fields (gym, grade, or hold color) to load canonical matches.")
+          return
+        }
 
+        const gradeValue = gradeToValue(gymGrade)
+        const candidates = await queryFingerprintCandidates(gymId, gradeValue, climbColor)
         if (candidates.length === 0) {
           setState("seed")
           return
