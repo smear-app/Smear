@@ -24,6 +24,9 @@ export interface ClimbDraft {
   photoFile: File | null     // raw File for upload
   climbColor: string | null
   notes: string
+  canonicalClimbId: string | null
+  confidenceScore: number | null
+  overrideSignal: boolean
 }
 
 interface ClimbRow {
@@ -207,6 +210,9 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photo_url: photoUrl,
     hold_color: draft.climbColor || null,
     session_id: sessionId,
+    canonical_climb_id: draft.canonicalClimbId || null,
+    confidence_score: draft.confidenceScore ?? null,
+    override_signal: draft.overrideSignal ?? false,
   })
 
   if (error) throw error
@@ -405,5 +411,8 @@ export function toClimbDraft(climb: Climb): ClimbDraft {
     photoFile: null,
     climbColor: climb.climbColor,
     notes: climb.notes ?? '',
+    canonicalClimbId: null,
+    confidenceScore: null,
+    overrideSignal: false,
   }
 }
