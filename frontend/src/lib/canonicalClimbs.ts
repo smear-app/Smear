@@ -12,7 +12,7 @@ export interface CanonicalClimb {
   flash_count: number
   takedown_votes: number
   is_active: boolean
-  status: 'pending' | 'verified' | 'flagged' | 'archived' | 'disputed'
+  status: 'pending' | 'verified' | 'flagged' | 'archived' | 'disputed' | 'deleted'
   last_logged_at: string
   expires_at: string
   seeded_by: string | null
