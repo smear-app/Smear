@@ -109,7 +109,7 @@ export default function ClimbTileActionsMenu({
               <div
                 ref={menuRef}
                 style={menuStyle ?? { position: "fixed", top: -9999, left: -9999, zIndex: 60 }}
-                className="w-32 rounded-[16px] border border-stone-border bg-stone-surface p-1.5 shadow-[0_18px_38px_rgba(89,68,51,0.16)]"
+                className="w-32 rounded-[16px] border border-stone-border bg-stone-surface p-1.5 shadow-[0_18px_38px_rgba(89,68,51,0.16)] dark:shadow-[0_18px_38px_rgba(0,0,0,0.42)]"
               >
                 <button
                   type="button"
