@@ -46,6 +46,7 @@ interface ClimbRow {
   climb_color?: string | null
   notes: string | null
   created_at: string
+  canonical_climbs?: { photo_url: string | null } | null
 }
 
 export interface Climb {
@@ -115,6 +116,7 @@ function getMissingOptionalColumn(
 function mapClimbRow(row: ClimbRow): Climb {
   return {
     ...row,
+    photo_url: row.photo_url ?? row.canonical_climbs?.photo_url ?? null,
     climbColor: row.hold_color ?? row.climb_color ?? null,
   }
 }
@@ -308,7 +310,7 @@ export async function fetchPaginatedClimbs({
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
   let query = supabase
     .from('climbs')
-    .select('*', { count: 'exact' })
+    .select('*, canonical_climbs(photo_url)', { count: 'exact' })
     .eq('user_id', userId)
 
   query = applyOptionalFilters(query, { gymId, sendTypes, wallTypes, holdTypes, movementTypes, grades })
@@ -344,7 +346,7 @@ export async function fetchRecentClimbs(userId: string, limit = 5): Promise<Clim
 export async function fetchClimbById(userId: string, climbId: string): Promise<Climb | null> {
   const { data, error } = await supabase
     .from('climbs')
-    .select('*')
+    .select('*, canonical_climbs(photo_url)')
     .eq('user_id', userId)
     .eq('id', climbId)
     .maybeSingle()

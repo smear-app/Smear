@@ -14,6 +14,42 @@ import { useAuth } from "../context/AuthContext"
 const AUTO_SELECT_MIN_SCORE = 80
 const AUTO_SELECT_MIN_GAP = 15
 
+function CanonicalStatusIcon({ status }) {
+  if (status === "verified") {
+    return (
+      <span title="Verified" className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-green-500">
+        <svg viewBox="0 0 12 12" fill="none" className="h-2.5 w-2.5">
+          <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    )
+  }
+  if (status === "flagged") {
+    return (
+      <span title="Flagged" className="h-2.5 w-2.5 flex-shrink-0 animate-pulse rounded-full bg-orange-400" />
+    )
+  }
+  if (status === "disputed") {
+    return (
+      <span title="Disputed" className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-500" />
+    )
+  }
+  if (status === "archived") {
+    return (
+      <span title="Archived" className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border border-stone-border/50">
+        <svg viewBox="0 0 12 12" fill="none" className="h-2.5 w-2.5">
+          <rect x="1" y="3" width="10" height="2" rx="0.5" fill="currentColor" className="text-stone-muted/50" />
+          <path d="M2 5h8v4a1 1 0 01-1 1H3a1 1 0 01-1-1V5z" fill="currentColor" className="text-stone-muted/50" />
+        </svg>
+      </span>
+    )
+  }
+  // pending (default)
+  return (
+    <span title="Pending" className="h-3.5 w-3.5 flex-shrink-0 rounded-full border-2 border-dashed border-stone-muted/60" />
+  )
+}
+
 function ConfidencePill({ score }) {
   if (score >= 80) {
     return (
@@ -66,7 +102,10 @@ function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-stone-text">{tagLabel}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-sm font-medium text-stone-text">{tagLabel}</p>
+            <CanonicalStatusIcon status={candidate.status} />
+          </div>
           <p className="mt-0.5 text-xs text-stone-muted">{formatRecency(candidate.last_logged_at)}</p>
         </div>
 
