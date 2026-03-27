@@ -26,10 +26,10 @@ function GradeSelectorRow({ label, value, onSelect }) {
                 key={grade}
                 type="button"
                 onClick={() => onSelect(grade)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
                   isSelected
-                    ? "bg-ember text-stone-surface"
-                    : "border border-stone-border/80 bg-stone-surface text-stone-secondary"
+                    ? "border-ember bg-ember text-stone-surface"
+                    : "border-stone-border/80 bg-stone-surface text-stone-secondary"
                 }`}
               >
                 {grade}
