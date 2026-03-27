@@ -45,7 +45,7 @@ export default function AnchoredPopover({
           }`}
         >
           <div
-            className={`w-[min(18rem,calc(100vw-2.75rem))] rounded-[18px] border border-stone-border bg-stone-surface/98 p-2.5 shadow-[0_20px_48px_rgba(89,68,51,0.16)] backdrop-blur ${panelClassName}`}
+            className={`w-[min(18rem,calc(100vw-2.75rem))] rounded-[18px] border border-stone-border bg-stone-surface/98 p-2.5 shadow-[0_20px_48px_rgba(89,68,51,0.16)] backdrop-blur dark:shadow-[0_20px_48px_rgba(0,0,0,0.44)] ${panelClassName}`}
           >
             {children}
           </div>
