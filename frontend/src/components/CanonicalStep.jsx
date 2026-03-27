@@ -132,55 +132,62 @@ function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
 function CanonicalStep({ draft, onChange, onSave }) {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
-  const [state, setState] = useState("loading") // loading | candidates | seed
+  const [state, setState] = useState("loading") // loading | candidates | seed | error
   const [scored, setScored] = useState([]) // [{candidate, score}]
   const [selectedId, setSelectedId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    async function load() {
-      setState("loading")
-      setError(null)
-
-      try {
-        const { gymId, gymGrade, climbColor } = draft || {}
-        if (!gymId || !gymGrade || !climbColor) {
-          setError("Missing required fields (gym, grade, or hold color) to load canonical matches.")
-          return
-        }
-
-        const gradeValue = gradeToValue(gymGrade)
-        const candidates = await queryFingerprintCandidates(gymId, gradeValue, climbColor)
-        if (candidates.length === 0) {
-          setState("seed")
-          return
-        }
-
-        const withScores = candidates
-          .map((c) => ({ candidate: c, score: computeConfidenceScore(c, draft.tags) }))
-          .sort((a, b) => b.score - a.score)
-
-        setScored(withScores)
-
-        // Auto-select if top candidate clears threshold with a meaningful gap
-        const top = withScores[0]
-        const second = withScores[1]
-        const gap = second ? top.score - second.score : 100
-        if (top.score >= AUTO_SELECT_MIN_SCORE && gap >= AUTO_SELECT_MIN_GAP) {
-          setSelectedId(top.candidate.id)
-        }
-
-        setState("candidates")
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load candidates")
-        setState("seed")
-      }
-    }
-
-    load()
+    loadCandidates()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function loadCandidates() {
+    setState("loading")
+    setError(null)
+
+    try {
+      const { gymId, gymGrade, climbColor } = draft || {}
+      if (!gymId || !gymGrade || !climbColor) {
+        setError("Missing required fields (gym, grade, or hold color) to load canonical matches.")
+        setState("error")
+        return
+      }
+
+      const gradeValue = gradeToValue(gymGrade)
+      const candidates = await queryFingerprintCandidates(gymId, gradeValue, climbColor)
+      if (candidates.length === 0) {
+        setState("seed")
+        return
+      }
+
+      const withScores = candidates
+        .map((c) => ({ candidate: c, score: computeConfidenceScore(c, draft.tags) }))
+        .sort((a, b) => b.score - a.score)
+
+      setScored(withScores)
+
+      // Auto-select if top candidate clears threshold with a meaningful gap
+      const top = withScores[0]
+      const second = withScores[1]
+      const gap = second ? top.score - second.score : 100
+      if (top.score >= AUTO_SELECT_MIN_SCORE && gap >= AUTO_SELECT_MIN_GAP) {
+        setSelectedId(top.candidate.id)
+      }
+
+      setState("candidates")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load candidates")
+      setState("error")
+    }
+  }
+
+  function handleRetry() {
+    setScored([])
+    setSelectedId(null)
+    loadCandidates()
+  }
 
   async function handleConfirm() {
     if (isSaving) return
@@ -196,10 +203,11 @@ function CanonicalStep({ draft, onChange, onSave }) {
         const isOverride = selected && scored[0].candidate.id !== selectedId
 
         // Increment counts on the canonical via RPC
-        await supabase.rpc("confirm_canonical_climb", {
+        const { error: rpcError } = await supabase.rpc("confirm_canonical_climb", {
           p_canonical_id: selectedId,
           p_send_type: draft.sendType.toLowerCase(),
         })
+        if (rpcError) throw rpcError
 
         canonicalId = selectedId
         onChange("canonicalClimbId", canonicalId)
@@ -237,6 +245,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
   }
 
   const canConfirm = state === "seed" || (state === "candidates" && selectedId !== null)
+  const showConfirmButton = state !== "loading" && state !== "error"
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
@@ -347,14 +356,44 @@ function CanonicalStep({ draft, onChange, onSave }) {
               />
             </>
           )}
+          {state === "error" && (
+            <>
+              <h3 className="text-lg font-semibold tracking-tight text-stone-text">
+                Couldn't load matches
+              </h3>
+              <p className="mt-1.5 text-xs leading-5 text-stone-muted">
+                {error || "Something went wrong while fetching matching climbs."}
+              </p>
+
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleRetry}
+                  className="w-full rounded-full bg-ember px-6 py-3 text-sm font-semibold text-stone-surface transition-all duration-200 hover:bg-ember-dark active:scale-[0.98]"
+                >
+                  Retry
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null)
+                    setState("seed")
+                  }}
+                  className="w-full text-center text-sm text-stone-muted underline-offset-2 hover:underline"
+                >
+                  Proceed without matching
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {error && (
+      {error && state !== "error" && (
         <p className="mt-2 text-center text-sm text-red-500">{error}</p>
       )}
 
-      {state !== "loading" && (
+      {showConfirmButton && (
         <button
           type="button"
           onClick={handleConfirm}
