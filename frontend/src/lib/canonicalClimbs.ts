@@ -45,7 +45,8 @@ export async function queryFingerprintCandidates(
 
 /**
  * Compute a 0–100 confidence score for a candidate at query time.
- * Never stored — used only to drive UI ordering and auto-selection.
+ * The score is stored on the climb row as `confidence_score` and also
+ * drives UI ordering and auto-selection.
  *
  * Signals:
  *   Tag overlap  (65pts max) — jaccard similarity between userTags and canonical_tags

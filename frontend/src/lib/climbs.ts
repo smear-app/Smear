@@ -199,7 +199,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photoUrl = await uploadToCloudinary(draft.photoFile)
   }
 
-  const { error } = await supabase.from('climbs').insert({
+  const requiredPayload = {
     user_id: userId,
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -212,12 +212,26 @@ export async function insertClimb(draft: ClimbDraft, userId: string, sessionId: 
     photo_url: photoUrl,
     hold_color: draft.climbColor || null,
     session_id: sessionId,
-    canonical_climb_id: draft.canonicalClimbId || null,
-    confidence_score: draft.confidenceScore ?? null,
-    override_signal: draft.overrideSignal ?? false,
-  })
+  }
 
-  if (error) throw error
+  const optionalColumns = new Map<string, string | number | boolean | null>([
+    ['canonical_climb_id', draft.canonicalClimbId || null],
+    ['confidence_score', draft.confidenceScore ?? null],
+    ['override_signal', draft.overrideSignal ?? false],
+  ])
+
+  while (true) {
+    const payload = { ...requiredPayload, ...Object.fromEntries(optionalColumns) }
+    const { error } = await supabase.from('climbs').insert(payload)
+
+    if (!error) break
+
+    const missingColumn = getMissingOptionalColumn(error, Array.from(optionalColumns.keys()))
+    if (!missingColumn) throw error
+
+    optionalColumns.delete(missingColumn)
+  }
+
   await touchSession(sessionId)
 }
 

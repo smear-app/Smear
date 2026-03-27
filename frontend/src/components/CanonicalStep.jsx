@@ -133,10 +133,12 @@ function CanonicalStep({ draft, onChange, onSave }) {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
   const [state, setState] = useState("loading") // loading | candidates | seed | error
+  const [state, setState] = useState("loading") // loading | candidates | seed | error
   const [scored, setScored] = useState([]) // [{candidate, score}]
   const [selectedId, setSelectedId] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
     loadCandidates()
@@ -147,7 +149,6 @@ function CanonicalStep({ draft, onChange, onSave }) {
     setState("loading")
     setError(null)
 
-    try {
       const { gymId, gymGrade, climbColor } = draft || {}
       if (!gymId || !gymGrade || !climbColor) {
         setError("Missing required fields (gym, grade, or hold color) to load canonical matches.")
@@ -155,16 +156,18 @@ function CanonicalStep({ draft, onChange, onSave }) {
         return
       }
 
-      const gradeValue = gradeToValue(gymGrade)
-      const candidates = await queryFingerprintCandidates(gymId, gradeValue, climbColor)
-      if (candidates.length === 0) {
-        setState("seed")
-        return
-      }
+      try {
+        const gradeValue = gradeToValue(gymGrade)
+        const candidates = await queryFingerprintCandidates(gymId, gradeValue, climbColor)
 
-      const withScores = candidates
-        .map((c) => ({ candidate: c, score: computeConfidenceScore(c, draft.tags) }))
-        .sort((a, b) => b.score - a.score)
+        if (candidates.length === 0) {
+          setState("seed")
+          return
+        }
+
+        const withScores = candidates
+          .map((c) => ({ candidate: c, score: computeConfidenceScore(c, draft.tags ?? []) }))
+          .sort((a, b) => b.score - a.score)
 
       setScored(withScores)
 
@@ -176,18 +179,16 @@ function CanonicalStep({ draft, onChange, onSave }) {
         setSelectedId(top.candidate.id)
       }
 
-      setState("candidates")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load candidates")
-      setState("error")
+        setState("candidates")
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load candidates")
+        setState("error")
+      }
     }
-  }
 
-  function handleRetry() {
-    setScored([])
-    setSelectedId(null)
-    loadCandidates()
-  }
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryCount])
 
   async function handleConfirm() {
     if (isSaving) return
@@ -204,9 +205,11 @@ function CanonicalStep({ draft, onChange, onSave }) {
 
         // Increment counts on the canonical via RPC
         const { error: rpcError } = await supabase.rpc("confirm_canonical_climb", {
+        const { error: rpcError } = await supabase.rpc("confirm_canonical_climb", {
           p_canonical_id: selectedId,
           p_send_type: draft.sendType.toLowerCase(),
         })
+        if (rpcError) throw rpcError
         if (rpcError) throw rpcError
 
         canonicalId = selectedId
@@ -255,6 +258,19 @@ function CanonicalStep({ draft, onChange, onSave }) {
             <div className="flex flex-col items-center gap-3 py-8">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-stone-border border-t-ember" />
               <p className="text-sm text-stone-muted">Finding matching climbs…</p>
+            </div>
+          )}
+
+          {state === "error" && (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <p className="text-center text-sm text-red-500">{error}</p>
+              <button
+                type="button"
+                onClick={() => setRetryCount((n) => n + 1)}
+                className="rounded-full bg-stone-border px-5 py-2.5 text-sm font-semibold text-stone-text"
+              >
+                Retry
+              </button>
             </div>
           )}
 
@@ -390,10 +406,11 @@ function CanonicalStep({ draft, onChange, onSave }) {
       </div>
 
       {error && state !== "error" && (
+      {error && state !== "error" && (
         <p className="mt-2 text-center text-sm text-red-500">{error}</p>
       )}
 
-      {showConfirmButton && (
+      {state !== "loading" && state !== "error" && (
         <button
           type="button"
           onClick={handleConfirm}
