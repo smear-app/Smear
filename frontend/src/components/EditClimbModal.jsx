@@ -97,7 +97,7 @@ function TextAreaField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         rows={4}
-        className="w-full resize-none rounded-[18px] border border-stone-border bg-stone-alt px-3.5 py-3 text-sm text-stone-text outline-none transition-colors focus:border-ember/30"
+        className="app-native-text-entry w-full resize-none rounded-[18px] border border-stone-border bg-stone-alt px-3.5 py-3 text-stone-text outline-none transition-colors focus:border-ember/30"
       />
     </label>
   )
@@ -377,7 +377,7 @@ export default function EditClimbModal({
                           gymName: selectedGym?.name ?? "",
                         }))
                       }}
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
+                      className="app-native-text-entry absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
                     >
                       {gymOptions.map((gym) => (
                         <option key={gym.id} value={gym.id}>

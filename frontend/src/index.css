@@ -104,3 +104,10 @@
     background-color: #1a1f22;
   }
 }
+
+@layer utilities {
+  .app-native-text-entry {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+}
