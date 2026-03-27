@@ -796,7 +796,7 @@ export default function LogbookPage({
           type="button"
           aria-label="Scroll to top"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-border bg-stone-surface/95 text-stone-secondary backdrop-blur transition-all duration-200"
+          className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-border bg-stone-surface text-stone-secondary transition-all duration-200"
         >
           <FiArrowUp className="h-4 w-4" />
         </button>
