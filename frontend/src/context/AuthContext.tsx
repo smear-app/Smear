@@ -47,12 +47,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .select('display_name')
       .eq('id', userId)
       .single()
-      .then(({ data }) => {
-        if (!cancelled) setDisplayName(data?.display_name ?? null)
-      })
-      .catch(() => {
-        if (!cancelled) setDisplayName(null)
-      })
+      .then(
+        ({ data }) => { if (!cancelled) setDisplayName(data?.display_name ?? null) },
+        () => { if (!cancelled) setDisplayName(null) },
+      )
 
     return () => { cancelled = true }
   }, [session?.user?.id])
