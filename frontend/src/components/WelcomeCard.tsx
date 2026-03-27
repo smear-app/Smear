@@ -1,22 +1,9 @@
-import { useEffect, useState } from "react"
 import { FiUser } from "react-icons/fi"
 import { useAuth } from "../context/AuthContext"
 import GymSelector from "./GymSelector"
-import { supabase } from "../lib/supabase"
 
 const WelcomeCard = () => {
-  const { user } = useAuth()
-  const [displayName, setDisplayName] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!user) return
-    supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => setDisplayName(data?.display_name ?? null))
-  }, [user])
+  const { displayName } = useAuth()
 
   return (
     <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 shadow-[0_12px_28px_rgba(89,68,51,0.07)]">

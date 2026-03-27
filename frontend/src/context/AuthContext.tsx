@@ -6,6 +6,7 @@ import { signOut } from '../lib/auth'
 interface AuthContextValue {
   session: Session | null
   user: User | null
+  displayName: string | null
   loading: boolean
   logout: () => Promise<void>
 }
@@ -15,6 +16,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [displayName, setDisplayName] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
@@ -29,13 +31,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!session?.user) { setDisplayName(null); return }
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", session.user.id)
+      .single()
+      .then(({ data }) => setDisplayName(data?.display_name ?? null))
+  }, [session?.user?.id])
+
   async function logout() {
     await signOut()
     setSession(null)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, logout }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, displayName, loading, logout }}>
       {children}
     </AuthContext.Provider>
   )
