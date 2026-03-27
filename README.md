@@ -29,7 +29,7 @@ Most climbers mentally track their progress, but the picture is fuzzy. Smear mak
 |------|--------|------|
 | Brandon Senaha | [@Bsenaha](https://github.com/Bsenaha) | Co-founder |
 | Jaden Phan | [@jphan10](https://github.com/jphan10) | Co-founder |
-| Nathan Nguyen | ... | Founding Engineer |
+| Nathan Nguyen | [@NathanNewwin](https://github.com/NathanNewwin) | Founding Engineer |
 
 
 ---

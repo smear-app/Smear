@@ -27,7 +27,7 @@ export default function ClimbIdentityBlock({
       </div>
 
       {officialName ? (
-        <h1 className="mt-4 text-[1.7rem] font-semibold leading-tight tracking-[-0.02em] text-[#433A33]">
+        <h1 className="mt-4 text-[1.7rem] font-semibold leading-tight tracking-[-0.02em] text-stone-text">
           {officialName}
         </h1>
       ) : null}

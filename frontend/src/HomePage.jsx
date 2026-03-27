@@ -84,7 +84,7 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalCli
             <Link
               to="/home/logbook"
               state={{ stackTransition: "forward" }}
-              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-stone-secondary transition-colors duration-200 hover:text-ember sm:gap-2 sm:text-sm"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-stone-secondary transition-colors duration-200 hover:text-ember dark:hover:text-ember sm:gap-2 sm:text-sm"
             >
               <span className="whitespace-nowrap">Logbook &rarr;</span>
               <span className="rounded-full border border-ember/10 bg-ember-soft px-2 py-0.5 text-xs font-semibold text-ember">
@@ -185,8 +185,8 @@ function ClimbCard({ climb, isOpening, isReturning, onDelete, onEdit, onOpen }) 
           event.preventDefault()
           onOpen()
         }}
-        className={`climb-card-interactive block rounded-[20px] border border-stone-border/70 px-4 py-3 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
-          isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface"
+        className={`climb-card-interactive block rounded-[20px] border border-stone-border px-4 py-3 pr-12 shadow-[0_10px_24px_rgba(89,68,51,0.05)] transition-colors duration-150 ${
+          isPressed ? "bg-[#F0EBE4]" : "bg-stone-surface dark:bg-stone-alt"
         }`}
         style={{ viewTransitionName: isTransitioning ? "active-climb-card" : "none" }}
       >

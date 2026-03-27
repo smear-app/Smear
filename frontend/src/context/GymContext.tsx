@@ -122,7 +122,6 @@ export function GymProvider({
     syncTimeoutRef.current = setTimeout(() => {
       // Fire-and-forget but avoid unhandled promise rejections
       void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch((error) => {
-        // Log so failures are visible during development
         console.error('Failed to save gym preferences', error)
       })
     }, 1000)

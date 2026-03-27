@@ -234,6 +234,7 @@ export default function LogbookPage({
     error,
     canLoadMore,
     loadMore,
+    removeClimb,
     isChronological,
   } = useLogbookHistory({
     userId: user?.id,
@@ -241,6 +242,11 @@ export default function LogbookPage({
     sort,
     reloadKey: refreshKey,
   })
+
+  const handleDeleteClimb = async (climbId: string) => {
+    removeClimb(climbId)
+    await onDeleteClimb(climbId)
+  }
 
   useEffect(() => {
     const nextParams = new URLSearchParams()
@@ -482,7 +488,7 @@ export default function LogbookPage({
                       value={draftFilters.gymId}
                       onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
                       aria-label="Gym"
-                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      className="app-native-text-entry absolute inset-0 h-full w-full cursor-pointer opacity-0"
                     >
                       <option value="all">All gyms</option>
                       {availableGyms.map((gym) => (
@@ -702,7 +708,7 @@ export default function LogbookPage({
                   showMeta
                   showLoggedDate={false}
                   fromState={calendarReturnState}
-                  onDelete={onDeleteClimb}
+                  onDelete={handleDeleteClimb}
                   onEdit={onEditClimb}
                   emptyState={
                     <div className="flex h-full min-h-full w-full items-center justify-center self-stretch rounded-[22px] border border-dashed border-stone-border/80 bg-stone-surface/65 px-4 py-6 text-center text-sm text-stone-secondary">
@@ -753,7 +759,7 @@ export default function LogbookPage({
                         climbs={session.climbs}
                         from={logbookReturnPath}
                         showMeta={false}
-                        onDelete={onDeleteClimb}
+                        onDelete={handleDeleteClimb}
                         onEdit={onEditClimb}
                       />
                     </div>
@@ -764,7 +770,7 @@ export default function LogbookPage({
                     climbs={climbs}
                     from={logbookReturnPath}
                     showMeta
-                    onDelete={onDeleteClimb}
+                    onDelete={handleDeleteClimb}
                     onEdit={onEditClimb}
                   />
                 )}
@@ -790,7 +796,7 @@ export default function LogbookPage({
           type="button"
           aria-label="Scroll to top"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-border bg-stone-surface/95 text-stone-secondary shadow-[0_12px_28px_rgba(89,68,51,0.14)] backdrop-blur transition-all duration-200"
+          className="fixed bottom-[calc(6.5rem+env(safe-area-inset-bottom))] right-5 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-stone-border bg-stone-surface text-stone-secondary transition-all duration-200"
         >
           <FiArrowUp className="h-4 w-4" />
         </button>

@@ -112,7 +112,7 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className={`inline-flex items-center justify-between gap-3 rounded-2xl bg-white/85 px-3 py-2 text-left shadow-sm ring-1 ring-slate-200 transition hover:bg-white ${
+        className={`inline-flex items-center justify-between gap-3 rounded-2xl bg-stone-surface/85 px-3 py-2 text-left shadow-sm ring-1 ring-stone-border transition hover:bg-stone-surface ${
           isEmptyState ? "min-w-[8.75rem]" : "min-w-[12.5rem] max-w-[15rem]"
         }`}
       >
@@ -130,18 +130,18 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
           </div>
         </div>
         <FiChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${
+          className={`h-4 w-4 shrink-0 text-stone-muted transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-[calc(100%+12px)] z-30 w-[min(20rem,calc(100vw-2.5rem))] rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-slate-200">
+        <div className="absolute left-0 top-[calc(100%+12px)] z-30 w-[min(20rem,calc(100vw-2.5rem))] rounded-[24px] bg-stone-surface p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-stone-border">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-slate-900">Select gym</p>
-              <p className="text-xs text-slate-500">Active gym for new logs</p>
+              <p className="text-sm font-semibold text-stone-text">Select gym</p>
+              <p className="text-xs text-stone-muted">Active gym for new logs</p>
             </div>
             <button
               type="button"
@@ -178,42 +178,42 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
       )}
 
       {isRegistryOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/20 px-5">
-          <div className="flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-[#fcfcfa] p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-slate-200">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 px-5">
+          <div className="flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-stone-surface p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-stone-border">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-sm font-semibold text-slate-900">Select gym</p>
+              <p className="text-sm font-semibold text-stone-text">Select gym</p>
               <button
                 type="button"
                 onClick={() => {
                   setIsRegistryOpen(false)
                   setQuery("")
                 }}
-                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600"
+                className="rounded-full bg-stone-alt px-3 py-1.5 text-xs font-semibold text-stone-secondary"
               >
                 Close
               </button>
             </div>
 
-            <label className="mt- flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-              <FiSearch className="h- w-4 text-slate-400" />
+            <label className="mt- flex items-center gap-2 rounded-2xl border border-stone-border bg-stone-surface px-3 py-2.5">
+              <FiSearch className="h- w-4 text-stone-muted" />
               <input
                 ref={searchInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search gyms, cities, or chains"
-                className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                className="app-native-text-entry w-full bg-transparent text-stone-text outline-none placeholder:text-stone-muted"
               />
             </label>
 
             <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-1 py-1">
               {!isHydrated ? (
-                <div className="flex items-center justify-center py-10 text-sm text-slate-400">
+                <div className="flex items-center justify-center py-10 text-sm text-stone-muted">
                   <FiLoader className="mr-2 h-4 w-4 animate-spin" />
                   Loading gyms...
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="rounded-2xl bg-slate-50 px-4 py-8 text-center">
-                  <p className="text-sm text-slate-500">No gyms matched your search.</p>
+                <div className="rounded-2xl bg-stone-surface px-4 py-8 text-center">
+                  <p className="text-sm text-stone-muted">No gyms matched your search.</p>
                   <a
                     href="/support"
                     className="mt-3 inline-block text-xs font-semibold text-ember"
@@ -233,7 +233,7 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
                           className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
                             isActive
                               ? "bg-ember-soft ring-ember/25"
-                              : "bg-white ring-slate-200 hover:bg-slate-50"
+                              : "bg-stone-surface ring-stone-border hover:bg-stone-alt"
                           }`}
                         >
                           <button
@@ -241,8 +241,8 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
                             onClick={() => handleSelectFromRegistry(gym.id)}
                             className="min-w-0 flex-1 text-left"
                           >
-                            <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
-                            <p className="mt-0.5 truncate text-xs text-slate-500">
+                            <p className="truncate text-sm font-semibold text-stone-text">{gym.name}</p>
+                            <p className="mt-0.5 truncate text-xs text-stone-muted">
                               {formatGymLocation(gym)}
                               {gym.address ? ` • ${gym.address}` : ""}
                             </p>
@@ -276,13 +276,13 @@ function SelectedGymLabel({
   showLocation: boolean
 }) {
   const isEmptyState = snapshot.id === null
-  const nameTone = snapshot.id === "loading" ? "text-slate-400" : "text-slate-900"
+  const nameTone = snapshot.id === "loading" ? "text-stone-muted" : "text-stone-text"
 
   return (
     <div className="min-w-0 transition-opacity duration-150">
       <p className={`truncate text-sm font-semibold ${nameTone}`}>{snapshot.name}</p>
       {showLocation && snapshot.location && !isEmptyState ? (
-        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-stone-muted">
           <FiMapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">{snapshot.location}</span>
         </p>
@@ -312,12 +312,12 @@ function SelectorSection({
 }) {
   return (
     <div className={className}>
-      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+      <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-muted">
         {title}
       </p>
       <div className="mt-2 space-y-1.5">
         {gyms.length === 0 ? (
-          <div className="rounded-2xl bg-slate-50 px-4 py-4 text-center text-sm text-slate-500">
+          <div className="rounded-2xl bg-stone-surface px-4 py-4 text-center text-sm text-stone-muted">
             {emptyMessage}
           </div>
         ) : (
@@ -329,7 +329,7 @@ function SelectorSection({
               <div
                 key={gym.id}
                 className={`flex items-center justify-between rounded-2xl px-3 py-2.5 transition ${
-                  isActive ? "bg-ember-soft" : "bg-slate-50 hover:bg-slate-100"
+                  isActive ? "bg-ember-soft" : "bg-stone-surface hover:bg-stone-alt"
                 }`}
               >
                 <button
@@ -337,8 +337,8 @@ function SelectorSection({
                   onClick={() => onSelect(gym.id)}
                   className="min-w-0 flex-1 text-left"
                 >
-                  <p className="truncate text-sm font-semibold text-slate-900">{gym.name}</p>
-                  <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+                  <p className="truncate text-sm font-semibold text-stone-text">{gym.name}</p>
+                  <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-stone-muted">
                     <FiMapPin className="h-3.5 w-3.5 shrink-0" />
                     {formatGymLocation(gym)}
                   </p>
@@ -375,7 +375,7 @@ function BookmarkToggleButton({
       type="button"
       aria-label={`${isBookmarked ? "Remove bookmark for" : "Bookmark"} ${gymName}`}
       onClick={onClick}
-      className="rounded-full bg-white/90 p-1.5 text-slate-400 ring-1 ring-slate-200 transition hover:text-ember"
+      className="rounded-full bg-stone-surface/90 p-1.5 text-stone-muted ring-1 ring-stone-border transition hover:text-ember"
     >
       {isBookmarked ? (
         <RiBookmarkFill className="h-3.5 w-3.5 text-ember" />

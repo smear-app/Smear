@@ -188,9 +188,9 @@ function LogClimbModal({
             onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
             onClose={onClose}
           />
-          <div className="px-6 pb-1 text-center text-sm text-slate-500">
+          <div className="px-6 pb-1 text-center text-sm text-stone-muted">
             {mode === "edit" ? "Editing at " : "Logging at "}
-            <span className="font-semibold text-slate-900">{draft.gymName}</span>
+            <span className="font-semibold text-stone-text">{draft.gymName}</span>
           </div>
           <StepProgress currentStep={currentStep} />
         </>
