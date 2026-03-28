@@ -1,3 +1,4 @@
+import { Capacitor } from "@capacitor/core"
 import ColorChipSelector from "./ColorChipSelector"
 import { GRADE_OPTIONS } from "../lib/climbFormOptions"
 import { getClimbColorPalette } from "../lib/climbColors"
@@ -48,6 +49,7 @@ function GradeSelectorRow({ label, value, onSelect }) {
 }
 
 function GradeStep({ draft, onChange, onContinue }) {
+  const isWebLayout = !Capacitor.isNativePlatform()
   const colorOptions = getClimbColorPalette()
   const canContinueFromGrade =
     draft.gymGrade !== "" && draft.feltLike !== "" && draft.climbColor !== null
@@ -55,7 +57,7 @@ function GradeStep({ draft, onChange, onContinue }) {
   return (
     <div className="flex flex-1 flex-col px-5 pb-5">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="space-y-4">
+        <div className={`space-y-4 ${isWebLayout ? "flex min-h-full flex-col justify-center" : ""}`}>
           <GradeSelectorRow
             label="Gym Grade"
             value={draft.gymGrade}
