@@ -15,7 +15,7 @@ export const CLIMB_TAG_CATEGORIES = [
   },
   {
     id: "wall",
-    title: "Wall Angle / Terrain",
+    title: "Wall Angle",
     limit: 2,
     options: ["Slab", "Vertical", "Overhang", "Cave"],
     logbookFilterKey: "wallTypes",
