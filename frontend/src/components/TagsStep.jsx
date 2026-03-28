@@ -1,30 +1,9 @@
 import { useEffect, useRef, useState } from "react"
-import { TAG_SECTIONS } from "../lib/climbFormOptions"
-
-function TagChip({ isSelected, label, onClick, tone = "ember" }) {
-  const selectedClassName =
-    tone === "lichen"
-      ? "border-lichen/25 bg-lichen-soft text-lichen shadow-[0_8px_18px_rgba(110,139,87,0.14)]"
-      : "border-ember/25 bg-ember-soft text-ember shadow-[0_8px_18px_rgba(201,86,26,0.14)]"
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`min-w-[88px] rounded-full border px-4 py-2.5 text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
-        isSelected
-          ? selectedClassName
-          : "border-stone-border bg-stone-surface text-stone-secondary"
-      }`}
-    >
-      {label}
-    </button>
-  )
-}
+import ClimbTagSelector from "./ClimbTagSelector"
 
 function TagsStep({
   draft,
-  onToggleTag,
+  onTagsChange,
   onSave,
   saveError,
   saveLabel = "Save Climb",
@@ -51,38 +30,12 @@ function TagsStep({
           <h3 className="text-lg font-semibold tracking-tight text-stone-text">
             Finish the details
           </h3>
-          <p className="mt-1.5 max-w-[260px] text-xs leading-5 text-stone-muted">
-            Pick the holds, movement, and wall angle that best match this climb.
-          </p>
-
-          <div className="mt-8 space-y-5">
-            {TAG_SECTIONS.map((section, index) => (
-              <section key={section.title}>
-                <p className="mb-2.5 text-sm font-medium uppercase tracking-[0.14em] text-stone-secondary">
-                  {section.title}
-                </p>
-
-                <div className="flex flex-wrap gap-2.5">
-                  {section.options.map((tag) => {
-                    const isSelected = draft.tags.includes(tag)
-
-                    return (
-                      <TagChip
-                        key={tag}
-                        label={tag}
-                        isSelected={isSelected}
-                        tone="ember"
-                        onClick={() => {
-                          if (!isSaving) {
-                            onToggleTag(tag)
-                          }
-                        }}
-                      />
-                    )
-                  })}
-                </div>
-              </section>
-            ))}
+          <div className="mt-4">
+            <ClimbTagSelector
+              selectedTags={draft.tags}
+              disabled={isSaving}
+              onChange={onTagsChange}
+            />
           </div>
         </div>
         </div>
