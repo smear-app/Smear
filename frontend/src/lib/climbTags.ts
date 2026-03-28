@@ -38,9 +38,6 @@ export type GroupedClimbTagSection = {
   tags: string[]
 }
 
-export const CLIMB_TAG_RULE_SUMMARY =
-  "Up to 2 hold types, 1 movement, 2 wall/terrain, 1 mechanic"
-
 const TAG_CATEGORY_BY_VALUE = new Map(
   CLIMB_TAG_CATEGORIES.flatMap((category) =>
     category.options.map((tag) => [normalizeClimbTag(tag), category] as const),

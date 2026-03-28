@@ -1,6 +1,5 @@
 import {
   CLIMB_TAG_CATEGORIES,
-  CLIMB_TAG_RULE_SUMMARY,
   getClimbTagSelectionCount,
   isClimbTagDisabled,
   isClimbTagSelected,
@@ -23,14 +22,7 @@ function TagChip({ label, isSelected, isDisabled, onClick }) {
             : "border-stone-border bg-stone-surface text-stone-secondary active:scale-[0.98]"
       }`}
     >
-      <span className="inline-flex items-center gap-1.5">
-        {isSelected ? (
-          <span aria-hidden="true" className="text-xs font-semibold">
-            ✓
-          </span>
-        ) : null}
-        <span>{label}</span>
-      </span>
+      <span>{label}</span>
     </button>
   )
 }
@@ -67,10 +59,10 @@ function CategoryCard({ category, selectedTags, onChange, disabled }) {
   )
 }
 
-function ClimbTagSelector({ selectedTags, onChange, disabled = false, helperText = CLIMB_TAG_RULE_SUMMARY }) {
+function ClimbTagSelector({ selectedTags, onChange, disabled = false, helperText = null }) {
   return (
-    <div className="space-y-3">
-      <p className="text-xs leading-5 text-stone-muted">{helperText}</p>
+    <div className={helperText ? "space-y-3" : ""}>
+      {helperText ? <p className="text-xs leading-5 text-stone-muted">{helperText}</p> : null}
 
       <div className="space-y-3">
         {CLIMB_TAG_CATEGORIES.map((category) => (

@@ -49,9 +49,15 @@ function TagsStep({
           <p className="text-center text-sm text-red-500">{saveError}</p>
         ) : isSaving ? (
           <p className="text-center text-sm text-stone-secondary">Saving climb...</p>
-        ) : !canSaveFromTags ? (
-          <p className="text-center text-sm text-stone-secondary">
-            Select at least one tag to save this climb
+        ) : null}
+        {!saveError && !isSaving ? (
+          <p
+            aria-hidden={canSaveFromTags}
+            className={`text-center text-sm text-stone-secondary transition-opacity duration-200 ${
+              canSaveFromTags ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            Select at least 1 to continue
           </p>
         ) : null}
       </div>
