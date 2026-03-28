@@ -4,6 +4,8 @@ import { FiBookmark, FiCheck, FiChevronDown, FiLoader, FiMapPin, FiSearch } from
 import { RiBookmarkFill } from "react-icons/ri"
 import { useGym } from "../context/GymContext"
 import { formatGymLocation, type GymRecord } from "../lib/gyms"
+import AnchoredPopover from "./logbook/AnchoredPopover"
+import SurfaceLayer from "./surfaces/SurfaceLayer"
 
 interface GymSelectorProps {
   className?: string
@@ -54,7 +56,6 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
   const [isOpen, setIsOpen] = useState(false)
   const [isRegistryOpen, setIsRegistryOpen] = useState(false)
   const [query, setQuery] = useState("")
-  const containerRef = useRef<HTMLDivElement | null>(null)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   const searchResults = useMemo(() => searchGyms(query), [query, searchGyms])
@@ -62,20 +63,6 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
     () => getSelectedGymSnapshot(activeGym, isHydrated),
     [activeGym, isHydrated],
   )
-
-  useEffect(() => {
-    if (!isOpen && !isRegistryOpen) return undefined
-
-    function handlePointerDown(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false)
-        setIsRegistryOpen(false)
-      }
-    }
-
-    window.addEventListener("mousedown", handlePointerDown)
-    return () => window.removeEventListener("mousedown", handlePointerDown)
-  }, [isOpen, isRegistryOpen])
 
   useEffect(() => {
     if (!isRegistryOpen) return undefined
@@ -108,36 +95,44 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
   const isEmptyState = selectedSnapshot.id === null
 
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className={`inline-flex items-center justify-between gap-3 rounded-2xl bg-stone-surface/85 px-3 py-2 text-left shadow-sm ring-1 ring-stone-border transition hover:bg-stone-surface ${
-          isEmptyState ? "min-w-[8.75rem]" : "min-w-[12.5rem] max-w-[15rem]"
-        }`}
-      >
-        <div className="relative min-w-0 flex-1 overflow-hidden">
-          <div
-            className={
-              isEmptyState
-                ? "min-h-[1.25rem]"
-                : showLocation
-                  ? "min-h-[2.625rem]"
-                  : "min-h-[1.25rem]"
-            }
-          >
-            <SelectedGymLabel snapshot={selectedSnapshot} showLocation={showLocation} />
+    <>
+      <AnchoredPopover
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        align="left"
+        panelClassName="!w-[min(20rem,calc(100vw-2.5rem))] !rounded-[24px] !border-transparent !bg-stone-surface !p-4 !shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-stone-border dark:ring-stone-border"
+        trigger={
+          <div className={className}>
+            <button
+              type="button"
+              onClick={() => setIsOpen((current) => !current)}
+              className={`inline-flex items-center justify-between gap-3 rounded-2xl bg-stone-surface/85 px-3 py-2 text-left shadow-sm ring-1 ring-stone-border transition hover:bg-stone-surface ${
+                isEmptyState ? "min-w-[8.75rem]" : "min-w-[12.5rem] max-w-[15rem]"
+              }`}
+            >
+              <div className="relative min-w-0 flex-1 overflow-hidden">
+                <div
+                  className={
+                    isEmptyState
+                      ? "min-h-[1.25rem]"
+                      : showLocation
+                        ? "min-h-[2.625rem]"
+                        : "min-h-[1.25rem]"
+                  }
+                >
+                  <SelectedGymLabel snapshot={selectedSnapshot} showLocation={showLocation} />
+                </div>
+              </div>
+              <FiChevronDown
+                className={`h-4 w-4 shrink-0 text-stone-muted transition-transform ${
+                  isOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
           </div>
-        </div>
-        <FiChevronDown
-          className={`h-4 w-4 shrink-0 text-stone-muted transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute left-0 top-[calc(100%+12px)] z-30 w-[min(20rem,calc(100vw-2.5rem))] rounded-[24px] bg-stone-surface p-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)] ring-1 ring-stone-border">
+        }
+      >
+        <div>
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-stone-text">Select gym</p>
@@ -175,55 +170,56 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
             className="mt-4"
           />
         </div>
-      )}
+      </AnchoredPopover>
 
       {isRegistryOpen && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 px-5">
-          <div className="flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-stone-surface p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-stone-border">
-            <div className="flex items-start justify-between gap-4">
-              <p className="text-sm font-semibold text-stone-text">Select gym</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRegistryOpen(false)
-                  setQuery("")
-                }}
-                className="rounded-full bg-stone-alt px-3 py-1.5 text-xs font-semibold text-stone-secondary"
-              >
-                Close
-              </button>
-            </div>
+        <SurfaceLayer open backdropClassName="bg-black/20" zIndexClassName="z-[60]">
+          <div className="pointer-events-none flex h-full w-full items-center justify-center px-5">
+            <div className="pointer-events-auto flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-stone-surface p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-stone-border">
+              <div className="flex items-start justify-between gap-4">
+                <p className="text-sm font-semibold text-stone-text">Select gym</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRegistryOpen(false)
+                    setQuery("")
+                  }}
+                  className="rounded-full bg-stone-alt px-3 py-1.5 text-xs font-semibold text-stone-secondary"
+                >
+                  Close
+                </button>
+              </div>
 
-            <label className="mt- flex items-center gap-2 rounded-2xl border border-stone-border bg-stone-surface px-3 py-2.5">
-              <FiSearch className="h- w-4 text-stone-muted" />
-              <input
-                ref={searchInputRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search gyms, cities, or chains"
-                className="app-native-text-entry w-full bg-transparent text-stone-text outline-none placeholder:text-stone-muted"
-              />
-            </label>
+              <label className="mt- flex items-center gap-2 rounded-2xl border border-stone-border bg-stone-surface px-3 py-2.5">
+                <FiSearch className="h- w-4 text-stone-muted" />
+                <input
+                  ref={searchInputRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search gyms, cities, or chains"
+                  className="app-native-text-entry w-full bg-transparent text-stone-text outline-none placeholder:text-stone-muted"
+                />
+              </label>
 
-            <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-1 py-1">
-              {!isHydrated ? (
-                <div className="flex items-center justify-center py-10 text-sm text-stone-muted">
-                  <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                  Loading gyms...
-                </div>
-              ) : searchResults.length === 0 ? (
-                <div className="rounded-2xl bg-stone-surface px-4 py-8 text-center">
-                  <p className="text-sm text-stone-muted">No gyms matched your search.</p>
-                  <a
-                    href="/support"
-                    className="mt-3 inline-block text-xs font-semibold text-ember"
-                  >
-                    Don't see your gym?
-                  </a>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {searchResults.map((gym) => {
+              <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-1 py-1">
+                {!isHydrated ? (
+                  <div className="flex items-center justify-center py-10 text-sm text-stone-muted">
+                    <FiLoader className="mr-2 h-4 w-4 animate-spin" />
+                    Loading gyms...
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="rounded-2xl bg-stone-surface px-4 py-8 text-center">
+                    <p className="text-sm text-stone-muted">No gyms matched your search.</p>
+                    <a
+                      href="/support"
+                      className="mt-3 inline-block text-xs font-semibold text-ember"
+                    >
+                      Don't see your gym?
+                    </a>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {searchResults.map((gym) => {
                       const isBookmarked = bookmarkedGymIds.includes(gym.id)
                       const isActive = activeGymId === gym.id
 
@@ -257,14 +253,15 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
                           </div>
                         </div>
                       )
-                  })}
-                </div>
-              )}
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </SurfaceLayer>
       )}
-    </div>
+    </>
   )
 }
 
