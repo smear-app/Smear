@@ -64,7 +64,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     const previousBodyWidth = document.body.style.width
     let lastTouchY = 0
 
-    const findScrollableAncestor = (startNode) => {
+    const findVerticalScrollableAncestor = (startNode) => {
       let node = startNode instanceof Element ? startNode : null
 
       while (node && sheetRef.current?.contains(node)) {
@@ -74,6 +74,20 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
           (overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight
 
         if (canScroll) {
+          return node
+        }
+
+        node = node.parentElement
+      }
+
+      return null
+    }
+
+    const findHorizontalScrollableAncestor = (startNode) => {
+      let node = startNode instanceof Element ? startNode : null
+
+      while (node && sheetRef.current?.contains(node)) {
+        if (node instanceof HTMLElement && node.dataset.horizontalScroll === "true") {
           return node
         }
 
@@ -102,7 +116,14 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
         return
       }
 
-      const scrollableAncestor = findScrollableAncestor(target)
+      const horizontalScrollableAncestor = findHorizontalScrollableAncestor(target)
+
+      if (horizontalScrollableAncestor) {
+        lastTouchY = touch.clientY
+        return
+      }
+
+      const scrollableAncestor = findVerticalScrollableAncestor(target)
 
       if (!scrollableAncestor) {
         event.preventDefault()

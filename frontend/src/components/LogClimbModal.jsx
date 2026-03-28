@@ -3,11 +3,14 @@ import GradeStep from "./GradeStep"
 import BottomSheet from "./BottomSheet"
 import CanonicalStep from "./CanonicalStep"
 import LogClimbHeader from "./LogClimbHeader"
-import PhotoStep from "./PhotoStep"
 import SendStep from "./SendStep"
 import StepProgress from "./StepProgress"
 import SuccessStep from "./SuccessStep"
 import TagsStep from "./TagsStep"
+import {
+  LOG_CLIMB_ROUTE_STEP_INDEX,
+  LOG_CLIMB_SUCCESS_STEP_INDEX,
+} from "../lib/logClimbFlow"
 
 const EMPTY_DRAFT = {
   name: "",
@@ -27,8 +30,6 @@ const EMPTY_DRAFT = {
 }
 
 const CLOSE_ANIMATION_MS = 280
-
-const SUCCESS_STEP = 5
 
 function LogClimbModal({
   isOpen,
@@ -121,26 +122,19 @@ function LogClimbModal({
 
   const steps = useMemo(
     () => [
-      <PhotoStep
+      <GradeStep
         draft={draft}
         onChange={(field, value) =>
           setDraft((currentDraft) => ({ ...currentDraft, [field]: value }))
         }
         onContinue={() => setCurrentStep(1)}
       />,
-      <GradeStep
-        draft={draft}
-        onChange={(field, value) =>
-          setDraft((currentDraft) => ({ ...currentDraft, [field]: value }))
-        }
-        onContinue={() => setCurrentStep(2)}
-      />,
       <SendStep
         draft={draft}
         onChange={(field, value) =>
           setDraft((currentDraft) => ({ ...currentDraft, [field]: value }))
         }
-        onContinue={() => setCurrentStep(3)}
+        onContinue={() => setCurrentStep(2)}
       />,
       <TagsStep
         draft={draft}
@@ -152,7 +146,7 @@ function LogClimbModal({
               : [...currentDraft.tags, tag],
           }))
         }
-        onSave={() => setCurrentStep(4)}
+        onSave={() => setCurrentStep(LOG_CLIMB_ROUTE_STEP_INDEX)}
         saveError={null}
         saveLabel="Continue"
         isSaving={false}
@@ -169,7 +163,7 @@ function LogClimbModal({
           try {
             await onSave(finalDraft)
             setIsSaving(false)
-            setCurrentStep(SUCCESS_STEP)
+            setCurrentStep(LOG_CLIMB_SUCCESS_STEP_INDEX)
           } catch (err) {
             setIsSaving(false)
             setSaveError(err instanceof Error ? err.message : "Failed to save climb")
@@ -188,22 +182,24 @@ function LogClimbModal({
 
   return (
     <BottomSheet isVisible={isVisible} onClose={onClose} closeLabel="Close log climb">
-      {currentStep < SUCCESS_STEP && (
-        <>
-          <LogClimbHeader
-            currentStep={currentStep}
-            title={mode === "edit" ? "Edit Log" : "Log Climb"}
-            onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-            onClose={onClose}
-          />
-          <div className="px-6 pb-1 text-center text-sm text-stone-muted">
-            {mode === "edit" ? "Editing at " : "Logging at "}
-            <span className="font-semibold text-stone-text">{draft.gymName}</span>
-          </div>
-          <StepProgress currentStep={currentStep} />
-        </>
-      )}
-      <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {currentStep < LOG_CLIMB_SUCCESS_STEP_INDEX && (
+          <>
+            <LogClimbHeader
+              currentStep={currentStep}
+              title={mode === "edit" ? "Edit Log" : "Log Climb"}
+              onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+              onClose={onClose}
+            />
+            <div className="px-6 pb-1 text-center text-sm text-stone-muted">
+              {mode === "edit" ? "Editing at " : "Logging at "}
+              <span className="font-semibold text-stone-text">{draft.gymName}</span>
+            </div>
+            <StepProgress currentStep={currentStep} />
+          </>
+        )}
+        <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
+      </div>
     </BottomSheet>
   )
 }

@@ -1,4 +1,12 @@
+import { Capacitor } from "@capacitor/core"
+import ColorChipSelector from "./ColorChipSelector"
 import { GRADE_OPTIONS } from "../lib/climbFormOptions"
+import { getClimbColorPalette } from "../lib/climbColors"
+
+const GRADE_ROW_SCROLL_STYLE = {
+  WebkitOverflowScrolling: "touch",
+  touchAction: "pan-x",
+}
 
 function GradeSelectorRow({ label, value, onSelect }) {
   return (
@@ -10,7 +18,11 @@ function GradeSelectorRow({ label, value, onSelect }) {
         </span>
       </div>
 
-      <div className="overflow-x-auto pb-1">
+      <div
+        data-horizontal-scroll="true"
+        className="overflow-x-auto pb-1"
+        style={GRADE_ROW_SCROLL_STYLE}
+      >
         <div className="flex min-w-max gap-2">
           {GRADE_OPTIONS.map((grade) => {
             const isSelected = value === grade
@@ -20,10 +32,10 @@ function GradeSelectorRow({ label, value, onSelect }) {
                 key={grade}
                 type="button"
                 onClick={() => onSelect(grade)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${
                   isSelected
-                    ? "bg-ember text-stone-surface"
-                    : "border border-stone-border/80 bg-stone-surface text-stone-secondary"
+                    ? "border-ember bg-ember text-stone-surface"
+                    : "border-stone-border/80 bg-stone-surface text-stone-secondary"
                 }`}
               >
                 {grade}
@@ -37,29 +49,47 @@ function GradeSelectorRow({ label, value, onSelect }) {
 }
 
 function GradeStep({ draft, onChange, onContinue }) {
-  const canContinueFromGrade = draft.gymGrade !== "" && draft.feltLike !== ""
+  const isWebLayout = !Capacitor.isNativePlatform()
+  const colorOptions = getClimbColorPalette()
+  const canContinueFromGrade =
+    draft.gymGrade !== "" && draft.feltLike !== "" && draft.climbColor !== null
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-5">
-      <div className="flex flex-1 flex-col justify-center gap-4">
-        <GradeSelectorRow
-          label="Gym Grade"
-          value={draft.gymGrade}
-          onSelect={(grade) => onChange("gymGrade", grade)}
-        />
-        <GradeSelectorRow
-          label="Felt Like"
-          value={draft.feltLike}
-          onSelect={(grade) => onChange("feltLike", grade)}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className={`space-y-4 ${isWebLayout ? "flex min-h-full flex-col justify-center" : ""}`}>
+          <GradeSelectorRow
+            label="Gym Grade"
+            value={draft.gymGrade}
+            onSelect={(grade) => onChange("gymGrade", grade)}
+          />
+          <GradeSelectorRow
+            label="Felt Like"
+            value={draft.feltLike}
+            onSelect={(grade) => onChange("feltLike", grade)}
+          />
+          <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
+            <h3 className="mb-4 text-sm font-semibold text-stone-text">
+              Climb Color
+            </h3>
+            <ColorChipSelector
+              options={colorOptions}
+              value={draft.climbColor}
+              onChange={(value) => onChange("climbColor", value)}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 min-h-[20px]">
-        {!canContinueFromGrade ? (
-          <p className="text-center text-sm text-stone-secondary">
-            Select both Gym Grade and Felt Like to continue
-          </p>
-        ) : null}
+        <p
+          aria-hidden={canContinueFromGrade}
+          className={`text-center text-sm text-stone-secondary transition-opacity duration-200 ${
+            canContinueFromGrade ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          Complete all selections to continue
+        </p>
       </div>
 
       <button

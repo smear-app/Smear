@@ -1,10 +1,13 @@
-const STEP_LABELS = ["Photo", "Grade", "Send", "Tags", "Route"]
+import { LOG_CLIMB_STEP_LABELS } from "../lib/logClimbFlow"
 
 function StepProgress({ currentStep }) {
   return (
     <div className="px-5 pb-5">
-      <div className="grid grid-cols-5 gap-2">
-        {STEP_LABELS.map((label, index) => {
+      <div
+        className="grid gap-2"
+        style={{ gridTemplateColumns: `repeat(${LOG_CLIMB_STEP_LABELS.length}, minmax(0, 1fr))` }}
+      >
+        {LOG_CLIMB_STEP_LABELS.map((label, index) => {
           const isActive = index <= currentStep
 
           return (

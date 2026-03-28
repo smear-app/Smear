@@ -46,11 +46,14 @@ function SendStep({ draft, onChange, onContinue }) {
       </div>
 
       <div className="mt-6 min-h-[20px]">
-        {!canContinueFromSend ? (
-          <p className="text-center text-sm text-stone-secondary">
-            Select Flash, Send, or Attempt to continue
-          </p>
-        ) : null}
+        <p
+          aria-hidden={canContinueFromSend}
+          className={`text-center text-sm text-stone-secondary transition-opacity duration-200 ${
+            canContinueFromSend ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          Complete selection to continue
+        </p>
       </div>
 
       <button
