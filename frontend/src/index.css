@@ -105,9 +105,41 @@
   }
 }
 
+@layer base {
+  #root,
+  #root * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root :where(
+    input,
+    textarea,
+    select,
+    option,
+    [contenteditable="true"],
+    [contenteditable="plaintext-only"],
+    .app-selectable,
+    .app-touch-selectable,
+    .app-native-text-entry
+  ) {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+}
+
 @layer utilities {
   .app-native-text-entry {
     font-size: 1rem;
     line-height: 1.25rem;
+  }
+
+  .app-selectable {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 }

@@ -2,6 +2,11 @@ import ColorChipSelector from "./ColorChipSelector"
 import { GRADE_OPTIONS } from "../lib/climbFormOptions"
 import { getClimbColorPalette } from "../lib/climbColors"
 
+const GRADE_ROW_SCROLL_STYLE = {
+  WebkitOverflowScrolling: "touch",
+  touchAction: "pan-x",
+}
+
 function GradeSelectorRow({ label, value, onSelect }) {
   return (
     <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
@@ -15,7 +20,7 @@ function GradeSelectorRow({ label, value, onSelect }) {
       <div
         data-horizontal-scroll="true"
         className="overflow-x-auto pb-1"
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x" }}
+        style={GRADE_ROW_SCROLL_STYLE}
       >
         <div className="flex min-w-max gap-2">
           {GRADE_OPTIONS.map((grade) => {

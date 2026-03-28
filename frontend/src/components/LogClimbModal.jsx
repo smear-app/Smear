@@ -182,22 +182,24 @@ function LogClimbModal({
 
   return (
     <BottomSheet isVisible={isVisible} onClose={onClose} closeLabel="Close log climb">
-      {currentStep < LOG_CLIMB_SUCCESS_STEP_INDEX && (
-        <>
-          <LogClimbHeader
-            currentStep={currentStep}
-            title={mode === "edit" ? "Edit Log" : "Log Climb"}
-            onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
-            onClose={onClose}
-          />
-          <div className="px-6 pb-1 text-center text-sm text-stone-muted">
-            {mode === "edit" ? "Editing at " : "Logging at "}
-            <span className="font-semibold text-stone-text">{draft.gymName}</span>
-          </div>
-          <StepProgress currentStep={currentStep} />
-        </>
-      )}
-      <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {currentStep < LOG_CLIMB_SUCCESS_STEP_INDEX && (
+          <>
+            <LogClimbHeader
+              currentStep={currentStep}
+              title={mode === "edit" ? "Edit Log" : "Log Climb"}
+              onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+              onClose={onClose}
+            />
+            <div className="px-6 pb-1 text-center text-sm text-stone-muted">
+              {mode === "edit" ? "Editing at " : "Logging at "}
+              <span className="font-semibold text-stone-text">{draft.gymName}</span>
+            </div>
+            <StepProgress currentStep={currentStep} />
+          </>
+        )}
+        <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
+      </div>
     </BottomSheet>
   )
 }
