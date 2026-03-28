@@ -1,5 +1,7 @@
 import { supabase } from './supabase'
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+
 export interface CanonicalClimb {
   id: string
   gym_id: string | null
@@ -105,5 +107,14 @@ export async function seedCanonicalClimb(
     .single()
 
   if (error) throw error
-  return data.id as string
+  const id = data.id as string
+
+  // Fire-and-forget: trigger background duplicate detection if a photo was provided
+  if (photoUrl) {
+    fetch(`${API_BASE}/canonical-climbs/${id}/process-embedding`, { method: 'POST' }).catch(
+      () => {/* non-critical, ignore errors */},
+    )
+  }
+
+  return id
 }
