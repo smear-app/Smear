@@ -7,6 +7,8 @@ import {
 } from "../lib/climbTags"
 
 function TagChip({ label, isSelected, isDisabled, onClick }) {
+  const interactiveClassName = isDisabled ? "" : "transition-colors duration-200 active:scale-[0.98]"
+
   return (
     <button
       type="button"
@@ -14,12 +16,12 @@ function TagChip({ label, isSelected, isDisabled, onClick }) {
       disabled={isDisabled}
       aria-pressed={isSelected}
       aria-label={`${label}${isSelected ? ", selected" : ""}${isDisabled ? ", unavailable, category limit reached" : ""}`}
-      className={`rounded-full border px-3 py-2 text-sm font-medium transition-all duration-200 ${
+      className={`rounded-full border px-3 py-2 text-sm font-medium ${interactiveClassName} ${
         isSelected
           ? "border-ember/25 bg-ember-soft text-ember shadow-[0_8px_18px_rgba(201,86,26,0.14)]"
           : isDisabled
             ? "cursor-not-allowed border-stone-border/70 bg-stone-surface/70 text-stone-muted opacity-55"
-            : "border-stone-border bg-stone-surface text-stone-secondary active:scale-[0.98]"
+            : "border-stone-border bg-stone-surface text-stone-secondary"
       }`}
     >
       <span>{label}</span>
