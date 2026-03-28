@@ -26,21 +26,21 @@ function TagsStep({
     <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
       <div className="relative min-h-0 flex-1">
         <div ref={scrollRef} className="h-full overflow-y-auto">
-        <div className="rounded-[30px] border border-stone-border bg-stone-surface p-6">
-          <h3 className="text-lg font-semibold tracking-tight text-stone-text">
-            Finish the details
-          </h3>
-          <div className="mt-4">
-            <ClimbTagSelector
-              selectedTags={draft.tags}
-              disabled={isSaving}
-              onChange={onTagsChange}
-            />
+          <div className="pb-1">
+            <h3 className="px-1 text-lg font-semibold tracking-tight text-stone-text">
+              Add tags to your climb
+            </h3>
+            <div className="mt-4">
+              <ClimbTagSelector
+                selectedTags={draft.tags}
+                disabled={isSaving}
+                onChange={onTagsChange}
+              />
+            </div>
           </div>
         </div>
-        </div>
         {showFade && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rounded-b-[30px] bg-gradient-to-t from-stone-surface to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-stone-bg to-transparent" />
         )}
       </div>
 
@@ -57,7 +57,7 @@ function TagsStep({
               canSaveFromTags ? "opacity-0" : "opacity-100"
             }`}
           >
-            Select at least 1 to continue
+            Select at least one to continue
           </p>
         ) : null}
       </div>
