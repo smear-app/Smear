@@ -4,6 +4,7 @@ import {
   MOVEMENT_TAGS,
   WALL_TAGS,
   getLogbookFilterKeyForTag,
+  getLogbookTagFilterSections,
   normalizeClimbTag,
 } from "./climbTags"
 
@@ -23,6 +24,7 @@ export interface LogbookFilters {
   wallTypes: string[]
   holdTypes: string[]
   movementTypes: string[]
+  mechanicTypes: string[]
   grades: string[]
 }
 
@@ -45,6 +47,7 @@ export const DEFAULT_LOGBOOK_FILTERS: LogbookFilters = {
   wallTypes: [],
   holdTypes: [],
   movementTypes: [],
+  mechanicTypes: [],
   grades: [],
 }
 
@@ -72,7 +75,7 @@ export function toLocalDateKey(value: string | Date) {
   return `${year}-${month}-${day}`
 }
 
-export function getTagCategory(value: string): "wall" | "hold" | "movement" | null {
+export function getTagCategory(value: string): "wall" | "hold" | "movement" | "mechanic" | null {
   const filterKey = getLogbookFilterKeyForTag(value)
 
   if (filterKey === "wallTypes") {
@@ -85,6 +88,10 @@ export function getTagCategory(value: string): "wall" | "hold" | "movement" | nu
 
   if (filterKey === "movementTypes") {
     return "movement"
+  }
+
+  if (filterKey === "mechanicTypes") {
+    return "mechanic"
   }
 
   return null
@@ -128,6 +135,13 @@ export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): bo
   if (
     filters.movementTypes.length > 0 &&
     !filters.movementTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))
+  ) {
+    return false
+  }
+
+  if (
+    filters.mechanicTypes.length > 0 &&
+    !filters.mechanicTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))
   ) {
     return false
   }
@@ -222,23 +236,7 @@ export function getClimbsForDateKey(climbs: Climb[], dateKey: string | null): Cl
 }
 
 export function getAttributeFilterSections() {
-  return [
-    {
-      key: "wallTypes" as const,
-      title: "Wall Type",
-      options: WALL_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-    {
-      key: "holdTypes" as const,
-      title: "Hold Type",
-      options: HOLD_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-    {
-      key: "movementTypes" as const,
-      title: "Movement",
-      options: MOVEMENT_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-  ]
+  return getLogbookTagFilterSections()
 }
 
 export function getSortLabel(sort: LogbookSort): string {

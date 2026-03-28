@@ -29,7 +29,7 @@ const POPUP_CARD_SHELL_CLASS =
   "rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]"
 
 type OpenPanel = "filters" | "sort" | null
-type AttributeSectionKey = "wallTypes" | "holdTypes" | "movementTypes"
+type AttributeSectionKey = "holdTypes" | "movementTypes" | "wallTypes" | "mechanicTypes"
 type LogbookRestoreState = {
   restoreLogbookState?: {
     view: LogbookView
@@ -68,6 +68,9 @@ function buildInitialFilters(searchParams: URLSearchParams): LogbookFilters {
     movementTypes:
       searchParams.get("movementTypes")?.split(",").filter(Boolean) ??
       (legacyCategory === "movement" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.movementTypes),
+    mechanicTypes:
+      searchParams.get("mechanicTypes")?.split(",").filter(Boolean) ??
+      (legacyCategory === "mechanic" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.mechanicTypes),
     grades: searchParams.get("grades")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.grades,
   }
 }
@@ -220,9 +223,10 @@ export default function LogbookPage({
     () => restoredLogbookState?.selectedDateKey ?? null,
   )
   const [expandedAttributeSections, setExpandedAttributeSections] = useState<Record<AttributeSectionKey, boolean>>({
-    wallTypes: false,
     holdTypes: false,
     movementTypes: false,
+    wallTypes: false,
+    mechanicTypes: false,
   })
   const {
     climbs,
@@ -271,6 +275,10 @@ export default function LogbookPage({
 
     if (filters.movementTypes.length > 0) {
       nextParams.set("movementTypes", filters.movementTypes.join(","))
+    }
+
+    if (filters.mechanicTypes.length > 0) {
+      nextParams.set("mechanicTypes", filters.mechanicTypes.join(","))
     }
 
     if (filters.grades.length > 0) {
@@ -349,6 +357,7 @@ export default function LogbookPage({
     filters.wallTypes.length > 0 ||
     filters.holdTypes.length > 0 ||
     filters.movementTypes.length > 0 ||
+    filters.mechanicTypes.length > 0 ||
     filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
@@ -532,7 +541,45 @@ export default function LogbookPage({
                     </div>
                   </div>
 
+                  <div className="grid gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Grades
+                    </span>
+                    <div className="w-full px-1.5">
+                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
+                        {availableGrades.map((gradeOption) => {
+                          const isSelected = draftFilters.grades.includes(gradeOption.grade)
+
+                          return (
+                            <button
+                              key={gradeOption.grade}
+                              type="button"
+                              onClick={() =>
+                                setDraftFilters((current) => ({
+                                  ...current,
+                                  grades: current.grades.includes(gradeOption.grade)
+                                    ? current.grades.filter((grade) => grade !== gradeOption.grade)
+                                    : [...current.grades, gradeOption.grade],
+                                }))
+                              }
+                              className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
+                                isSelected
+                                  ? "border-ember/20 bg-ember-soft text-ember"
+                                  : "border-stone-border bg-stone-alt text-stone-secondary"
+                              }`}
+                            >
+                              {gradeOption.grade}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Tags
+                    </span>
                     {getAttributeFilterSections().map((section) => {
                       const selectedValues = draftFilters[section.key]
                       const isExpanded = expandedAttributeSections[section.key]
@@ -572,41 +619,6 @@ export default function LogbookPage({
                         </CompactFilterSection>
                       )
                     })}
-                  </div>
-
-                  <div className="grid gap-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                      Grades
-                    </span>
-                    <div className="w-full px-1.5">
-                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
-                        {availableGrades.map((gradeOption) => {
-                          const isSelected = draftFilters.grades.includes(gradeOption.grade)
-
-                          return (
-                            <button
-                              key={gradeOption.grade}
-                              type="button"
-                              onClick={() =>
-                                setDraftFilters((current) => ({
-                                  ...current,
-                                  grades: current.grades.includes(gradeOption.grade)
-                                    ? current.grades.filter((grade) => grade !== gradeOption.grade)
-                                    : [...current.grades, gradeOption.grade],
-                                }))
-                              }
-                              className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
-                                isSelected
-                                  ? "border-ember/20 bg-ember-soft text-ember"
-                                  : "border-stone-border bg-stone-alt text-stone-secondary"
-                              }`}
-                            >
-                              {gradeOption.grade}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
                   </div>
 
                   <button

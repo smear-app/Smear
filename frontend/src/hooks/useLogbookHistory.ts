@@ -85,6 +85,7 @@ export function useLogbookHistory({
           wallTypes: filters.wallTypes,
           holdTypes: filters.holdTypes,
           movementTypes: filters.movementTypes,
+          mechanicTypes: filters.mechanicTypes,
           grades: filters.grades,
         })
 
@@ -116,6 +117,7 @@ export function useLogbookHistory({
     filters.gymId,
     filters.grades,
     filters.holdTypes,
+    filters.mechanicTypes,
     filters.movementTypes,
     filters.sendTypes,
     filters.wallTypes,
@@ -151,6 +153,7 @@ export function useLogbookHistory({
       wallTypes: filters.wallTypes,
       holdTypes: filters.holdTypes,
       movementTypes: filters.movementTypes,
+      mechanicTypes: filters.mechanicTypes,
       grades: filters.grades,
     })
       .then((page) => {

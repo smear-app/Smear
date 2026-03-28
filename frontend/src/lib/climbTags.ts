@@ -16,6 +16,7 @@ export const CLIMB_TAG_CATEGORIES = [
   {
     id: "wall",
     title: "Wall Angle",
+    logbookTitle: "Wall Angle",
     limit: 2,
     options: ["Slab", "Vertical", "Overhang", "Cave"],
     logbookFilterKey: "wallTypes",
@@ -25,7 +26,7 @@ export const CLIMB_TAG_CATEGORIES = [
     title: "Mechanics",
     limit: 1,
     options: ["Balance", "Power", "Dyno"],
-    logbookFilterKey: null,
+    logbookFilterKey: "mechanicTypes",
   },
 ] as const
 
@@ -59,6 +60,10 @@ export const HOLD_TAGS = CLIMB_TAG_CATEGORIES.find((category) => category.id ===
 )
 
 export const MOVEMENT_TAGS = CLIMB_TAG_CATEGORIES.find((category) => category.id === "movement")!.options.map(
+  normalizeClimbTag,
+)
+
+export const MECHANIC_TAGS = CLIMB_TAG_CATEGORIES.find((category) => category.id === "mechanic")!.options.map(
   normalizeClimbTag,
 )
 
@@ -120,6 +125,17 @@ export function toggleClimbTag(tags: string[], tag: string) {
 
 export function getLogbookFilterKeyForTag(tag: string): LogbookTagFilterKey | null {
   return getClimbTagCategory(tag)?.logbookFilterKey ?? null
+}
+
+export function getLogbookTagFilterSections() {
+  return CLIMB_TAG_CATEGORIES.filter((category) => category.logbookFilterKey !== null).map((category) => ({
+    key: category.logbookFilterKey,
+    title: "logbookTitle" in category ? category.logbookTitle : category.title,
+    options: category.options.map((option) => ({
+      value: normalizeClimbTag(option),
+      label: option,
+    })),
+  }))
 }
 
 export function groupClimbTags(tags: string[]): GroupedClimbTagSection[] {
