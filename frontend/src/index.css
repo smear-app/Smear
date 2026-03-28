@@ -106,15 +106,45 @@
 }
 
 @layer base {
-  #root,
-  #root * {
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
+  html,
+  body,
+  body * {
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
     -webkit-tap-highlight-color: transparent;
   }
 
-  #root :where(
+  body :where(
+    button,
+    [role="button"],
+    a[href],
+    summary,
+    label[for],
+    .app-touch-control
+  ) {
+    touch-action: manipulation;
+    -webkit-user-drag: none;
+  }
+
+  body :where(
+    button,
+    [role="button"],
+    a[href],
+    summary,
+    label[for],
+    .app-touch-control,
+    button *,
+    [role="button"] *,
+    a[href] *,
+    summary *,
+    label[for] *,
+    .app-touch-control *
+  ) {
+    -webkit-user-drag: none;
+  }
+
+  body :where(
     input,
     textarea,
     select,
@@ -125,9 +155,9 @@
     .app-touch-selectable,
     .app-native-text-entry
   ) {
-    -webkit-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
   }
 }
 
@@ -138,8 +168,8 @@
   }
 
   .app-selectable {
-    -webkit-user-select: text;
-    user-select: text;
-    -webkit-touch-callout: default;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-touch-callout: default !important;
   }
 }
