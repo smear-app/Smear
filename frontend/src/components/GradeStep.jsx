@@ -54,26 +54,28 @@ function GradeStep({ draft, onChange, onContinue }) {
 
   return (
     <div className="flex flex-1 flex-col px-5 pb-5">
-      <div className="flex flex-1 flex-col justify-center gap-4">
-        <GradeSelectorRow
-          label="Gym Grade"
-          value={draft.gymGrade}
-          onSelect={(grade) => onChange("gymGrade", grade)}
-        />
-        <GradeSelectorRow
-          label="Felt Like"
-          value={draft.feltLike}
-          onSelect={(grade) => onChange("feltLike", grade)}
-        />
-        <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
-          <h3 className="mb-4 text-sm font-semibold text-stone-text">
-            Climb Color
-          </h3>
-          <ColorChipSelector
-            options={colorOptions}
-            value={draft.climbColor}
-            onChange={(value) => onChange("climbColor", value)}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="space-y-4">
+          <GradeSelectorRow
+            label="Gym Grade"
+            value={draft.gymGrade}
+            onSelect={(grade) => onChange("gymGrade", grade)}
           />
+          <GradeSelectorRow
+            label="Felt Like"
+            value={draft.feltLike}
+            onSelect={(grade) => onChange("feltLike", grade)}
+          />
+          <div className="rounded-[28px] border border-stone-border bg-stone-alt p-4">
+            <h3 className="mb-4 text-sm font-semibold text-stone-text">
+              Climb Color
+            </h3>
+            <ColorChipSelector
+              options={colorOptions}
+              value={draft.climbColor}
+              onChange={(value) => onChange("climbColor", value)}
+            />
+          </div>
         </div>
       </div>
 
