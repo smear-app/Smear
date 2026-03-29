@@ -1,4 +1,12 @@
 import type { Climb } from "./climbs"
+import {
+  HOLD_TAGS,
+  MOVEMENT_TAGS,
+  WALL_TAGS,
+  getLogbookFilterKeyForTag,
+  getLogbookTagFilterSections,
+  normalizeClimbTag,
+} from "./climbTags"
 
 export const LOGBOOK_PAGE_SIZE = 25
 export const RECENT_CLIMBS_LIMIT = 5
@@ -16,6 +24,7 @@ export interface LogbookFilters {
   wallTypes: string[]
   holdTypes: string[]
   movementTypes: string[]
+  mechanicTypes: string[]
   grades: string[]
 }
 
@@ -28,10 +37,6 @@ export interface LogbookSession {
   climbs: Climb[]
 }
 
-export const WALL_TAGS = ["slab", "vertical", "overhang", "cave", "roof"] as const
-export const HOLD_TAGS = ["crimp", "sloper", "pinch", "pocket", "jug"] as const
-export const MOVEMENT_TAGS = ["dynamic", "static", "balance", "compression", "tension", "technical"] as const
-
 const WALL_TAG_SET = new Set(WALL_TAGS)
 const HOLD_TAG_SET = new Set(HOLD_TAGS)
 const MOVEMENT_TAG_SET = new Set(MOVEMENT_TAGS)
@@ -42,6 +47,7 @@ export const DEFAULT_LOGBOOK_FILTERS: LogbookFilters = {
   wallTypes: [],
   holdTypes: [],
   movementTypes: [],
+  mechanicTypes: [],
   grades: [],
 }
 
@@ -58,7 +64,7 @@ export function formatTagLabel(value: string): string {
 }
 
 export function normalizeTag(value: string): string {
-  return value.trim().toLowerCase()
+  return normalizeClimbTag(value)
 }
 
 export function toLocalDateKey(value: string | Date) {
@@ -69,19 +75,23 @@ export function toLocalDateKey(value: string | Date) {
   return `${year}-${month}-${day}`
 }
 
-export function getTagCategory(value: string): "wall" | "hold" | "movement" | null {
-  const normalizedTag = normalizeTag(value)
+export function getTagCategory(value: string): "wall" | "hold" | "movement" | "mechanic" | null {
+  const filterKey = getLogbookFilterKeyForTag(value)
 
-  if (WALL_TAG_SET.has(normalizedTag as (typeof WALL_TAGS)[number])) {
+  if (filterKey === "wallTypes") {
     return "wall"
   }
 
-  if (HOLD_TAG_SET.has(normalizedTag as (typeof HOLD_TAGS)[number])) {
+  if (filterKey === "holdTypes") {
     return "hold"
   }
 
-  if (MOVEMENT_TAG_SET.has(normalizedTag as (typeof MOVEMENT_TAGS)[number])) {
+  if (filterKey === "movementTypes") {
     return "movement"
+  }
+
+  if (filterKey === "mechanicTypes") {
+    return "mechanic"
   }
 
   return null
@@ -125,6 +135,13 @@ export function doesClimbMatchFilters(climb: Climb, filters: LogbookFilters): bo
   if (
     filters.movementTypes.length > 0 &&
     !filters.movementTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))
+  ) {
+    return false
+  }
+
+  if (
+    filters.mechanicTypes.length > 0 &&
+    !filters.mechanicTypes.some((tag) => normalizedTags.includes(normalizeTag(tag)))
   ) {
     return false
   }
@@ -219,23 +236,7 @@ export function getClimbsForDateKey(climbs: Climb[], dateKey: string | null): Cl
 }
 
 export function getAttributeFilterSections() {
-  return [
-    {
-      key: "wallTypes" as const,
-      title: "Wall Type",
-      options: WALL_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-    {
-      key: "holdTypes" as const,
-      title: "Hold Type",
-      options: HOLD_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-    {
-      key: "movementTypes" as const,
-      title: "Movement",
-      options: MOVEMENT_TAGS.map((value) => ({ value, label: formatTagLabel(value) })),
-    },
-  ]
+  return getLogbookTagFilterSections()
 }
 
 export function getSortLabel(sort: LogbookSort): string {

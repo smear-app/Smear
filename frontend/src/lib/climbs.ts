@@ -151,6 +151,7 @@ interface PaginatedClimbsParams {
   wallTypes?: string[]
   holdTypes?: string[]
   movementTypes?: string[]
+  mechanicTypes?: string[]
   grades?: string[]
 }
 
@@ -162,7 +163,7 @@ type PaginatedClimbsQuery = {
 
 function applyOptionalFilters<T extends PaginatedClimbsQuery>(
   query: T,
-  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'wallTypes' | 'holdTypes' | 'movementTypes' | 'grades'>,
+  params: Pick<PaginatedClimbsParams, 'gymId' | 'sendTypes' | 'wallTypes' | 'holdTypes' | 'movementTypes' | 'mechanicTypes' | 'grades'>,
 ): T {
   let nextQuery = query
 
@@ -184,6 +185,10 @@ function applyOptionalFilters<T extends PaginatedClimbsQuery>(
 
   if (params.movementTypes && params.movementTypes.length > 0) {
     nextQuery = nextQuery.overlaps('tags', params.movementTypes.map((tag) => tag.toLowerCase())) as T
+  }
+
+  if (params.mechanicTypes && params.mechanicTypes.length > 0) {
+    nextQuery = nextQuery.overlaps('tags', params.mechanicTypes.map((tag) => tag.toLowerCase())) as T
   }
 
   if (params.grades && params.grades.length > 0) {
@@ -320,6 +325,7 @@ export async function fetchPaginatedClimbs({
   wallTypes,
   holdTypes,
   movementTypes,
+  mechanicTypes,
   grades,
 }: PaginatedClimbsParams): Promise<PaginatedClimbsResult> {
   let query = supabase
@@ -327,7 +333,7 @@ export async function fetchPaginatedClimbs({
     .select('*, canonical_climbs(photo_url)', { count: 'exact' })
     .eq('user_id', userId)
 
-  query = applyOptionalFilters(query, { gymId, sendTypes, wallTypes, holdTypes, movementTypes, grades })
+  query = applyOptionalFilters(query, { gymId, sendTypes, wallTypes, holdTypes, movementTypes, mechanicTypes, grades })
 
   if (sort === 'hardest' || sort === 'easiest') {
     query = query
