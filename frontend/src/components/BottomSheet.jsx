@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core"
 import { useEffect, useRef, useState } from "react"
+import SurfaceLayer from "./surfaces/SurfaceLayer"
 
 const CLOSE_DRAG_THRESHOLD_PX = 132
 const CLOSE_VELOCITY_THRESHOLD = 0.55
@@ -56,12 +57,6 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       return
     }
 
-    const scrollY = window.scrollY
-    const previousHtmlOverflow = document.documentElement.style.overflow
-    const previousBodyOverflow = document.body.style.overflow
-    const previousBodyPosition = document.body.style.position
-    const previousBodyTop = document.body.style.top
-    const previousBodyWidth = document.body.style.width
     let lastTouchY = 0
 
     const findVerticalScrollableAncestor = (startNode) => {
@@ -145,14 +140,8 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       lastTouchY = touch.clientY
     }
 
-    document.documentElement.style.overflow = "hidden"
-    document.body.style.overflow = "hidden"
-    document.body.style.position = "fixed"
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = "100%"
-
     if (shouldDebugNativeSheet) {
-      console.debug("[BottomSheet] iOS scroll lock enabled", { closeLabel, scrollY })
+      console.debug("[BottomSheet] iOS scroll containment enabled", { closeLabel })
     }
 
     document.addEventListener("touchstart", handleDocumentTouchStart, { passive: true, capture: true })
@@ -161,15 +150,9 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
     return () => {
       document.removeEventListener("touchstart", handleDocumentTouchStart, true)
       document.removeEventListener("touchmove", handleDocumentTouchMove, true)
-      document.documentElement.style.overflow = previousHtmlOverflow
-      document.body.style.overflow = previousBodyOverflow
-      document.body.style.position = previousBodyPosition
-      document.body.style.top = previousBodyTop
-      document.body.style.width = previousBodyWidth
-      window.scrollTo({ top: scrollY, left: 0, behavior: "auto" })
 
       if (shouldDebugNativeSheet) {
-        console.debug("[BottomSheet] iOS scroll lock released", { closeLabel, scrollY })
+        console.debug("[BottomSheet] iOS scroll containment released", { closeLabel })
       }
     }
   }, [closeLabel, isNativeIOS, isVisible, shouldDebugNativeSheet])
@@ -373,20 +356,18 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40" style={{ overscrollBehavior: isNativeIOS ? "contain" : "auto" }}>
-      <button
-        type="button"
-        aria-label={closeLabel}
-        onClick={onClose}
-        className={`absolute inset-0 bg-[#2E2A26]/35 transition-opacity duration-300 dark:bg-black/50 ${
-          isVisible ? "opacity-100" : "opacity-0"
-        }`}
-      />
-
-      <div className="absolute inset-x-0 bottom-0 flex justify-center">
+    <SurfaceLayer
+      open
+      onBackdropPress={onClose}
+      backdropClassName={`bg-[#2E2A26]/35 transition-opacity duration-300 dark:bg-black/50 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
+      zIndexClassName="z-40"
+    >
+      <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none">
         <div
           ref={sheetRef}
-          className={`relative flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.44)] ${
+          className={`pointer-events-auto relative flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.44)] ${
             isDragging ? "" : "transition-transform duration-300"
           } ${isVisible ? "translate-y-0" : "translate-y-full"}`}
           style={{
@@ -413,7 +394,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
           {children}
         </div>
       </div>
-    </div>
+    </SurfaceLayer>
   )
 }
 
