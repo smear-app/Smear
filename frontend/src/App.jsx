@@ -16,9 +16,10 @@ import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
 import SocialPage from "./pages/SocialPage"
 import StatsPage from "./pages/StatsPage"
+import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
 
 function ProtectedApp() {
-  const { session, loading } = useAuth()
+  const { session, loading, isAdmin } = useAuth()
   const { activeGym } = useGym()
   const [isLogClimbOpen, setIsLogClimbOpen] = useState(false)
   const [isEditClimbOpen, setIsEditClimbOpen] = useState(false)
@@ -159,6 +160,7 @@ function ProtectedApp() {
         <Route path="/feed" element={<FeedPage />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
       </Routes>
       <LogClimbModal
         isOpen={isLogClimbOpen}

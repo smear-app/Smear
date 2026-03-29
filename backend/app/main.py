@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
 from app.gyms import seed_region, get_supabase
-from app.duplicate_detection import run_duplicate_check
+from app.duplicate_detection import run_duplicate_check, merge_canonicals, dismiss_flag
 
 app = fastapi.FastAPI()
 
@@ -51,6 +51,23 @@ async def process_embedding(canonical_id: str, background_tasks: BackgroundTasks
     """
     background_tasks.add_task(run_duplicate_check, canonical_id)
     return {"status": "queued", "canonical_id": canonical_id}
+
+
+class MergeFlagRequest(BaseModel):
+    winner_id: str
+    loser_id: str
+
+
+@app.post("/api/v1/duplicate-flags/{flag_id}/merge")
+def merge_flag(flag_id: str, body: MergeFlagRequest):
+    """Merge two duplicate canonical climbs and mark the flag reviewed."""
+    return merge_canonicals(body.winner_id, body.loser_id, flag_id)
+
+
+@app.post("/api/v1/duplicate-flags/{flag_id}/dismiss")
+def dismiss_flag_endpoint(flag_id: str):
+    """Dismiss a duplicate flag without merging."""
+    return dismiss_flag(flag_id)
 
 
 @app.post("/api/v1/gyms/seed-city")

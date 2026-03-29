@@ -7,6 +7,7 @@ interface AuthContextValue {
   session: Session | null
   user: User | null
   displayName: string | null
+  isAdmin: boolean
   loading: boolean
   logout: () => Promise<void>
 }
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [displayName, setDisplayName] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
@@ -44,12 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     supabase
       .from('profiles')
-      .select('display_name')
+      .select('display_name, is_admin')
       .eq('id', userId)
       .single()
       .then(
-        ({ data }) => { if (!cancelled) setDisplayName(data?.display_name ?? null) },
-        () => { if (!cancelled) setDisplayName(null) },
+        ({ data }) => {
+          if (!cancelled) {
+            setDisplayName(data?.display_name ?? null)
+            setIsAdmin(data?.is_admin ?? false)
+          }
+        },
+        () => { if (!cancelled) { setDisplayName(null); setIsAdmin(false) } },
       )
 
     return () => { cancelled = true }
@@ -58,10 +65,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     await signOut()
     setSession(null)
+    setIsAdmin(false)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, displayName, loading, logout }}>
+    <AuthContext.Provider value={{ session, user: session?.user ?? null, displayName, isAdmin, loading, logout }}>
       {children}
     </AuthContext.Provider>
   )
