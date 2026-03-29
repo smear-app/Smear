@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { FiCamera, FiChevronDown, FiMapPin, FiX } from "react-icons/fi"
 import BottomSheet from "./BottomSheet"
+import ClimbTagSelector from "./ClimbTagSelector"
 import ColorChipSelector from "./ColorChipSelector"
 import { useAuth } from "../context/AuthContext"
 import { fetchLoggedGyms } from "../lib/climbs"
-import { GRADE_OPTIONS, SEND_OPTIONS, TAG_SECTIONS } from "../lib/climbFormOptions"
+import { GRADE_OPTIONS, SEND_OPTIONS } from "../lib/climbFormOptions"
 
 const EMPTY_DRAFT = {
   name: "",
@@ -115,26 +116,6 @@ function SelectionChip({
       className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
         isSelected
           ? "border-ember/20 bg-ember-soft text-ember"
-          : "border-stone-border bg-stone-alt text-stone-secondary"
-      }`}
-    >
-      {label}
-    </button>
-  )
-}
-
-function TagChip({
-  label,
-  isSelected,
-  onClick,
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-3 py-2 text-sm font-medium transition-colors ${
-        isSelected
-          ? "border-ember/25 bg-ember-soft text-ember"
           : "border-stone-border bg-stone-alt text-stone-secondary"
       }`}
     >
@@ -285,15 +266,6 @@ export default function EditClimbModal({
 
     return Array.from(optionsById.values())
   }, [availableGyms, draft.gymId, draft.gymName])
-
-  const handleToggleTag = (tag) => {
-    setDraft((currentDraft) => ({
-      ...currentDraft,
-      tags: currentDraft.tags.includes(tag)
-        ? currentDraft.tags.filter((currentTag) => currentTag !== tag)
-        : [...currentDraft.tags, tag],
-    }))
-  }
 
   const handleSelectPhoto = (event) => {
     const file = event.target.files?.[0]
@@ -520,25 +492,11 @@ export default function EditClimbModal({
                   placeholder="How did it feel? Beta notes, tries, or anything you want to remember."
                 />
 
-                <div className="space-y-3">
-                  {TAG_SECTIONS.map((section) => (
-                    <section key={section.title}>
-                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                        {section.title}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {section.options.map((tag) => (
-                          <TagChip
-                            key={tag}
-                            label={tag}
-                            isSelected={draft.tags.includes(tag)}
-                            onClick={() => handleToggleTag(tag)}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
+                <ClimbTagSelector
+                  selectedTags={draft.tags}
+                  disabled={isSaving}
+                  onChange={(nextTags) => handleChange("tags", nextTags)}
+                />
               </EditSection>
             </div>
           </div>

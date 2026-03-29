@@ -15,18 +15,3 @@ export const GRADE_OPTIONS = [
 ] as const
 
 export const SEND_OPTIONS = ["Flash", "Send", "Attempt"] as const
-
-export const TAG_SECTIONS = [
-  {
-    title: "Hold type",
-    options: ["Crimp", "Sloper", "Pinch", "Pocket", "Jug"],
-  },
-  {
-    title: "Movement",
-    options: ["Dynamic", "Static", "Balance", "Compression", "Tension"],
-  },
-  {
-    title: "Wall angle",
-    options: ["Slab", "Vertical", "Overhang", "Cave"],
-  },
-] as const

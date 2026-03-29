@@ -138,12 +138,10 @@ function LogClimbModal({
       />,
       <TagsStep
         draft={draft}
-        onToggleTag={(tag) =>
+        onTagsChange={(nextTags) =>
           setDraft((currentDraft) => ({
             ...currentDraft,
-            tags: currentDraft.tags.includes(tag)
-              ? currentDraft.tags.filter((currentTag) => currentTag !== tag)
-              : [...currentDraft.tags, tag],
+            tags: nextTags,
           }))
         }
         onSave={() => setCurrentStep(LOG_CLIMB_ROUTE_STEP_INDEX)}

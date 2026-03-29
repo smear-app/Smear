@@ -29,7 +29,7 @@ const POPUP_CARD_SHELL_CLASS =
   "rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]"
 
 type OpenPanel = "filters" | "sort" | null
-type AttributeSectionKey = "wallTypes" | "holdTypes" | "movementTypes"
+type AttributeSectionKey = "holdTypes" | "movementTypes" | "wallTypes" | "mechanicTypes"
 type LogbookRestoreState = {
   restoreLogbookState?: {
     view: LogbookView
@@ -68,6 +68,9 @@ function buildInitialFilters(searchParams: URLSearchParams): LogbookFilters {
     movementTypes:
       searchParams.get("movementTypes")?.split(",").filter(Boolean) ??
       (legacyCategory === "movement" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.movementTypes),
+    mechanicTypes:
+      searchParams.get("mechanicTypes")?.split(",").filter(Boolean) ??
+      (legacyCategory === "mechanic" && legacyAttribute ? [legacyAttribute] : DEFAULT_LOGBOOK_FILTERS.mechanicTypes),
     grades: searchParams.get("grades")?.split(",").filter(Boolean) ?? DEFAULT_LOGBOOK_FILTERS.grades,
   }
 }
@@ -170,7 +173,7 @@ type CompactSelectorRowProps = {
 
 function CompactSelectorRow({ label, value, children }: CompactSelectorRowProps) {
   return (
-    <div className="relative overflow-hidden rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2 shadow-[0_8px_20px_rgba(89,68,51,0.05)]">
+    <div className="relative overflow-hidden rounded-[16px] border border-stone-border bg-stone-surface px-3 py-2">
       <div className="flex items-center gap-2">
         <FiMapPin className="h-3.5 w-3.5 shrink-0 text-stone-secondary" />
 
@@ -220,9 +223,10 @@ export default function LogbookPage({
     () => restoredLogbookState?.selectedDateKey ?? null,
   )
   const [expandedAttributeSections, setExpandedAttributeSections] = useState<Record<AttributeSectionKey, boolean>>({
-    wallTypes: false,
     holdTypes: false,
     movementTypes: false,
+    wallTypes: false,
+    mechanicTypes: false,
   })
   const {
     climbs,
@@ -271,6 +275,10 @@ export default function LogbookPage({
 
     if (filters.movementTypes.length > 0) {
       nextParams.set("movementTypes", filters.movementTypes.join(","))
+    }
+
+    if (filters.mechanicTypes.length > 0) {
+      nextParams.set("mechanicTypes", filters.mechanicTypes.join(","))
     }
 
     if (filters.grades.length > 0) {
@@ -349,6 +357,7 @@ export default function LogbookPage({
     filters.wallTypes.length > 0 ||
     filters.holdTypes.length > 0 ||
     filters.movementTypes.length > 0 ||
+    filters.mechanicTypes.length > 0 ||
     filters.grades.length > 0
   const listIsEmpty = isChronological ? sessions.length === 0 : climbs.length === 0
   const totalMatchingResults = totalCount
@@ -457,6 +466,7 @@ export default function LogbookPage({
               open={openPanel === "filters"}
               onClose={closeFilterPopover}
               align="right"
+              panelClassName="flex max-h-[min(36rem,calc(100dvh-10.5rem-env(safe-area-inset-bottom)))] min-h-0 flex-col overflow-hidden"
               trigger={
                 <button
                   type="button"
@@ -481,23 +491,28 @@ export default function LogbookPage({
                 </button>
               }
             >
-              <div className={POPUP_CARD_SHELL_CLASS}>
-                <div className="grid gap-2">
-                  <CompactSelectorRow label="Gym" value={selectedGymLabel}>
-                    <select
-                      value={draftFilters.gymId}
-                      onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
-                      aria-label="Gym"
-                      className="app-native-text-entry absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                    >
-                      <option value="all">All gyms</option>
-                      {availableGyms.map((gym) => (
-                        <option key={gym.id} value={gym.id}>
-                          {gym.name}
-                        </option>
-                      ))}
-                    </select>
-                  </CompactSelectorRow>
+              <div className={`${POPUP_CARD_SHELL_CLASS} flex min-h-0 flex-1 flex-col`}>
+                <div
+                  className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                >
+                  <div className="shrink-0">
+                    <CompactSelectorRow label="Gym" value={selectedGymLabel}>
+                      <select
+                        value={draftFilters.gymId}
+                        onChange={(event) => setDraftFilters((current) => ({ ...current, gymId: event.target.value }))}
+                        aria-label="Gym"
+                        className="app-native-text-entry absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                      >
+                        <option value="all">All gyms</option>
+                        {availableGyms.map((gym) => (
+                          <option key={gym.id} value={gym.id}>
+                            {gym.name}
+                          </option>
+                        ))}
+                      </select>
+                    </CompactSelectorRow>
+                  </div>
 
                   <div className="grid gap-1">
                     <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
@@ -532,7 +547,45 @@ export default function LogbookPage({
                     </div>
                   </div>
 
+                  <div className="grid gap-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Grades
+                    </span>
+                    <div className="w-full px-1.5">
+                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
+                        {availableGrades.map((gradeOption) => {
+                          const isSelected = draftFilters.grades.includes(gradeOption.grade)
+
+                          return (
+                            <button
+                              key={gradeOption.grade}
+                              type="button"
+                              onClick={() =>
+                                setDraftFilters((current) => ({
+                                  ...current,
+                                  grades: current.grades.includes(gradeOption.grade)
+                                    ? current.grades.filter((grade) => grade !== gradeOption.grade)
+                                    : [...current.grades, gradeOption.grade],
+                                }))
+                              }
+                              className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
+                                isSelected
+                                  ? "border-ember/20 bg-ember-soft text-ember"
+                                  : "border-stone-border bg-stone-alt text-stone-secondary"
+                              }`}
+                            >
+                              {gradeOption.grade}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid gap-1.5">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
+                      Tags
+                    </span>
                     {getAttributeFilterSections().map((section) => {
                       const selectedValues = draftFilters[section.key]
                       const isExpanded = expandedAttributeSections[section.key]
@@ -573,46 +626,14 @@ export default function LogbookPage({
                       )
                     })}
                   </div>
+                </div>
 
-                  <div className="grid gap-1">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">
-                      Grades
-                    </span>
-                    <div className="w-full px-1.5">
-                      <div className="flex flex-wrap justify-center gap-x-2 gap-y-1.5">
-                        {availableGrades.map((gradeOption) => {
-                          const isSelected = draftFilters.grades.includes(gradeOption.grade)
-
-                          return (
-                            <button
-                              key={gradeOption.grade}
-                              type="button"
-                              onClick={() =>
-                                setDraftFilters((current) => ({
-                                  ...current,
-                                  grades: current.grades.includes(gradeOption.grade)
-                                    ? current.grades.filter((grade) => grade !== gradeOption.grade)
-                                    : [...current.grades, gradeOption.grade],
-                                }))
-                              }
-                              className={`rounded-full border px-2.5 py-[0.3rem] text-xs font-semibold transition-colors ${
-                                isSelected
-                                  ? "border-ember/20 bg-ember-soft text-ember"
-                                  : "border-stone-border bg-stone-alt text-stone-secondary"
-                              }`}
-                            >
-                              {gradeOption.grade}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
+                <div className="mt-2 shrink-0 space-y-2 pb-[calc(0.35rem+env(safe-area-inset-bottom))]">
+                  {visibleGymLoadError ? <p className="text-xs text-red-500">{visibleGymLoadError}</p> : null}
                   <button
                     type="button"
                     onClick={() => setDraftFilters(DEFAULT_LOGBOOK_FILTERS)}
-                    className="mt-1 w-full rounded-[14px] border border-stone-border/70 bg-stone-surface px-3 py-2 text-sm font-medium text-stone-secondary transition-colors active:bg-stone-alt"
+                    className="w-full rounded-[14px] border border-stone-border/70 bg-stone-surface px-3 py-2 text-sm font-medium text-stone-secondary transition-colors active:bg-stone-alt"
                   >
                     Reset filters
                   </button>
@@ -623,14 +644,10 @@ export default function LogbookPage({
                       setFilters(draftFilters)
                       setOpenPanel(null)
                     }}
-                    className="rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-stone-surface"
+                    className="w-full rounded-full bg-ember px-3 py-1.5 text-sm font-semibold text-stone-surface"
                   >
                     Apply
                   </button>
-
-                  {visibleGymLoadError ? (
-                    <p className="text-xs text-red-500">{visibleGymLoadError}</p>
-                  ) : null}
                 </div>
               </div>
             </AnchoredPopover>
