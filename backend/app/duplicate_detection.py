@@ -92,3 +92,40 @@ async def run_duplicate_check(canonical_id: str) -> None:
             logger.info("Flagged duplicate pair (%s, %s) score=%.3f", id_a, id_b, match["similarity"])
         except Exception as exc:
             logger.debug("Duplicate flag already exists or insert failed: %s", exc)
+
+
+def merge_canonicals(winner_id: str, loser_id: str, flag_id: str) -> dict:
+    """
+    Merge two duplicate canonical climbs:
+      1. Re-point all climb logs from loser → winner
+      2. Soft-delete loser (is_active=False, status=archived)
+      3. Mark the duplicate flag as reviewed
+    """
+    supabase = get_supabase()
+
+    supabase.table("climbs").update({"canonical_climb_id": winner_id}).eq(
+        "canonical_climb_id", loser_id
+    ).execute()
+    logger.info("Re-pointed climbs from %s → %s", loser_id, winner_id)
+
+    supabase.table("canonical_climbs").update(
+        {"is_active": False, "status": "archived"}
+    ).eq("id", loser_id).execute()
+    logger.info("Archived loser canonical %s", loser_id)
+
+    supabase.table("duplicate_flags").update({"status": "reviewed"}).eq(
+        "id", flag_id
+    ).execute()
+    logger.info("Marked flag %s as reviewed", flag_id)
+
+    return {"status": "merged", "winner_id": winner_id, "loser_id": loser_id}
+
+
+def dismiss_flag(flag_id: str) -> dict:
+    """Mark a duplicate flag as dismissed without merging."""
+    supabase = get_supabase()
+    supabase.table("duplicate_flags").update({"status": "dismissed"}).eq(
+        "id", flag_id
+    ).execute()
+    logger.info("Dismissed flag %s", flag_id)
+    return {"status": "dismissed", "flag_id": flag_id}

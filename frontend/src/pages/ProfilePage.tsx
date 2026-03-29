@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { fetchReferralCode } from "../lib/auth"
 import BottomNav from "../components/BottomNav"
 import ThemeToggle from "../components/ThemeToggle"
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth()
+  const { user, logout, isAdmin } = useAuth()
   const [referralCode, setReferralCode] = useState<string | null>(null)
 
   useEffect(() => {
@@ -42,10 +43,19 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {isAdmin && (
+          <Link
+            to="/admin/duplicates"
+            className="mt-4 block w-full rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 text-left text-sm font-semibold text-stone-muted shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+          >
+            Review Duplicate Flags
+          </Link>
+        )}
+
         <button
           type="button"
           onClick={logout}
-          className="mt-6 w-full rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 text-left text-sm font-semibold text-ember shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
+          className="mt-4 w-full rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 text-left text-sm font-semibold text-ember shadow-[0_14px_34px_rgba(89,68,51,0.08)]"
         >
           Log out
         </button>
