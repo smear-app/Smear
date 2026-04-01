@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
-import { LogClimbActionProvider } from "./context/LogClimbActionContext"
+import { LogClimbActionContext } from "./context/logClimbActionContext"
 import HomePage from "./HomePage"
 import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
@@ -134,7 +134,7 @@ function ProtectedApp() {
   }
 
   return (
-    <LogClimbActionProvider value={logClimbAction}>
+    <LogClimbActionContext.Provider value={logClimbAction}>
       <div className="min-h-screen bg-stone-bg text-stone-text">
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
@@ -188,7 +188,7 @@ function ProtectedApp() {
           initialDraft={editingClimb ? toClimbDraft(editingClimb) : null}
         />
       </div>
-    </LogClimbActionProvider>
+    </LogClimbActionContext.Provider>
   )
 }
 

@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom"
 import { FiBarChart2, FiHome, FiPlus, FiUser, FiUsers } from "react-icons/fi"
-import { useLogClimbAction } from "../context/LogClimbActionContext"
+import { useLogClimbAction } from "../hooks/useLogClimbAction"
 
 const navItems = [
   { label: "Home", icon: FiHome, to: "/home" },
