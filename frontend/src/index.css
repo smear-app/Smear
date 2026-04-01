@@ -66,10 +66,6 @@
   html[data-platform="capacitor-ios"] .app-safe-fixed-bottom {
     padding-bottom: max(0px, calc(var(--native-safe-bottom) - 0.5rem));
   }
-
-  html[data-platform="capacitor-ios"] .app-safe-fab {
-    bottom: calc(4.75rem + var(--native-safe-bottom));
-  }
 }
 
 @layer base {
