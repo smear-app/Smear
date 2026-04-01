@@ -55,9 +55,9 @@ function GradeStep({ draft, onChange, onContinue }) {
     draft.gymGrade !== "" && draft.feltLike !== "" && draft.climbColor !== null
 
   return (
-    <div className="flex flex-1 flex-col px-5 pb-5">
+    <div className="flex min-h-0 flex-1 flex-col px-5 pb-5">
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className={`space-y-4 ${isWebLayout ? "flex min-h-full flex-col justify-center" : ""}`}>
+        <div className={`space-y-4 pb-1 ${isWebLayout ? "flex min-h-full flex-col justify-center" : ""}`}>
           <GradeSelectorRow
             label="Gym Grade"
             value={draft.gymGrade}
