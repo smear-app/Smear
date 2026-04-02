@@ -82,7 +82,7 @@ export async function reauthenticateUser(
     })
     if (error) return false
     return true
-  } catch (err) {
+  } catch {
     return false
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import type { ChangeEvent } from 'react'
 import { useAuth } from '../context/AuthContext'
 import {
@@ -10,7 +10,7 @@ import {
   deleteProfileImage,
   type UserProfile,
 } from '../lib/profile'
-// @ts-ignore
+// @ts-expect-error - BottomSheet is JSX without type definitions
 import BottomSheet from './BottomSheet'
 
 interface ProfileModalProps {
@@ -72,10 +72,10 @@ export default function ProfileModal({ isOpen, onClose, onSave }: ProfileModalPr
       setIsVisible(false)
       setTimeout(() => setIsRendered(false), 280)
     }
-  }, [isOpen])
+  }, [isOpen, loadProfile])
 
   // Load user profile data
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!user?.id) return
     try {
       setLoading(true)
@@ -98,7 +98,7 @@ export default function ProfileModal({ isOpen, onClose, onSave }: ProfileModalPr
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
   const handleDraftChange = (field: string, value: string) => {
     setDraft((prev) => ({ ...prev, [field]: value }))
