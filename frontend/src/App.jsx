@@ -4,11 +4,11 @@ import { Capacitor } from "@capacitor/core"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
+import { LogClimbActionContext } from "./context/logClimbActionContext"
 import HomePage from "./HomePage"
 import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
-import FeedPage from "./pages/FeedPage"
 import { deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
 import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
@@ -128,62 +128,67 @@ function ProtectedApp() {
     setRefreshKey((k) => k + 1)
   }
 
+  const logClimbAction = {
+    onOpen: handleOpenLogClimb,
+    disabled: !activeGym,
+  }
+
   return (
-    <div className="min-h-screen bg-stone-bg text-stone-text">
-      <Routes>
-        <Route path="/" element={<Navigate to="/home" replace />} />
-        <Route
-          path="/home"
-          element={
-            <HomePage
-              onOpenLogClimb={handleOpenLogClimb}
-              onEditClimb={handleEditClimb}
-              onDeleteClimb={handleDeleteLoggedClimb}
-              climbs={recentClimbs}
-              totalClimbs={recentClimbsTotal}
-              loadError={recentClimbsError}
-            />
-          }
+    <LogClimbActionContext.Provider value={logClimbAction}>
+      <div className="min-h-screen bg-stone-bg text-stone-text">
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route
+            path="/home"
+            element={
+              <HomePage
+                onEditClimb={handleEditClimb}
+                onDeleteClimb={handleDeleteLoggedClimb}
+                climbs={recentClimbs}
+                totalClimbs={recentClimbsTotal}
+                loadError={recentClimbsError}
+              />
+            }
+          />
+          <Route path="/climbs/:climbId" element={<ClimbDetailPage />} />
+          <Route
+            path="/home/logbook"
+            element={
+              <LogbookPage
+                onEditClimb={handleEditClimb}
+                onDeleteClimb={handleDeleteLoggedClimb}
+                refreshKey={refreshKey}
+              />
+            }
+          />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/social" element={<SocialPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
+        </Routes>
+        <LogClimbModal
+          isOpen={isLogClimbOpen}
+          onClose={() => {
+            setIsLogClimbOpen(false)
+          }}
+          onSave={handleSaveClimb}
+          onDone={handleDone}
+          activeGym={editingClimb?.gym_id ? { id: editingClimb.gym_id, name: editingClimb.gym_name } : activeGym}
+          initialDraft={null}
+          mode="create"
         />
-        <Route path="/climbs/:climbId" element={<ClimbDetailPage />} />
-        <Route
-          path="/home/logbook"
-          element={
-            <LogbookPage
-              onEditClimb={handleEditClimb}
-              onDeleteClimb={handleDeleteLoggedClimb}
-              refreshKey={refreshKey}
-            />
-          }
+        <EditClimbModal
+          isOpen={isEditClimbOpen}
+          onClose={() => {
+            setIsEditClimbOpen(false)
+            setEditingClimb(null)
+          }}
+          onSave={handleSaveEditedClimb}
+          onDone={handleDone}
+          initialDraft={editingClimb ? toClimbDraft(editingClimb) : null}
         />
-        <Route path="/stats" element={<StatsPage />} />
-        <Route path="/feed" element={<FeedPage />} />
-        <Route path="/social" element={<SocialPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
-      </Routes>
-      <LogClimbModal
-        isOpen={isLogClimbOpen}
-        onClose={() => {
-          setIsLogClimbOpen(false)
-        }}
-        onSave={handleSaveClimb}
-        onDone={handleDone}
-        activeGym={editingClimb?.gym_id ? { id: editingClimb.gym_id, name: editingClimb.gym_name } : activeGym}
-        initialDraft={null}
-        mode="create"
-      />
-      <EditClimbModal
-        isOpen={isEditClimbOpen}
-        onClose={() => {
-          setIsEditClimbOpen(false)
-          setEditingClimb(null)
-        }}
-        onSave={handleSaveEditedClimb}
-        onDone={handleDone}
-        initialDraft={editingClimb ? toClimbDraft(editingClimb) : null}
-      />
-    </div>
+      </div>
+    </LogClimbActionContext.Provider>
   )
 }
 

@@ -2,16 +2,13 @@ import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { useLocation, useNavigate } from "react-router-dom"
 import BottomNav from "./components/BottomNav"
-import FloatingActionButton from "./components/FloatingActionButton"
 import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
 import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
-import { useGym } from "./context/GymContext"
 
-function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }) {
+function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { activeGym } = useGym()
   const [openingClimbId, setOpeningClimbId] = useState(null)
   const [returnTransitionClimbId, setReturnTransitionClimbId] = useState(() => location.state?.returnClimbId ?? null)
   const isReturningFromLogbook = location.state?.stackTransition === "back"
@@ -139,7 +136,6 @@ function HomePage({ onOpenLogClimb, onEditClimb, onDeleteClimb, climbs, totalCli
         </section>
       </main>
 
-      <FloatingActionButton onClick={onOpenLogClimb} disabled={!activeGym} />
       <BottomNav />
     </div>
   )
