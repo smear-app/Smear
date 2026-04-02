@@ -1,9 +1,18 @@
 import { FiUser } from "react-icons/fi"
+import { useEffect, useState } from "react"
 import { useAuth } from "../context/AuthContext"
+import { fetchUserProfile } from "../lib/profile"
+import type { UserProfile } from "../lib/profile"
 import GymSelector from "./GymSelector"
 
 const WelcomeCard = () => {
-  const { displayName } = useAuth()
+  const { displayName, user } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    fetchUserProfile(user.id).then(setProfile).catch(console.error)
+  }, [user])
 
   return (
     <section className="rounded-[28px] border border-stone-border bg-stone-surface px-5 py-4 shadow-[0_12px_28px_rgba(89,68,51,0.07)]">
@@ -14,12 +23,20 @@ const WelcomeCard = () => {
             {displayName ?? "Climber"}
           </p>
         </div>
-        <div
-          aria-label="Default user avatar"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface"
-        >
-          <FiUser className="h-6 w-6" />
-        </div>
+        {profile?.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt="User avatar"
+            className="h-12 w-12 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <div
+            aria-label="Default user avatar"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface"
+          >
+            <FiUser className="h-6 w-6" />
+          </div>
+        )}
       </div>
 
       <div className="mt-3.5">
