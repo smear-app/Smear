@@ -58,22 +58,6 @@ export default function ProfileModal({ isOpen, onClose, onSave }: ProfileModalPr
   const [showNewPassword, setShowNewPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Initialize modal state with animation
-  useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true)
-      setIsVisible(false)
-      setIsEditMode(false)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setIsVisible(true))
-      })
-      loadProfile()
-    } else {
-      setIsVisible(false)
-      setTimeout(() => setIsRendered(false), 280)
-    }
-  }, [isOpen, loadProfile])
-
   // Load user profile data
   const loadProfile = useCallback(async () => {
     if (!user?.id) return
@@ -99,6 +83,22 @@ export default function ProfileModal({ isOpen, onClose, onSave }: ProfileModalPr
       setLoading(false)
     }
   }, [user?.id])
+
+  // Initialize modal state with animation
+  useEffect(() => {
+    if (isOpen) {
+      setIsRendered(true)
+      setIsVisible(false)
+      setIsEditMode(false)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsVisible(true))
+      })
+      loadProfile()
+    } else {
+      setIsVisible(false)
+      setTimeout(() => setIsRendered(false), 280)
+    }
+  }, [isOpen, loadProfile])
 
   const handleDraftChange = (field: string, value: string) => {
     setDraft((prev) => ({ ...prev, [field]: value }))
