@@ -6,6 +6,8 @@ import {
   getRecentClimbs as apiGetRecentClimbs,
   postClimb,
   patchClimb,
+  patchClimbPhoto,
+  patchCanonicalPhoto,
   deleteClimbApi,
   getClimbsMeta,
   type ClimbObject,
@@ -36,6 +38,7 @@ export interface ClimbDraft {
   canonicalClimbId: string | null
   confidenceScore: number | null
   overrideSignal: boolean
+  backgroundCanonicalPhotoId?: string | null
 }
 
 export interface Climb {
@@ -116,6 +119,11 @@ export interface LoggedGradeOption {
   value: number
 }
 
+export interface InsertClimbResult {
+  climb: Climb
+  backgroundUpload?: Promise<void>
+}
+
 interface PaginatedClimbsParams {
   userId: string
   limit: number
@@ -130,15 +138,24 @@ interface PaginatedClimbsParams {
   grades?: string[]
 }
 
-export async function insertClimb(draft: ClimbDraft, userId: string): Promise<void> {
+function startBackgroundPhotoUpload(
+  photoFile: File,
+  climbId: string,
+  canonicalId?: string | null,
+): Promise<void> {
+  return uploadToCloudinary(photoFile).then(async (photoUrl) => {
+    await patchClimbPhoto(climbId, photoUrl)
+    if (canonicalId) {
+      await patchCanonicalPhoto(canonicalId, photoUrl)
+    }
+  })
+}
+
+export async function insertClimb(draft: ClimbDraft, userId: string): Promise<InsertClimbResult> {
   void userId  // backend reads user from auth token
 
-  let photoUrl: string | null = null
-  if (draft.photoFile) {
-    photoUrl = await uploadToCloudinary(draft.photoFile)
-  }
-
-  await postClimb({
+  const photoUrl = draft.photo && !draft.photo.startsWith('blob:') ? draft.photo : null
+  const created = await postClimb({
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
     gym_grade: draft.gymGrade,
@@ -153,6 +170,17 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<vo
     confidence_score: draft.confidenceScore ?? null,
     override_signal: draft.overrideSignal ?? false,
   })
+
+  const climb = mapApiClimb(created)
+  const backgroundUpload = draft.photoFile
+    ? startBackgroundPhotoUpload(
+        draft.photoFile,
+        climb.id,
+        draft.backgroundCanonicalPhotoId ?? null,
+      )
+    : undefined
+
+  return { climb, backgroundUpload }
 }
 
 export async function updateClimb(

@@ -68,7 +68,6 @@ def _get_or_create_session(supabase, user_id: str, gym_id: Optional[str], gym_na
     result = (
         supabase.from_("sessions")
         .insert({"user_id": user_id, "gym_id": gym_id, "gym_name": gym_name})
-        .select("id")
         .execute()
     )
     return result.data[0]["id"]
@@ -78,6 +77,25 @@ def _touch_session(supabase, session_id: str) -> None:
     supabase.from_("sessions").update(
         {"ended_at": datetime.now(timezone.utc).isoformat()}
     ).eq("id", session_id).execute()
+
+
+def _soft_delete_canonical_if_unused(supabase, canonical_climb_id: Optional[str]) -> None:
+    if not canonical_climb_id:
+        return
+
+    remaining = (
+        supabase.from_("climbs")
+        .select("id", count="exact")
+        .eq("canonical_climb_id", canonical_climb_id)
+        .limit(1)
+        .execute()
+    )
+    if (remaining.count or 0) > 0:
+        return
+
+    supabase.from_("canonical_climbs").update(
+        {"status": "deleted", "is_active": False}
+    ).eq("id", canonical_climb_id).execute()
 
 
 @router.get("", response_model=PaginatedClimbsResponse)
@@ -228,7 +246,7 @@ def post_climb(body: PostClimbRequest, user_id: str = Depends(get_current_user))
     if body.override_signal:
         payload["override_signal"] = body.override_signal
 
-    result = supabase.from_("climbs").insert(payload).select("*").execute()
+    result = supabase.from_("climbs").insert(payload).execute()
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to insert climb")
 
@@ -276,4 +294,18 @@ def patch_climb_photo(climb_id: str, body: PatchClimbPhotoRequest, user_id: str 
 @router.delete("/{climb_id}", status_code=204)
 def delete_climb(climb_id: str, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
+    climb = (
+        supabase.from_("climbs")
+        .select("id, canonical_climb_id")
+        .eq("id", climb_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if not climb or not climb.data:
+        raise HTTPException(status_code=404, detail="Climb not found")
+
+    canonical_climb_id = climb.data.get("canonical_climb_id")
+
     supabase.from_("climbs").delete().eq("id", climb_id).eq("user_id", user_id).execute()
+    _soft_delete_canonical_if_unused(supabase, canonical_climb_id)

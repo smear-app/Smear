@@ -1,6 +1,7 @@
 import logging
 logging.basicConfig(level=logging.INFO)
 
+import os
 import fastapi
 from fastapi import BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,11 +15,26 @@ from app.routers.climbs import router as climbs_router
 from app.routers.canonical_climbs import router as canonical_climbs_router
 from app.routers.admin import router as admin_router
 
+
+def get_allowed_origins() -> list[str]:
+    configured = os.environ.get("CORS_ALLOW_ORIGINS", "")
+    if configured.strip():
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+    return [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
+        "https://smearapp.vercel.app",
+    ]
+
+
 app = fastapi.FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://smearapp.vercel.app"],
+    allow_origins=get_allowed_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )

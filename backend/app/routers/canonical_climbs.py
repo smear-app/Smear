@@ -82,7 +82,6 @@ def post_canonical_climb(
             "flash_count": 0,
             "log_count": 1,
         })
-        .select("*")
         .execute()
     )
     if not result.data:

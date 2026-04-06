@@ -4,7 +4,7 @@ const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)"
 const CHALK_EASE = "cubic-bezier(0.16, 1, 0.3, 1)"
 const EXIT_ANIMATION_MS = 320
 
-function SuccessStep({ draft, onDone, title = "Climb logged!" }) {
+function SuccessStep({ draft, onDone, title = "Climb logged!", photoUploadStatus = "idle" }) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const doneTimeoutRef = useRef(null)
@@ -149,6 +149,27 @@ function SuccessStep({ draft, onDone, title = "Climb logged!" }) {
       >
         {title}
       </h2>
+
+      {photoUploadStatus !== "idle" && (
+        <p
+          className={`mt-2 text-sm ${
+            photoUploadStatus === "error"
+              ? "text-red-500"
+              : photoUploadStatus === "done"
+                ? "text-green-600"
+                : "text-stone-muted"
+          }`}
+          style={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? "translateY(0)" : "translateY(10px)",
+            transition: `transform 300ms ${EASE_OUT} 240ms, opacity 300ms ${EASE_OUT} 240ms`,
+          }}
+        >
+          {photoUploadStatus === "uploading" && "Photo uploading..."}
+          {photoUploadStatus === "done" && "Photo uploaded"}
+          {photoUploadStatus === "error" && "Photo upload failed"}
+        </p>
+      )}
 
       <div
         className="mt-6 w-full space-y-2 rounded-[24px] border border-stone-border bg-stone-alt px-5 py-4"

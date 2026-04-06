@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+const DEFAULT_API_BASE_URL = 'https://smear-backend.onrender.com/api/v1'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, '')
 
 const ME_CACHE_KEY = 'smear:me'
 const GYMS_CACHE_KEY = 'smear:gyms-cache'
@@ -182,7 +183,7 @@ async function getToken(): Promise<string> {
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getToken()
-  const resp = await fetch(`${API_BASE}${path}`, {
+  const resp = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
@@ -314,6 +315,13 @@ export async function patchClimb(id: string, body: PatchClimbRequest): Promise<C
   return apiFetch<ClimbObject>(`/climbs/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
+  })
+}
+
+export async function patchClimbPhoto(id: string, photoUrl: string): Promise<ClimbObject> {
+  return apiFetch<ClimbObject>(`/climbs/${id}/photo`, {
+    method: 'PATCH',
+    body: JSON.stringify({ photo_url: photoUrl }),
   })
 }
 

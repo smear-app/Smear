@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { supabase } from "../lib/supabase"
 import { gradeToValue } from "../lib/climbs"
-import { uploadToCloudinary } from "../lib/cloudinary"
 import {
   queryFingerprintCandidates,
   computeConfidenceScore,
@@ -205,7 +204,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
 
     try {
       let canonicalId = null
-      let photoOverride = {}
+      let backgroundCanonicalPhotoId = null
 
       if (state === "candidates" && selectedId) {
         const selected = scored.find((s) => s.candidate.id === selectedId)
@@ -223,22 +222,14 @@ function CanonicalStep({ draft, onChange, onSave }) {
         onChange("confidenceScore", selected?.score ?? null)
         onChange("overrideSignal", isOverride)
       } else {
-        // Seed flow: upload photo first so canonical gets the real URL
-        let photoUrl = null
-        if (draft.photoFile) {
-          photoUrl = await uploadToCloudinary(draft.photoFile)
-          photoOverride = { photo: photoUrl, photoFile: null }
-        } else if (draft.photo && !draft.photo.startsWith("blob:")) {
-          photoUrl = draft.photo
-        }
-
         canonicalId = await seedCanonicalClimb(
           draft.gymId,
           gradeToValue(draft.gymGrade),
           draft.climbColor ?? "",
           user.id,
-          photoUrl,
+          null,
         )
+        backgroundCanonicalPhotoId = draft.photoFile ? canonicalId : null
 
         onChange("canonicalClimbId", canonicalId)
         onChange("confidenceScore", null)
@@ -246,7 +237,11 @@ function CanonicalStep({ draft, onChange, onSave }) {
       }
 
       // Trigger the actual climb insert + navigate to success
-      await onSave({ ...draft, canonicalClimbId: canonicalId, ...photoOverride })
+      await onSave({
+        ...draft,
+        canonicalClimbId: canonicalId,
+        backgroundCanonicalPhotoId,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setIsSaving(false)
