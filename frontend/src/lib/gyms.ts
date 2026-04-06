@@ -1,4 +1,4 @@
-import { supabase } from "./supabase"
+import { getGymsAll } from "./api"
 
 export interface GymRecord {
   id: string
@@ -42,15 +42,6 @@ export function getGymStorageKey(userId: string) {
 // lookups (bookmarks, recent, active) resolve against this cache.
 const gymCache = new Map<string, GymRecord>()
 
-function dbRowToGymRecord(row: Record<string, unknown>): GymRecord {
-  return {
-    id: row.id as string,
-    name: row.name as string,
-    city: row.city as string,
-    state: row.state as string,
-    address: (row.address as string | null) ?? undefined,
-  }
-}
 
 export function registerGymsInCache(gyms: GymRecord[]) {
   for (const gym of gyms) {
@@ -59,17 +50,26 @@ export function registerGymsInCache(gyms: GymRecord[]) {
 }
 
 export async function loadAllGymsIntoCache(): Promise<void> {
-  const { data } = await supabase.from("gyms").select("*").limit(500)
-  if (data) registerGymsInCache(data.map(dbRowToGymRecord))
+  const { gyms } = await getGymsAll()
+  registerGymsInCache(
+    gyms.map((g) => ({
+      id: g.id,
+      name: g.name,
+      city: g.city,
+      state: g.state,
+      address: g.address ?? undefined,
+    })),
+  )
 }
 
 export async function getGymsByIds(ids: string[]): Promise<GymRecord[]> {
   if (ids.length === 0) return []
-  const { data } = await supabase.from("gyms").select("*").in("id", ids)
-  if (!data) return []
-  const gyms = data.map(dbRowToGymRecord)
-  registerGymsInCache(gyms)
-  return gyms
+  // Serve from cache if already loaded
+  const cached = ids.map((id) => gymCache.get(id)).filter(Boolean) as GymRecord[]
+  if (cached.length === ids.length) return cached
+  // Fall back to fetching all gyms to populate cache
+  await loadAllGymsIntoCache()
+  return ids.map((id) => gymCache.get(id)).filter(Boolean) as GymRecord[]
 }
 
 export function getGymById(gymId: string): GymRecord | undefined {

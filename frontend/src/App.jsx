@@ -10,7 +10,6 @@ import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import { deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
-import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -86,8 +85,7 @@ function ProtectedApp() {
       return
     }
 
-    const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
-    await insertClimb(draft, session.user.id, sessionId)
+    await insertClimb(draft, session.user.id)
     void loadRecentClimbs({ background: true })
   }
 

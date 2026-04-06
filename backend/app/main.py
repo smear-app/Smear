@@ -7,8 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 load_dotenv()
-from app.gyms import seed_region, get_supabase
+from app.gyms import seed_region, get_supabase, gyms_router
 from app.duplicate_detection import run_duplicate_check, merge_canonicals, dismiss_flag
+from app.routers.me import router as me_router
+from app.routers.climbs import router as climbs_router
+from app.routers.canonical_climbs import router as canonical_climbs_router
+from app.routers.admin import router as admin_router
 
 app = fastapi.FastAPI()
 
@@ -18,6 +22,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# v1 API routers
+app.include_router(me_router, prefix="/api/v1")
+app.include_router(climbs_router, prefix="/api/v1")
+app.include_router(canonical_climbs_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
+app.include_router(gyms_router, prefix="/api/v1")
 
 
 @app.get("/")

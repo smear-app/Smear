@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { signOut } from '../lib/auth'
+import { clearMeCache, getMe } from '../lib/api'
 
 interface AuthContextValue {
   session: Session | null
@@ -39,30 +40,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const userId = session?.user?.id ?? null
     if (!userId) {
       queueMicrotask(() => {
-        if (!cancelled) setDisplayName(null)
+        if (!cancelled) {
+          setDisplayName(null)
+          setIsAdmin(false)
+        }
       })
       return () => { cancelled = true }
     }
 
-    supabase
-      .from('profiles')
-      .select('display_name, is_admin')
-      .eq('id', userId)
-      .single()
-      .then(
-        ({ data }) => {
-          if (!cancelled) {
-            setDisplayName(data?.display_name ?? null)
-            setIsAdmin(data?.is_admin ?? false)
-          }
-        },
-        () => { if (!cancelled) { setDisplayName(null); setIsAdmin(false) } },
-      )
+    getMe().then(
+      (me) => {
+        if (!cancelled) {
+          setDisplayName(me.display_name ?? null)
+          setIsAdmin(me.is_admin ?? false)
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setDisplayName(null)
+          setIsAdmin(false)
+        }
+      },
+    )
 
     return () => { cancelled = true }
   }, [session?.user?.id])
 
   async function logout() {
+    clearMeCache()
     await signOut()
     setSession(null)
     setIsAdmin(false)

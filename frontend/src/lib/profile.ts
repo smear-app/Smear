@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { uploadToCloudinary } from './cloudinary'
+import { getMe, patchMe } from './api'
 
 export interface UserProfile {
   id: string
@@ -16,71 +17,36 @@ export interface UpdateProfileData {
   avatar_url?: string
 }
 
-/**
- * Fetch full user profile data including date of birth
- */
 export async function fetchUserProfile(userId: string): Promise<UserProfile> {
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user?.email) {
-    throw new Error('Unable to fetch user authentication data')
-  }
-
-  // Fetch profile with safe column selection (created_at is the join date)
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, username, display_name, avatar_url, created_at')
-    .eq('id', userId)
-    .single()
-
-  if (profileError) {
-    console.error('Profile fetch error details:', profileError)
-    throw new Error(profileError.message || 'Failed to load profile data')
-  }
-
-  if (!profile) {
-    throw new Error('Profile not found')
-  }
-
+  void userId
+  const me = await getMe()
   return {
-    ...profile,
-    email: user.email,
+    id: me.id,
+    username: me.username ?? '',
+    display_name: me.display_name,
+    avatar_url: me.avatar_url,
+    email: me.email,
+    created_at: me.created_at,
   }
 }
 
-/**
- * Update user profile fields (display_name, username, date_of_birth, avatar_url)
- */
 export async function updateProfile(
-  userId: string,
+  _userId: string,
   updates: UpdateProfileData,
 ): Promise<void> {
-  // Verify the current user matches the userId to prevent RLS violations
-  const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
-  if (authError || !currentUser || currentUser.id !== userId) {
-    throw new Error('Unauthorized: Cannot update another user\'s profile')
-  }
-
-  const { error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId)
-
-  if (error) throw error
+  await patchMe(updates)
 }
 
 /**
- * Re-authenticate user with email and password
- * This is required before changing password for security
+ * Re-authenticate user with email and password.
+ * This is required before changing password for security.
  */
 export async function reauthenticateUser(
   email: string,
   password: string,
 ): Promise<boolean> {
   try {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) return false
     return true
   } catch {
@@ -89,9 +55,8 @@ export async function reauthenticateUser(
 }
 
 /**
- * Change user password with current password verification
- * Note: Supabase requires reauthentication before password change
- * The current password should be verified via reauthenticateUser() first
+ * Change user password. Requires reauthenticateUser() to have been called first.
+ * Note: Supabase requires reauthentication before password change.
  */
 export async function changePassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
@@ -99,8 +64,8 @@ export async function changePassword(newPassword: string): Promise<void> {
 }
 
 /**
- * Upload profile image to Cloudinary
- * Returns the secure URL of the uploaded image
+ * Upload profile image to Cloudinary.
+ * Returns the secure URL of the uploaded image.
  */
 export async function uploadProfileImage(file: File): Promise<string> {
   return uploadToCloudinary(file, 'smear/avatars')

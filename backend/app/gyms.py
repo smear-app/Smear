@@ -1,6 +1,8 @@
 import os
+import time
 import httpx
 from typing import Optional
+from datetime import datetime, timezone
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 OVERPASS_ENDPOINTS = [
@@ -16,6 +18,30 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 def get_supabase():
     from supabase import create_client
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+
+# ── /gyms/all with module-level TTL cache ────────────────────────────────────
+
+from fastapi import APIRouter as _APIRouter
+
+gyms_router = _APIRouter(prefix="/gyms", tags=["gyms"])
+
+_GYMS_CACHE_TTL = 3600  # seconds
+_gym_cache: dict = {"data": None, "cached_at": None}
+
+
+@gyms_router.get("/all")
+def get_all_gyms():
+    now = time.time()
+    if _gym_cache["data"] is None or (now - (_gym_cache["cached_at"] or 0)) > _GYMS_CACHE_TTL:
+        supabase = get_supabase()
+        result = supabase.from_("gyms").select("*").execute()
+        _gym_cache["data"] = result.data
+        _gym_cache["cached_at"] = now
+    return {
+        "gyms": _gym_cache["data"],
+        "cached_at": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 async def geocode_location(location: str) -> Optional[dict]:
