@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { uploadToCloudinary } from './cloudinary'
 
 export interface UserProfile {
   id: string
@@ -98,41 +99,9 @@ export async function changePassword(newPassword: string): Promise<void> {
 }
 
 /**
- * Upload profile image to Supabase storage
- * Returns the public URL of the uploaded image
+ * Upload profile image to Cloudinary
+ * Returns the secure URL of the uploaded image
  */
 export async function uploadProfileImage(file: File): Promise<string> {
-  const fileExt = file.name.split('.').pop()
-  const fileName = `${Date.now()}.${fileExt}`
-  const filePath = `profile-images/${fileName}`
-
-  const { error: uploadError } = await supabase.storage
-    .from('avatars')
-    .upload(filePath, file, { upsert: true })
-
-  if (uploadError) throw uploadError
-
-  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath)
-  return data.publicUrl
-}
-
-/**
- * Delete old profile image from storage
- * Accepts either a full public URL or just the file path
- */
-export async function deleteProfileImage(urlOrPath: string): Promise<void> {
-  if (!urlOrPath) return
-
-  // Extract file path from public URL if needed
-  let filePath = urlOrPath
-  if (urlOrPath.includes('/storage/v1/object/public/avatars/')) {
-    // Extract path from URL: https://xxx.supabase.co/storage/v1/object/public/avatars/profile-images/123.jpg
-    const parts = urlOrPath.split('/storage/v1/object/public/avatars/')
-    if (parts.length === 2) {
-      filePath = parts[1]
-    }
-  }
-
-  const { error } = await supabase.storage.from('avatars').remove([filePath])
-  if (error) console.warn('Failed to delete old profile image:', error)
+  return uploadToCloudinary(file, 'smear/avatars')
 }

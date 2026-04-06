@@ -7,7 +7,6 @@ import {
   changePassword,
   reauthenticateUser,
   uploadProfileImage,
-  deleteProfileImage,
   type UserProfile,
 } from '../lib/profile'
 // @ts-expect-error - BottomSheet is JSX without type definitions
@@ -226,10 +225,6 @@ export default function ProfileModal({ isOpen, onClose, onSave }: ProfileModalPr
       // Upload new image if selected
       if (draft.photoFile) {
         avatarUrl = await uploadProfileImage(draft.photoFile)
-        // Delete old avatar if it exists
-        if (profile.avatar_url) {
-          await deleteProfileImage(profile.avatar_url)
-        }
       }
 
       // Update profile
