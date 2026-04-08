@@ -10,7 +10,6 @@ import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
 import { deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
-import { getOrCreateSession } from "./lib/sessions"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
@@ -83,12 +82,20 @@ function ProtectedApp() {
   async function handleSaveClimb(draft) {
     if (editingClimb) {
       await updateClimb(draft, editingClimb)
-      return
+      return {}
     }
 
-    const sessionId = await getOrCreateSession(session.user.id, draft.gymId || null, draft.gymName || null)
-    await insertClimb(draft, session.user.id, sessionId)
+    const { backgroundUpload } = await insertClimb(draft, session.user.id)
     void loadRecentClimbs({ background: true })
+    if (backgroundUpload) {
+      void backgroundUpload.catch((error) => {
+        console.error("Background photo upload failed", error)
+      })
+      void backgroundUpload.finally(() => {
+        void loadRecentClimbs({ background: true })
+      })
+    }
+    return { backgroundUpload }
   }
 
   function handleOpenLogClimb() {

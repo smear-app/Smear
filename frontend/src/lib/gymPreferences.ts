@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { getMe, patchGymPreferences } from './api'
 
 export interface GymPreferences {
   bookmarkedGymIds: string[]
@@ -6,17 +6,15 @@ export interface GymPreferences {
 }
 
 export async function loadGymPreferences(userId: string): Promise<GymPreferences | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('bookmarked_gym_ids, recent_gym_ids')
-    .eq('id', userId)
-    .single()
-
-  if (error || !data) return null
-
-  return {
-    bookmarkedGymIds: (data.bookmarked_gym_ids as string[]) ?? [],
-    recentGymIds: (data.recent_gym_ids as string[]) ?? [],
+  void userId
+  try {
+    const me = await getMe()
+    return {
+      bookmarkedGymIds: me.bookmarked_gym_ids ?? [],
+      recentGymIds: me.recent_gym_ids ?? [],
+    }
+  } catch {
+    return null
   }
 }
 
@@ -25,12 +23,6 @@ export async function saveGymPreferences(
   bookmarkedGymIds: string[],
   recentGymIds: string[],
 ): Promise<void> {
-  const { error } = await supabase
-    .from('profiles')
-    .update({ bookmarked_gym_ids: bookmarkedGymIds, recent_gym_ids: recentGymIds })
-    .eq('id', userId)
-
-  if (error) {
-    throw error
-  }
+  void userId
+  await patchGymPreferences({ bookmarked_gym_ids: bookmarkedGymIds, recent_gym_ids: recentGymIds })
 }
