@@ -46,7 +46,6 @@ function LogClimbModal({
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [saveError, setSaveError] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [photoUploadStatus, setPhotoUploadStatus] = useState("idle")
   const previousPhotoRef = useRef(null)
 
   const resetDraft = () => {
@@ -58,7 +57,6 @@ function LogClimbModal({
     setDraft(EMPTY_DRAFT)
     setCurrentStep(0)
     setIsSaving(false)
-    setPhotoUploadStatus("idle")
   }
 
   useEffect(() => {
@@ -163,13 +161,7 @@ function LogClimbModal({
           try {
             const result = await onSave(finalDraft)
             if (result?.backgroundUpload) {
-              setPhotoUploadStatus("uploading")
-              void result.backgroundUpload.then(
-                () => setPhotoUploadStatus("done"),
-                () => setPhotoUploadStatus("error"),
-              )
-            } else {
-              setPhotoUploadStatus("idle")
+              void result.backgroundUpload
             }
             setIsSaving(false)
             setCurrentStep(LOG_CLIMB_SUCCESS_STEP_INDEX)
@@ -184,7 +176,6 @@ function LogClimbModal({
         draft={draft}
         onDone={onDone}
         title={mode === "edit" ? "Log updated!" : "Climb logged!"}
-        photoUploadStatus={photoUploadStatus}
       />,
     ],
     [draft, isSaving, mode, onDone, onSave, saveError],
