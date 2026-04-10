@@ -140,6 +140,7 @@ class CanonicalClimbObject(BaseModel):
     takedown_votes: int = 0
     is_active: bool = True
     status: str = "pending"
+    confidence_score: Optional[float] = None
     last_logged_at: Optional[str] = None
     expires_at: Optional[str] = None
     seeded_by: Optional[str] = None

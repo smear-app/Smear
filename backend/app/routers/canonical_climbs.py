@@ -1,4 +1,6 @@
 import logging
+import math
+from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from typing import Optional
 from app.deps import get_current_user
@@ -12,6 +14,45 @@ from app.duplicate_detection import run_duplicate_check
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canonical-climbs", tags=["canonical-climbs"])
+
+
+def recompute_canonical_confidence(supabase, canonical_climb_id: str) -> None:
+    """Recompute and store confidence_score on a canonical climb after a new log.
+
+    Formula (0–1 float):
+      raw_confirmations  (70%) — log-scaled, saturates around 20 logs
+      recency            (15%) — half-life of 30 days from last_logged_at
+      photo bonus        (15%) — flat bonus if photo_url is set
+    """
+    result = (
+        supabase.from_("canonical_climbs")
+        .select("log_count, last_logged_at, photo_url")
+        .eq("id", canonical_climb_id)
+        .maybe_single()
+        .execute()
+    )
+    if not result.data:
+        return
+
+    row = result.data
+    log_count = row.get("log_count") or 0
+
+    raw_score = min(1.0, math.log(log_count + 1) / math.log(21))
+
+    last_logged = row.get("last_logged_at")
+    if last_logged:
+        days_ago = (datetime.now(timezone.utc) - datetime.fromisoformat(last_logged)).days
+    else:
+        days_ago = 0
+    recency_score = math.pow(0.5, days_ago / 30)
+
+    photo_bonus = 0.15 if row.get("photo_url") else 0.0
+
+    confidence = round(0.7 * raw_score + 0.15 * recency_score + photo_bonus, 4)
+
+    supabase.from_("canonical_climbs").update(
+        {"confidence_score": confidence}
+    ).eq("id", canonical_climb_id).execute()
 
 
 def _row_to_canonical(row: dict) -> CanonicalClimbObject:
@@ -28,6 +69,7 @@ def _row_to_canonical(row: dict) -> CanonicalClimbObject:
         takedown_votes=row.get("takedown_votes") or 0,
         is_active=row.get("is_active", True),
         status=row.get("status") or "pending",
+        confidence_score=row.get("confidence_score"),
         last_logged_at=row.get("last_logged_at"),
         expires_at=row.get("expires_at"),
         seeded_by=row.get("seeded_by"),
@@ -118,5 +160,6 @@ def patch_canonical_photo(
     if not result.data:
         raise HTTPException(status_code=404, detail="Canonical climb not found")
 
+    recompute_canonical_confidence(supabase, canonical_id)
     background_tasks.add_task(run_duplicate_check, canonical_id)
     return _row_to_canonical(result.data[0])
