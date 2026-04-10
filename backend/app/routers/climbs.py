@@ -16,6 +16,8 @@ from app.models import (
     LoggedGradeOption,
 )
 
+from app.routers.canonical_climbs import recompute_canonical_confidence
+
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/climbs", tags=["climbs"])
 
@@ -251,6 +253,8 @@ def post_climb(body: PostClimbRequest, user_id: str = Depends(get_current_user))
         raise HTTPException(status_code=500, detail="Failed to insert climb")
 
     _touch_session(supabase, session_id)
+    if body.canonical_climb_id:
+        recompute_canonical_confidence(supabase, body.canonical_climb_id)
     return _row_to_climb_object(result.data[0])
 
 
