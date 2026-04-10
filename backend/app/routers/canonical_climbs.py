@@ -102,11 +102,17 @@ def patch_canonical_photo(
     _user_id: str = Depends(get_current_user),
 ):
     supabase = get_supabase()
-    result = (
+    (
         supabase.from_("canonical_climbs")
         .update({"photo_url": body.photo_url})
         .eq("id", canonical_id)
+        .execute()
+    )
+
+    result = (
+        supabase.from_("canonical_climbs")
         .select("*")
+        .eq("id", canonical_id)
         .execute()
     )
     if not result.data:
