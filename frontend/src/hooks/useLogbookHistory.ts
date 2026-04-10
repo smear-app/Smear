@@ -38,6 +38,13 @@ interface UseLogbookHistoryResult {
 const EMPTY_CLIMBS: Climb[] = []
 const EMPTY_SESSIONS: LogbookSession[] = []
 
+type LogbookHistoryCacheEntry = {
+  climbs: Climb[]
+  totalCount: number
+}
+
+const logbookHistoryCache = new Map<string, LogbookHistoryCacheEntry>()
+
 export function useLogbookHistory({
   userId,
   filters = DEFAULT_LOGBOOK_FILTERS,
@@ -45,18 +52,19 @@ export function useLogbookHistory({
   pageSize = LOGBOOK_PAGE_SIZE,
   reloadKey = 0,
 }: UseLogbookHistoryParams): UseLogbookHistoryResult {
-  const [loadedClimbs, setLoadedClimbs] = useState<Climb[]>([])
-  const [totalCount, setTotalCount] = useState(0)
+  const chronological = isChronologicalSort(sort)
+  const requestKey = JSON.stringify({ userId, filters, sort, pageSize, chronological, reloadKey })
+  const cachedHistory = userId ? logbookHistoryCache.get(requestKey) : undefined
+  const [loadedClimbs, setLoadedClimbs] = useState<Climb[]>(() => cachedHistory?.climbs ?? [])
+  const [totalCount, setTotalCount] = useState(() => cachedHistory?.totalCount ?? 0)
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const requestKeyRef = useRef("")
 
-  const chronological = isChronologicalSort(sort)
-  const requestKey = JSON.stringify({ userId, filters, sort, pageSize, chronological, reloadKey })
-
   useEffect(() => {
     if (!userId) {
+      requestKeyRef.current = ""
       setLoadedClimbs([])
       setTotalCount(0)
       setError(null)
@@ -67,6 +75,17 @@ export function useLogbookHistory({
 
     let cancelled = false
     requestKeyRef.current = requestKey
+
+    const cachedPage = logbookHistoryCache.get(requestKey)
+    if (cachedPage) {
+      setLoadedClimbs(cachedPage.climbs)
+      setTotalCount(cachedPage.totalCount)
+      setError(null)
+      setIsLoading(false)
+      setIsLoadingMore(false)
+      return
+    }
+
     setIsLoading(true)
     setIsLoadingMore(false)
     setError(null)
@@ -95,6 +114,10 @@ export function useLogbookHistory({
 
         setLoadedClimbs(page.climbs)
         setTotalCount(page.totalCount)
+        logbookHistoryCache.set(requestKey, {
+          climbs: page.climbs,
+          totalCount: page.totalCount,
+        })
       } catch (loadError) {
         if (cancelled || requestKeyRef.current !== requestKey) {
           return
@@ -130,8 +153,19 @@ export function useLogbookHistory({
   ])
 
   const removeClimb = (climbId: string) => {
-    setLoadedClimbs((prev) => prev.filter((c) => c.id !== climbId))
-    setTotalCount((prev) => Math.max(0, prev - 1))
+    const nextTotalCount = Math.max(0, totalCount - 1)
+
+    setLoadedClimbs((prev) => {
+      const nextClimbs = prev.filter((c) => c.id !== climbId)
+
+      logbookHistoryCache.set(requestKey, {
+        climbs: nextClimbs,
+        totalCount: nextTotalCount,
+      })
+
+      return nextClimbs
+    })
+    setTotalCount(nextTotalCount)
   }
 
   const loadMore = () => {
@@ -161,7 +195,16 @@ export function useLogbookHistory({
           return
         }
 
-        setLoadedClimbs((current) => [...current, ...page.climbs])
+        setLoadedClimbs((current) => {
+          const nextClimbs = [...current, ...page.climbs]
+
+          logbookHistoryCache.set(activeRequestKey, {
+            climbs: nextClimbs,
+            totalCount: page.totalCount,
+          })
+
+          return nextClimbs
+        })
         setTotalCount(page.totalCount)
       })
       .catch((loadError) => {

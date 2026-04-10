@@ -6,7 +6,6 @@ import {
   getRecentClimbs as apiGetRecentClimbs,
   postClimb,
   patchClimb,
-  patchClimbPhoto,
   patchCanonicalPhoto,
   deleteClimbApi,
   getClimbsMeta,
@@ -138,23 +137,15 @@ interface PaginatedClimbsParams {
   grades?: string[]
 }
 
-function startBackgroundPhotoUpload(
-  photoFile: File,
-  climbId: string,
-  canonicalId?: string | null,
-): Promise<void> {
-  return uploadToCloudinary(photoFile).then(async (photoUrl) => {
-    await patchClimbPhoto(climbId, photoUrl)
-    if (canonicalId) {
-      await patchCanonicalPhoto(canonicalId, photoUrl)
-    }
-  })
-}
-
 export async function insertClimb(draft: ClimbDraft, userId: string): Promise<InsertClimbResult> {
   void userId  // backend reads user from auth token
 
-  const photoUrl = draft.photo && !draft.photo.startsWith('blob:') ? draft.photo : null
+  const photoUrl = draft.photoFile
+    ? await uploadToCloudinary(draft.photoFile)
+    : draft.photo && !draft.photo.startsWith('blob:')
+      ? draft.photo
+      : null
+
   const created = await postClimb({
     gym_id: draft.gymId || null,
     gym_name: draft.gymName || null,
@@ -172,12 +163,8 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<In
   })
 
   const climb = mapApiClimb(created)
-  const backgroundUpload = draft.photoFile
-    ? startBackgroundPhotoUpload(
-        draft.photoFile,
-        climb.id,
-        draft.backgroundCanonicalPhotoId ?? null,
-      )
+  const backgroundUpload = photoUrl && draft.backgroundCanonicalPhotoId
+    ? patchCanonicalPhoto(draft.backgroundCanonicalPhotoId, photoUrl)
     : undefined
 
   return { climb, backgroundUpload }
