@@ -364,3 +364,7 @@ export async function patchCanonicalPhoto(id: string, photoUrl: string): Promise
 export async function getAdminDuplicateFlags(): Promise<DuplicateFlagObject[]> {
   return apiFetch<DuplicateFlagObject[]>('/admin/duplicate-flags')
 }
+
+export async function adminRecomputeConfidence(): Promise<{ recomputed: number }> {
+  return apiFetch<{ recomputed: number }>('/admin/recompute-confidence', { method: 'POST' })
+}

@@ -15,15 +15,35 @@ from app.duplicate_detection import run_duplicate_check
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/canonical-climbs", tags=["canonical-climbs"])
 
+# Tune these thresholds as confidence score distribution becomes clearer in prod
+CONFIDENCE_VERIFIED_THRESHOLD = 0.7
+CONFIDENCE_ARCHIVED_THRESHOLD = 0.3
+
+
+def _compute_confidence(log_count: int, last_logged: Optional[str], photo_url: Optional[str]) -> float:
+    raw_score = min(1.0, math.log(log_count + 1) / math.log(21))
+
+    if last_logged:
+        days_ago = (datetime.now(timezone.utc) - datetime.fromisoformat(last_logged)).days
+    else:
+        days_ago = 0
+    recency_score = math.pow(0.5, days_ago / 30)
+
+    photo_bonus = 0.15 if photo_url else 0.0
+
+    return round(0.7 * raw_score + 0.15 * recency_score + photo_bonus, 4)
+
+
+def _status_from_confidence(confidence: float) -> str:
+    if confidence >= CONFIDENCE_VERIFIED_THRESHOLD:
+        return "verified"
+    if confidence <= CONFIDENCE_ARCHIVED_THRESHOLD:
+        return "archived"
+    return "pending"
+
 
 def recompute_canonical_confidence(supabase, canonical_climb_id: str) -> None:
-    """Recompute and store confidence_score on a canonical climb after a new log.
-
-    Formula (0–1 float):
-      raw_confirmations  (70%) — log-scaled, saturates around 20 logs
-      recency            (15%) — half-life of 30 days from last_logged_at
-      photo bonus        (15%) — flat bonus if photo_url is set
-    """
+    """Recompute confidence_score and derive status for a single canonical climb."""
     result = (
         supabase.from_("canonical_climbs")
         .select("log_count, last_logged_at, photo_url")
@@ -35,23 +55,15 @@ def recompute_canonical_confidence(supabase, canonical_climb_id: str) -> None:
         return
 
     row = result.data
-    log_count = row.get("log_count") or 0
-
-    raw_score = min(1.0, math.log(log_count + 1) / math.log(21))
-
-    last_logged = row.get("last_logged_at")
-    if last_logged:
-        days_ago = (datetime.now(timezone.utc) - datetime.fromisoformat(last_logged)).days
-    else:
-        days_ago = 0
-    recency_score = math.pow(0.5, days_ago / 30)
-
-    photo_bonus = 0.15 if row.get("photo_url") else 0.0
-
-    confidence = round(0.7 * raw_score + 0.15 * recency_score + photo_bonus, 4)
+    confidence = _compute_confidence(
+        row.get("log_count") or 0,
+        row.get("last_logged_at"),
+        row.get("photo_url"),
+    )
+    status = _status_from_confidence(confidence)
 
     supabase.from_("canonical_climbs").update(
-        {"confidence_score": confidence}
+        {"confidence_score": confidence, "status": status}
     ).eq("id", canonical_climb_id).execute()
 
 

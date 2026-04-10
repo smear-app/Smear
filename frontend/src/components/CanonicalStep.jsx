@@ -206,6 +206,8 @@ function CanonicalStep({ draft, onChange, onSave }) {
       let canonicalId = null
       let backgroundCanonicalPhotoId = null
 
+      let inheritedPhotoUrl = null
+
       if (state === "candidates" && selectedId) {
         const selected = scored.find((s) => s.candidate.id === selectedId)
         const isOverride = selected && scored[0].candidate.id !== selectedId
@@ -221,6 +223,12 @@ function CanonicalStep({ draft, onChange, onSave }) {
         onChange("canonicalClimbId", canonicalId)
         onChange("confidenceScore", selected?.score ?? null)
         onChange("overrideSignal", isOverride)
+
+        // Absorb canonical photo if user didn't take their own
+        if (!draft.photo && !draft.photoFile && selected?.candidate?.photo_url) {
+          inheritedPhotoUrl = selected.candidate.photo_url
+          onChange("photo", inheritedPhotoUrl)
+        }
       } else {
         canonicalId = await seedCanonicalClimb(
           draft.gymId,
@@ -241,6 +249,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
         ...draft,
         canonicalClimbId: canonicalId,
         backgroundCanonicalPhotoId,
+        ...(inheritedPhotoUrl ? { photo: inheritedPhotoUrl } : {}),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")

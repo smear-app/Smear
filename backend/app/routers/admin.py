@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.deps import get_current_user
 from app.gyms import get_supabase
 from app.models import DuplicateFlagObject, CanonicalSummary
+from app.routers.canonical_climbs import recompute_canonical_confidence
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -81,3 +82,27 @@ def get_duplicate_flags(user_id: str = Depends(get_current_user)):
         ))
 
     return output
+
+
+@router.post("/recompute-confidence", status_code=200)
+def recompute_all_confidence(user_id: str = Depends(get_current_user)):
+    """Recompute confidence_score and status for all active canonical climbs.
+
+    Run manually to apply recency decay. Hook up to a daily Render cron job
+    once the score distribution has been validated in prod.
+    """
+    supabase = get_supabase()
+    _require_admin(user_id, supabase)
+
+    result = (
+        supabase.from_("canonical_climbs")
+        .select("id")
+        .in_("status", ["pending", "verified"])
+        .eq("is_active", True)
+        .execute()
+    )
+    ids = [row["id"] for row in (result.data or [])]
+    for canonical_id in ids:
+        recompute_canonical_confidence(supabase, canonical_id)
+
+    return {"recomputed": len(ids)}
