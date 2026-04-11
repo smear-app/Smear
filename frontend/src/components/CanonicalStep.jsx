@@ -204,8 +204,6 @@ function CanonicalStep({ draft, onChange, onSave }) {
 
     try {
       let canonicalId = null
-      let backgroundCanonicalPhotoId = null
-
       let inheritedPhotoUrl = null
 
       if (state === "candidates" && selectedId) {
@@ -237,7 +235,6 @@ function CanonicalStep({ draft, onChange, onSave }) {
           user.id,
           null,
         )
-        backgroundCanonicalPhotoId = draft.photoFile ? canonicalId : null
 
         onChange("canonicalClimbId", canonicalId)
         onChange("confidenceScore", null)
@@ -248,7 +245,6 @@ function CanonicalStep({ draft, onChange, onSave }) {
       await onSave({
         ...draft,
         canonicalClimbId: canonicalId,
-        backgroundCanonicalPhotoId,
         ...(inheritedPhotoUrl ? { photo: inheritedPhotoUrl } : {}),
       })
     } catch (err) {
