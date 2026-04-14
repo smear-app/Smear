@@ -85,17 +85,9 @@ function ProtectedApp() {
       return {}
     }
 
-    const { backgroundUpload } = await insertClimb(draft, session.user.id)
+    await insertClimb(draft, session.user.id)
     void loadRecentClimbs({ background: true })
-    if (backgroundUpload) {
-      void backgroundUpload.catch((error) => {
-        console.error("Background photo upload failed", error)
-      })
-      void backgroundUpload.finally(() => {
-        void loadRecentClimbs({ background: true })
-      })
-    }
-    return { backgroundUpload }
+    return {}
   }
 
   function handleOpenLogClimb() {

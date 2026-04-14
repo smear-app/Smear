@@ -352,12 +352,6 @@ export async function postCanonicalClimb(body: PostCanonicalRequest): Promise<Ca
   })
 }
 
-export async function patchCanonicalPhoto(id: string, photoUrl: string): Promise<void> {
-  await apiFetch<void>(`/canonical-climbs/${id}/photo`, {
-    method: 'PATCH',
-    body: JSON.stringify({ photo_url: photoUrl }),
-  })
-}
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 

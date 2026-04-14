@@ -6,7 +6,7 @@ import {
   getRecentClimbs as apiGetRecentClimbs,
   postClimb,
   patchClimb,
-  patchCanonicalPhoto,
+
   deleteClimbApi,
   getClimbsMeta,
   type ClimbObject,
@@ -37,7 +37,7 @@ export interface ClimbDraft {
   canonicalClimbId: string | null
   confidenceScore: number | null
   overrideSignal: boolean
-  backgroundCanonicalPhotoId?: string | null
+
 }
 
 export interface Climb {
@@ -118,11 +118,6 @@ export interface LoggedGradeOption {
   value: number
 }
 
-export interface InsertClimbResult {
-  climb: Climb
-  backgroundUpload?: Promise<void>
-}
-
 interface PaginatedClimbsParams {
   userId: string
   limit: number
@@ -137,7 +132,7 @@ interface PaginatedClimbsParams {
   grades?: string[]
 }
 
-export async function insertClimb(draft: ClimbDraft, userId: string): Promise<InsertClimbResult> {
+export async function insertClimb(draft: ClimbDraft, userId: string): Promise<Climb> {
   void userId  // backend reads user from auth token
 
   const photoUrl = draft.photoFile
@@ -162,12 +157,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<In
     override_signal: draft.overrideSignal ?? false,
   })
 
-  const climb = mapApiClimb(created)
-  const backgroundUpload = photoUrl && draft.backgroundCanonicalPhotoId
-    ? patchCanonicalPhoto(draft.backgroundCanonicalPhotoId, photoUrl)
-    : undefined
-
-  return { climb, backgroundUpload }
+  return mapApiClimb(created)
 }
 
 export async function updateClimb(
