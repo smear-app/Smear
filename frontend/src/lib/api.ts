@@ -139,6 +139,7 @@ export interface CanonicalClimbObject {
   takedown_votes: number
   is_active: boolean
   status: string
+  confidence_score: number | null
   last_logged_at: string | null
   expires_at: string | null
   seeded_by: string | null
@@ -351,15 +352,13 @@ export async function postCanonicalClimb(body: PostCanonicalRequest): Promise<Ca
   })
 }
 
-export async function patchCanonicalPhoto(id: string, photoUrl: string): Promise<void> {
-  await apiFetch<void>(`/canonical-climbs/${id}/photo`, {
-    method: 'PATCH',
-    body: JSON.stringify({ photo_url: photoUrl }),
-  })
-}
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminDuplicateFlags(): Promise<DuplicateFlagObject[]> {
   return apiFetch<DuplicateFlagObject[]>('/admin/duplicate-flags')
+}
+
+export async function adminRecomputeConfidence(): Promise<{ recomputed: number }> {
+  return apiFetch<{ recomputed: number }>('/admin/recompute-confidence', { method: 'POST' })
 }

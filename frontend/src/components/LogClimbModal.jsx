@@ -159,10 +159,7 @@ function LogClimbModal({
           setSaveError(null)
           setIsSaving(true)
           try {
-            const result = await onSave(finalDraft)
-            if (result?.backgroundUpload) {
-              void result.backgroundUpload
-            }
+            await onSave(finalDraft)
             setIsSaving(false)
             setCurrentStep(LOG_CLIMB_SUCCESS_STEP_INDEX)
           } catch (err) {

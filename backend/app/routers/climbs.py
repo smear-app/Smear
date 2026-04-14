@@ -2,9 +2,10 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from app.deps import get_current_user
 from app.gyms import get_supabase
+from app.duplicate_detection import run_duplicate_check
 from app.models import (
     ClimbObject,
     PaginatedClimbsResponse,
@@ -15,6 +16,8 @@ from app.models import (
     LoggedGymOption,
     LoggedGradeOption,
 )
+
+from app.routers.canonical_climbs import recompute_canonical_confidence
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/climbs", tags=["climbs"])
@@ -219,7 +222,7 @@ def get_climb_by_id(climb_id: str, user_id: str = Depends(get_current_user)):
 
 
 @router.post("", response_model=ClimbObject, status_code=201)
-def post_climb(body: PostClimbRequest, user_id: str = Depends(get_current_user)):
+def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
 
     session_id = _get_or_create_session(supabase, user_id, body.gym_id, body.gym_name)
@@ -251,6 +254,13 @@ def post_climb(body: PostClimbRequest, user_id: str = Depends(get_current_user))
         raise HTTPException(status_code=500, detail="Failed to insert climb")
 
     _touch_session(supabase, session_id)
+    if body.canonical_climb_id:
+        recompute_canonical_confidence(supabase, body.canonical_climb_id)
+        if body.photo_url:
+            supabase.from_("canonical_climbs").update({"photo_url": body.photo_url}).eq(
+                "id", body.canonical_climb_id
+            ).is_("photo_url", "null").execute()
+            background_tasks.add_task(run_duplicate_check, body.canonical_climb_id)
     return _row_to_climb_object(result.data[0])
 
 
