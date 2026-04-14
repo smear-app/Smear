@@ -54,7 +54,7 @@ function CanonicalStatusIcon({ status }) {
   }
   // pending (default)
   return (
-    <span title="Pending" className="h-3.5 w-3.5 flex-shrink-0 rounded-full border-2 border-dashed border-stone-muted/60" />
+    <span title="Pending" className="h-3.5 w-3.5 flex-shrink-0 animate-pulse rounded-full border-2 border-stone-muted/60 bg-stone-muted/20" />
   )
 }
 
@@ -99,7 +99,7 @@ function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
         isSelected
           ? "border-ember/40 bg-ember-soft"
           : "border-stone-border bg-stone-surface"
-      }`}
+      } ${candidate.status === "archived" ? "opacity-50" : ""}`}
     >
       <div className="flex items-center gap-3">
         <div
@@ -169,7 +169,12 @@ function CanonicalStep({ draft, onChange, onSave }) {
 
       const withScores = candidates
         .map((c) => ({ candidate: c, score: computeConfidenceScore(c, draft.tags ?? []) }))
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => {
+          const aArchived = a.candidate.status === "archived" ? 1 : 0
+          const bArchived = b.candidate.status === "archived" ? 1 : 0
+          if (aArchived !== bArchived) return aArchived - bArchived
+          return b.score - a.score
+        })
 
       setScored(withScores)
 
