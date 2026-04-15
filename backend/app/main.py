@@ -1,5 +1,9 @@
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:%(name)s:%(message)s",
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 import os
 import fastapi
@@ -14,6 +18,8 @@ from app.routers.me import router as me_router
 from app.routers.climbs import router as climbs_router
 from app.routers.canonical_climbs import router as canonical_climbs_router
 from app.routers.admin import router as admin_router
+from app.routers.sessions import router as sessions_router
+from app.routers.social import router as social_router
 
 
 def get_allowed_origins() -> list[str]:
@@ -44,6 +50,8 @@ app.include_router(me_router, prefix="/api/v1")
 app.include_router(climbs_router, prefix="/api/v1")
 app.include_router(canonical_climbs_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(sessions_router, prefix="/api/v1")
+app.include_router(social_router, prefix="/api/v1")
 app.include_router(gyms_router, prefix="/api/v1")
 
 

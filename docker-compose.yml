@@ -1,0 +1,9 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: smear-backend
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
