@@ -8,6 +8,12 @@ interface SessionCardProps {
   onCommentTap?: (sessionId: string) => void
 }
 
+const TAG_RANK_STYLES = [
+  'border-amber-400/50 bg-amber-400/10 text-amber-600',   // gold
+  'border-slate-400/50 bg-slate-400/10 text-slate-500',   // silver
+  'border-amber-600/50 bg-amber-600/10 text-amber-700', // bronze
+]
+
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return ''
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -111,8 +117,8 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
           </div>
         )}
 
-        {/* Hardest grade (no cover photo case) */}
-        {!session.cover_photo_url && session.hardest_grade && (
+        {/* Hardest grade */}
+        {session.hardest_grade && (
           <div className="mt-3 flex items-center gap-1.5">
             <FiZap className="h-3.5 w-3.5 text-ember" />
             <span className="text-xs font-semibold text-stone-text">
@@ -124,13 +130,13 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
           </div>
         )}
 
-        {/* Tags */}
+        {/* Tags — gold/silver/bronze by frequency rank */}
         {session.top_tags.length > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {session.top_tags.map((tag) => (
+            {session.top_tags.map((tag, i) => (
               <span
                 key={tag}
-                className="rounded-full border border-stone-border bg-stone-bg px-2 py-0.5 text-xs capitalize text-stone-secondary"
+                className={`rounded-full border px-2 py-0.5 text-xs capitalize ${TAG_RANK_STYLES[i] ?? TAG_RANK_STYLES[2]}`}
               >
                 {tag}
               </span>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FiUsers, FiCompass, FiUserPlus } from 'react-icons/fi'
 import BottomNav from '../components/BottomNav'
 import SessionCard from '../components/social/SessionCard'
+import SessionCommentsSheet from '../components/social/SessionCommentsSheet'
 import UserSearchSheet from '../components/social/UserSearchSheet'
 import type { SessionCardObject } from '../lib/api'
 import { getSocialFeed, getExploreFeed } from '../lib/api'
@@ -14,6 +15,7 @@ export default function SocialPage() {
   const [resolvedKey, setResolvedKey] = useState<string | null>(null)
   const [feedData, setFeedData] = useState<{ feed: SessionCardObject[]; error: string | null }>({ feed: [], error: null })
   const [showSearch, setShowSearch] = useState(false)
+  const [commentSessionId, setCommentSessionId] = useState<string | null>(null)
   const { activeGym, isHydrated } = useGym()
 
   const currentKey = `${tab}-${activeGym?.id ?? ''}`
@@ -78,7 +80,7 @@ export default function SocialPage() {
         {!loading && !error && feed.length > 0 && (
           <div className="flex flex-col gap-4">
             {feed.map((session) => (
-              <SessionCard key={session.id} session={session} />
+              <SessionCard key={session.id} session={session} onCommentTap={setCommentSessionId} />
             ))}
           </div>
         )}
@@ -86,6 +88,7 @@ export default function SocialPage() {
 
       <BottomNav />
       <UserSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <SessionCommentsSheet sessionId={commentSessionId} onClose={() => setCommentSessionId(null)} />
     </div>
   )
 }
