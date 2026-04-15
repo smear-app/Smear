@@ -42,7 +42,7 @@ def _row_to_session_card(row: dict, viewer_id: str, reaction_counts: dict, comme
         hardest_flash_value=row.get("hardest_flash_value"),
         top_tags=row.get("top_tags") or [],
         cover_photo_url=row.get("cover_photo_url"),
-        created_at=row["created_at"],
+        created_at=row.get("started_at"),
         author_display_name=profile.get("display_name"),
         author_username=profile.get("username"),
         author_avatar_url=profile.get("avatar_url"),

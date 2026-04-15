@@ -135,7 +135,7 @@ def get_active_session(user_id: str = Depends(get_current_user)):
         user_id=row["user_id"],
         gym_id=row.get("gym_id"),
         gym_name=row.get("gym_name"),
-        started_at=row.get("started_at") or row.get("created_at"),
+        started_at=row.get("started_at"),
         ended_at=row.get("ended_at"),
         visibility=row.get("visibility", "followers"),
         is_published=row.get("is_published", False),
@@ -149,7 +149,7 @@ def get_active_session(user_id: str = Depends(get_current_user)):
         hardest_flash_value=row.get("hardest_flash_value"),
         top_tags=row.get("top_tags") or [],
         cover_photo_url=row.get("cover_photo_url"),
-        created_at=row["created_at"],
+        created_at=row.get("started_at"),
     )
 
 
@@ -197,7 +197,7 @@ def end_session(
         user_id=row["user_id"],
         gym_id=row.get("gym_id"),
         gym_name=row.get("gym_name"),
-        started_at=row.get("started_at") or row.get("created_at"),
+        started_at=row.get("started_at"),
         ended_at=row.get("ended_at"),
         visibility=row.get("visibility", "followers"),
         is_published=row.get("is_published", False),
@@ -211,5 +211,5 @@ def end_session(
         hardest_flash_value=row.get("hardest_flash_value"),
         top_tags=row.get("top_tags") or [],
         cover_photo_url=row.get("cover_photo_url"),
-        created_at=row["created_at"],
+        created_at=row.get("started_at"),
     )

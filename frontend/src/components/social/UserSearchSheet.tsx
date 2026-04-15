@@ -49,7 +49,7 @@ export default function UserSearchSheet({ isOpen, onClose }: UserSearchSheetProp
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-stone-bg">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-stone-border px-4 pt-safe pb-3 pt-4">
+      <div className="flex items-center gap-3 border-b border-stone-border px-4 pb-3 pt-4" style={{ paddingTop: 'max(1rem, calc(env(safe-area-inset-top) + 0.75rem))' }}>
         <div className="flex flex-1 items-center gap-2 rounded-xl border border-stone-border bg-stone-surface px-3 py-2">
           <FiSearch className="h-4 w-4 shrink-0 text-stone-secondary" />
           <input
