@@ -18,6 +18,7 @@ from app.models import (
 )
 
 from app.routers.canonical_climbs import recompute_canonical_confidence
+from app.routers.sessions import publish_stale_sessions
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/climbs", tags=["climbs"])
@@ -254,6 +255,7 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
         raise HTTPException(status_code=500, detail="Failed to insert climb")
 
     _touch_session(supabase, session_id)
+    background_tasks.add_task(publish_stale_sessions, supabase, user_id)
     if body.canonical_climb_id:
         recompute_canonical_confidence(supabase, body.canonical_climb_id)
         if body.photo_url:

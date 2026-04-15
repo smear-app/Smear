@@ -45,6 +45,10 @@ function readStoredGyms(userId: string | undefined) {
   }
 }
 
+function serializeSyncedGymPrefs(bookmarkedGymIds: string[], recentGymIds: string[]) {
+  return JSON.stringify({ bookmarkedGymIds, recentGymIds })
+}
+
 export function GymProvider({
   children,
   storageUserId,
@@ -58,6 +62,7 @@ export function GymProvider({
   const [recentHistoryGymIds, setRecentHistoryGymIds] = useState<string[]>([])
   const [hiddenGymIds, setHiddenGymIds] = useState<string[]>([])
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastSyncedPrefsRef = useRef<string | null>(null)
 
   // Hydrate gym cache and preferences (Supabase preferred, localStorage fallback)
   useEffect(() => {
@@ -69,6 +74,7 @@ export function GymProvider({
         if (prefs) {
           setBookmarkedGymIds(prefs.bookmarkedGymIds)
           setRecentHistoryGymIds(prefs.recentGymIds)
+          lastSyncedPrefsRef.current = serializeSyncedGymPrefs(prefs.bookmarkedGymIds, prefs.recentGymIds)
           restoredFromSupabase = true
         }
       }
@@ -81,6 +87,7 @@ export function GymProvider({
           setBookmarkedGymIds(initial.bookmarkedGymIds)
           setRecentHistoryGymIds(initial.recentHistoryGymIds)
           setHiddenGymIds(initial.hiddenGymIds)
+          lastSyncedPrefsRef.current = serializeSyncedGymPrefs(initial.bookmarkedGymIds, initial.recentHistoryGymIds)
         }
       } else {
         // Still restore activeGymId and hiddenGymIds from localStorage
@@ -114,6 +121,9 @@ export function GymProvider({
   useEffect(() => {
     if (!isHydrated || !storageUserId) return
 
+    const currentPrefs = serializeSyncedGymPrefs(bookmarkedGymIds, recentHistoryGymIds)
+    if (lastSyncedPrefsRef.current === currentPrefs) return
+
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current)
       syncTimeoutRef.current = null
@@ -121,9 +131,13 @@ export function GymProvider({
 
     syncTimeoutRef.current = setTimeout(() => {
       // Fire-and-forget but avoid unhandled promise rejections
-      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds).catch((error) => {
-        console.error('Failed to save gym preferences', error)
-      })
+      void saveGymPreferences(storageUserId, bookmarkedGymIds, recentHistoryGymIds)
+        .then(() => {
+          lastSyncedPrefsRef.current = currentPrefs
+        })
+        .catch((error) => {
+          console.error('Failed to save gym preferences', error)
+        })
     }, 1000)
 
     return () => {

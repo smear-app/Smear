@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/me", tags=["me"])
 
 
+def _short_id(value: str | None) -> str:
+    return value[:8] if value else "-"
+
+
 def _build_me_response(user_id: str, supabase) -> MeResponse:
     profile_result = (
         supabase.from_("profiles")
@@ -95,3 +99,9 @@ def patch_gym_preferences(body: PatchGymPrefsRequest, user_id: str = Depends(get
         "bookmarked_gym_ids": body.bookmarked_gym_ids,
         "recent_gym_ids": body.recent_gym_ids,
     }).eq("id", user_id).execute()
+    logger.info(
+        "Updated gym preferences user=%s bookmarked=%d recent=%d",
+        _short_id(user_id),
+        len(body.bookmarked_gym_ids),
+        len(body.recent_gym_ids),
+    )
