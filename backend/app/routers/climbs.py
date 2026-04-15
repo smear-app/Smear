@@ -274,14 +274,16 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
-    result = (
+    update_result = (
         supabase.from_("climbs")
         .update(updates)
         .eq("id", climb_id)
         .eq("user_id", user_id)
-        .select("*")
         .execute()
     )
+    if not update_result.data:
+        raise HTTPException(status_code=404, detail="Climb not found")
+    result = supabase.from_("climbs").select("*").eq("id", climb_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
     return _row_to_climb_object(result.data[0])
@@ -290,14 +292,16 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
 @router.patch("/{climb_id}/photo", response_model=ClimbObject)
 def patch_climb_photo(climb_id: str, body: PatchClimbPhotoRequest, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
-    result = (
+    update_result = (
         supabase.from_("climbs")
         .update({"photo_url": body.photo_url})
         .eq("id", climb_id)
         .eq("user_id", user_id)
-        .select("*")
         .execute()
     )
+    if not update_result.data:
+        raise HTTPException(status_code=404, detail="Climb not found")
+    result = supabase.from_("climbs").select("*").eq("id", climb_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
     return _row_to_climb_object(result.data[0])
