@@ -146,6 +146,7 @@ function ProtectedApp() {
                 climbs={recentClimbs}
                 totalClimbs={recentClimbsTotal}
                 loadError={recentClimbsError}
+                refreshKey={refreshKey}
               />
             }
           />

@@ -5,8 +5,9 @@ import BottomNav from "./components/BottomNav"
 import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
 import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
+import ActiveSessionBanner from "./components/ActiveSessionBanner"
 
-function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }) {
+function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError, refreshKey }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [openingClimbId, setOpeningClimbId] = useState(null)
@@ -22,20 +23,6 @@ function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }
         : climbs,
     [climbs, returningClimb],
   )
-
-  useEffect(() => {
-    if (!returningClimbId) {
-      setReturnTransitionClimbId(null)
-      return undefined
-    }
-
-    setReturnTransitionClimbId(returningClimbId)
-    const timeoutId = window.setTimeout(() => {
-      setReturnTransitionClimbId(null)
-    }, 220)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [returningClimbId])
 
   useEffect(() => {
     if (!returningClimbId) {
@@ -73,7 +60,11 @@ function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError }
         `}</style>
         <WelcomeCard />
 
-        <section className="mt-6 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
+        <div className="mt-4">
+          <ActiveSessionBanner refreshKey={refreshKey} />
+        </div>
+
+        <section className="mt-2 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center justify-between gap-3">
             <h2 className="min-w-0 whitespace-nowrap text-lg font-bold text-stone-text sm:text-xl">
               Recent Climbs

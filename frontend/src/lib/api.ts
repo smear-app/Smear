@@ -7,6 +7,7 @@ const ME_CACHE_KEY = 'smear:me'
 const GYMS_CACHE_KEY = 'smear:gyms-cache'
 const GYMS_CACHED_AT_KEY = 'smear:gyms-cached-at'
 const GYMS_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
+let meRequestPromise: Promise<MeResponse> | null = null
 
 // ── Response types (mirrors backend models) ──────────────────────────────────
 
@@ -204,6 +205,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
 export function clearMeCache(): void {
   sessionStorage.removeItem(ME_CACHE_KEY)
+  meRequestPromise = null
 }
 
 export async function getMe(): Promise<MeResponse> {
@@ -215,9 +217,17 @@ export async function getMe(): Promise<MeResponse> {
       sessionStorage.removeItem(ME_CACHE_KEY)
     }
   }
-  const me = await apiFetch<MeResponse>('/me')
-  sessionStorage.setItem(ME_CACHE_KEY, JSON.stringify(me))
-  return me
+  if (!meRequestPromise) {
+    meRequestPromise = apiFetch<MeResponse>('/me')
+      .then((me) => {
+        sessionStorage.setItem(ME_CACHE_KEY, JSON.stringify(me))
+        return me
+      })
+      .finally(() => {
+        meRequestPromise = null
+      })
+  }
+  return meRequestPromise
 }
 
 export async function patchMe(body: PatchMeRequest): Promise<MeResponse> {
@@ -225,6 +235,7 @@ export async function patchMe(body: PatchMeRequest): Promise<MeResponse> {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
+  meRequestPromise = null
   sessionStorage.setItem(ME_CACHE_KEY, JSON.stringify(me))
   return me
 }
@@ -352,6 +363,151 @@ export async function postCanonicalClimb(body: PostCanonicalRequest): Promise<Ca
   })
 }
 
+
+// ── Sessions ──────────────────────────────────────────────────────────────────
+
+export interface SessionCardObject {
+  id: string
+  user_id: string
+  gym_id: string | null
+  gym_name: string | null
+  started_at: string | null
+  ended_at: string | null
+  visibility: string
+  total_climbs: number | null
+  sends: number | null
+  flashes: number | null
+  attempts: number | null
+  hardest_grade: string | null
+  hardest_grade_value: number | null
+  hardest_flash: string | null
+  hardest_flash_value: number | null
+  top_tags: string[]
+  cover_photo_url: string | null
+  created_at: string
+  author_display_name: string | null
+  author_username: string | null
+  author_avatar_url: string | null
+  reaction_count: number
+  comment_count: number
+  viewer_has_reacted: boolean
+}
+
+export interface SessionObject {
+  id: string
+  user_id: string
+  gym_id: string | null
+  gym_name: string | null
+  started_at: string | null
+  ended_at: string | null
+  visibility: string
+  is_published: boolean
+  total_climbs: number | null
+  sends: number | null
+  flashes: number | null
+  attempts: number | null
+  hardest_grade: string | null
+  hardest_grade_value: number | null
+  hardest_flash: string | null
+  hardest_flash_value: number | null
+  top_tags: string[]
+  cover_photo_url: string | null
+  created_at: string
+}
+
+export async function getActiveSession(): Promise<SessionObject | null> {
+  try {
+    return await apiFetch<SessionObject | null>('/sessions/active')
+  } catch {
+    return null
+  }
+}
+
+export async function endSession(sessionId: string, visibility?: string): Promise<SessionObject> {
+  return apiFetch<SessionObject>(`/sessions/${sessionId}/end`, {
+    method: 'POST',
+    body: JSON.stringify({ visibility: visibility ?? null }),
+  })
+}
+
+// ── Social ────────────────────────────────────────────────────────────────────
+
+export interface FollowObject {
+  user_id: string
+  display_name: string | null
+  username: string | null
+  avatar_url: string | null
+  followed_at: string
+}
+
+export interface FollowsResponse {
+  following: FollowObject[]
+  followers: FollowObject[]
+}
+
+export interface UserSearchResult {
+  user_id: string
+  display_name: string | null
+  username: string | null
+  avatar_url: string | null
+  is_following: boolean
+}
+
+export interface CommentObject {
+  id: string
+  session_id: string
+  user_id: string
+  body: string
+  created_at: string
+  author_display_name: string | null
+  author_username: string | null
+  author_avatar_url: string | null
+}
+
+export async function getSocialFeed(limit = 20, offset = 0): Promise<SessionCardObject[]> {
+  return apiFetch<SessionCardObject[]>(`/social/feed?limit=${limit}&offset=${offset}`)
+}
+
+export async function getExploreFeed(limit = 20, offset = 0, gymId?: string): Promise<SessionCardObject[]> {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (gymId) params.set('gym_id', gymId)
+  return apiFetch<SessionCardObject[]>(`/social/explore?${params}`)
+}
+
+export async function getFollows(): Promise<FollowsResponse> {
+  return apiFetch<FollowsResponse>('/social/follows')
+}
+
+export async function followUser(targetUserId: string): Promise<void> {
+  await apiFetch<void>(`/social/follows/${targetUserId}`, { method: 'POST' })
+}
+
+export async function unfollowUser(targetUserId: string): Promise<void> {
+  await apiFetch<void>(`/social/follows/${targetUserId}`, { method: 'DELETE' })
+}
+
+export async function searchUsers(q: string): Promise<UserSearchResult[]> {
+  return apiFetch<UserSearchResult[]>(`/social/users/search?q=${encodeURIComponent(q)}`)
+}
+
+export async function addReaction(sessionId: string): Promise<void> {
+  await apiFetch<void>(`/social/sessions/${sessionId}/reactions`, { method: 'POST' })
+}
+
+export async function removeReaction(sessionId: string): Promise<void> {
+  await apiFetch<void>(`/social/sessions/${sessionId}/reactions`, { method: 'DELETE' })
+}
+
+export async function getComments(sessionId: string): Promise<CommentObject[]> {
+  return apiFetch<CommentObject[]>(`/social/sessions/${sessionId}/comments`)
+}
+
+export async function postComment(sessionId: string, body: string): Promise<CommentObject> {
+  return apiFetch<CommentObject>(`/social/sessions/${sessionId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  })
+}
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 

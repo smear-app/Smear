@@ -159,6 +159,102 @@ class PatchCanonicalPhotoRequest(BaseModel):
     photo_url: str
 
 
+# ── Sessions ─────────────────────────────────────────────────────────────────
+
+class SessionObject(BaseModel):
+    id: str
+    user_id: str
+    gym_id: Optional[str] = None
+    gym_name: Optional[str] = None
+    started_at: Optional[str] = None
+    ended_at: Optional[str] = None
+    visibility: str = "followers"
+    is_published: bool = False
+    total_climbs: Optional[int] = None
+    sends: Optional[int] = None
+    flashes: Optional[int] = None
+    attempts: Optional[int] = None
+    hardest_grade: Optional[str] = None
+    hardest_grade_value: Optional[int] = None
+    hardest_flash: Optional[str] = None
+    hardest_flash_value: Optional[int] = None
+    top_tags: list[str] = []
+    cover_photo_url: Optional[str] = None
+    created_at: Optional[str] = None
+
+
+class SessionCardObject(BaseModel):
+    """Session enriched with author profile + social counts — used in feed."""
+    id: str
+    user_id: str
+    gym_id: Optional[str] = None
+    gym_name: Optional[str] = None
+    started_at: Optional[str] = None
+    ended_at: Optional[str] = None
+    visibility: str
+    total_climbs: Optional[int] = None
+    sends: Optional[int] = None
+    flashes: Optional[int] = None
+    attempts: Optional[int] = None
+    hardest_grade: Optional[str] = None
+    hardest_grade_value: Optional[int] = None
+    hardest_flash: Optional[str] = None
+    hardest_flash_value: Optional[int] = None
+    top_tags: list[str] = []
+    cover_photo_url: Optional[str] = None
+    created_at: Optional[str] = None
+    # author
+    author_display_name: Optional[str] = None
+    author_username: Optional[str] = None
+    author_avatar_url: Optional[str] = None
+    # social
+    reaction_count: int = 0
+    comment_count: int = 0
+    viewer_has_reacted: bool = False
+
+
+class EndSessionRequest(BaseModel):
+    visibility: Optional[str] = None  # override profile default
+
+
+# ── Social ────────────────────────────────────────────────────────────────────
+
+class FollowObject(BaseModel):
+    user_id: str
+    display_name: Optional[str] = None
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    followed_at: str
+
+
+class FollowsResponse(BaseModel):
+    following: list[FollowObject] = []
+    followers: list[FollowObject] = []
+
+
+class UserSearchResult(BaseModel):
+    user_id: str
+    display_name: Optional[str] = None
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_following: bool = False
+
+
+class CommentObject(BaseModel):
+    id: str
+    session_id: str
+    user_id: str
+    body: str
+    created_at: str
+    author_display_name: Optional[str] = None
+    author_username: Optional[str] = None
+    author_avatar_url: Optional[str] = None
+
+
+class PostCommentRequest(BaseModel):
+    body: str
+
+
 # ── Admin / Duplicate Flags ───────────────────────────────────────────────────
 
 class CanonicalSummary(BaseModel):
