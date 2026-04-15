@@ -88,25 +88,21 @@ def get_feed(
     supabase = get_supabase()
 
     following = supabase.from_("follows").select("following_id").eq("follower_id", user_id).execute()
-    following_ids = [r["following_id"] for r in following.data or []]
-
-    if not following_ids:
-        logger.info("Social feed user=%s following=0 sessions=0", _short_id(user_id))
-        return []
+    following_ids = list({r["following_id"] for r in following.data or []} | {user_id})
 
     result = (
         supabase.from_("sessions")
         .select("*, profiles!sessions_user_id_fkey(display_name, username, avatar_url)")
         .in_("user_id", following_ids)
         .eq("is_published", True)
-        .in_("visibility", ["followers", "public"])
+        .or_(f"user_id.eq.{user_id},visibility.in.(followers,public)")
         .order("ended_at", desc=True)
         .range(offset, offset + limit - 1)
         .execute()
     )
     sessions = result.data or []
     logger.info(
-        "Social feed user=%s following=%d sessions=%d offset=%d limit=%d",
+        "Social feed user=%s pool=%d sessions=%d offset=%d limit=%d",
         _short_id(user_id),
         len(following_ids),
         len(sessions),
