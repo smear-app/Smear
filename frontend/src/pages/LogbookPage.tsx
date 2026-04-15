@@ -8,7 +8,8 @@ import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffo
 import LogbookClimbList from "../components/logbook/LogbookClimbList"
 import { useAuth } from "../context/AuthContext"
 import { useLogbookHistory } from "../hooks/useLogbookHistory"
-import { fetchLoggedGrades, fetchLoggedGyms, type LoggedGradeOption, type LoggedGymOption } from "../lib/climbs"
+import { type LoggedGradeOption, type LoggedGymOption } from "../lib/climbs"
+import { getClimbsMeta } from "../lib/api"
 import {
   DEFAULT_LOGBOOK_FILTERS,
   LOGBOOK_SORT_OPTIONS,
@@ -295,41 +296,21 @@ export default function LogbookPage({
 
     let cancelled = false
 
-    void fetchLoggedGyms(user.id)
-      .then((gyms) => {
+    void getClimbsMeta()
+      .then((meta) => {
         if (!cancelled) {
-          setLoggedGyms(gyms)
+          setLoggedGyms(meta.gyms)
+          setLoggedGrades(meta.grades)
           setGymLoadError(null)
         }
       })
       .catch((loadError) => {
         if (!cancelled) {
           setLoggedGyms([])
-          setGymLoadError(loadError instanceof Error ? loadError.message : "Failed to load gyms")
+          setLoggedGrades([])
+          setGymLoadError(loadError instanceof Error ? loadError.message : "Failed to load filters")
         }
       })
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshKey, user])
-
-  useEffect(() => {
-    if (!user) {
-      return
-    }
-
-    let cancelled = false
-
-    void fetchLoggedGrades(user.id).then((grades) => {
-      if (!cancelled) {
-        setLoggedGrades(grades)
-      }
-    }).catch(() => {
-      if (!cancelled) {
-        setLoggedGrades([])
-      }
-    })
 
     return () => {
       cancelled = true

@@ -180,7 +180,7 @@ class SessionObject(BaseModel):
     hardest_flash_value: Optional[int] = None
     top_tags: list[str] = []
     cover_photo_url: Optional[str] = None
-    created_at: str
+    created_at: Optional[str] = None
 
 
 class SessionCardObject(BaseModel):
@@ -202,7 +202,7 @@ class SessionCardObject(BaseModel):
     hardest_flash_value: Optional[int] = None
     top_tags: list[str] = []
     cover_photo_url: Optional[str] = None
-    created_at: str
+    created_at: Optional[str] = None
     # author
     author_display_name: Optional[str] = None
     author_username: Optional[str] = None
