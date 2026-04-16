@@ -1,6 +1,59 @@
-import { getStatsCard } from "../config/statsCards"
-import StatsDetailPlaceholderPage from "./StatsDetailPlaceholderPage"
+import { useMemo, useState } from "react"
+import BackButton from "../../../components/BackButton"
+import BottomNav from "../../../components/BottomNav"
+import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownList"
+import ArchetypeIdentityBlock from "../components/archetype/ArchetypeIdentityBlock"
+import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
+import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentControl"
+import ArchetypeStrengthsSection from "../components/archetype/ArchetypeStrengthsSection"
+import ArchetypeTrendCard from "../components/archetype/ArchetypeTrendCard"
+import ProgressionSurface from "../components/progression/ProgressionSurface"
+import { buildArchetypeViewModel, archetypeSegmentOptions } from "../domain/archetype/mockArchetypeData"
+import type { ArchetypeSegment } from "../domain/archetype/types"
 
 export default function ArchetypeStatsPage() {
-  return <StatsDetailPlaceholderPage card={getStatsCard("archetype")} />
+  const [selectedSegment, setSelectedSegment] = useState<ArchetypeSegment>("terrain")
+  const viewModel = useMemo(() => buildArchetypeViewModel(selectedSegment), [selectedSegment])
+
+  return (
+    <div className="app-safe-shell min-h-screen bg-stone-bg">
+      <main className="app-safe-shell__main mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
+        <div className="flex items-center gap-3">
+          <BackButton to="/stats" label="Back to Stats" ariaLabel="Back to Stats" size="sm" />
+          <h1 className="text-xl font-bold text-stone-text">Archetype</h1>
+        </div>
+
+        <div className="mt-4">
+          <ArchetypeSegmentControl
+            options={archetypeSegmentOptions}
+            value={selectedSegment}
+            onChange={setSelectedSegment}
+          />
+        </div>
+
+        <div className="mt-5">
+          <ProgressionSurface className="px-4 py-5">
+            <ArchetypeRadarChart axes={viewModel.radarAxes} />
+            <div className="mt-2">
+              <ArchetypeIdentityBlock label={viewModel.archetypeLabel} description={viewModel.description} />
+            </div>
+          </ProgressionSurface>
+        </div>
+
+        <div className="mt-4">
+          <ArchetypeStrengthsSection strengths={viewModel.strengths} growthAreas={viewModel.growthAreas} />
+        </div>
+
+        <div className="mt-4">
+          <ArchetypeBreakdownList items={viewModel.breakdown} />
+        </div>
+
+        <div className="mt-4">
+          <ArchetypeTrendCard items={viewModel.trends} />
+        </div>
+      </main>
+
+      <BottomNav />
+    </div>
+  )
 }
