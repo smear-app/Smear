@@ -1,0 +1,115 @@
+import type { ProgressionRange, ProgressionRangeOption, ProgressionViewModel } from "./types"
+
+export const progressionRangeOptions: ProgressionRangeOption[] = [
+  { value: "10-weeks", label: "10 Weeks" },
+  { value: "6-months", label: "6 Months" },
+  { value: "all-time", label: "All Time" },
+]
+
+export const progressionMockData: Record<ProgressionRange, ProgressionViewModel> = {
+  "10-weeks": {
+    insight: "Avg grade is trending upward while volume remains steady.",
+    chartPoints: [
+      { label: "Week 1", tickLabel: "Feb", climbs: 11, avgGrade: 4.1 },
+      { label: "Week 2", tickLabel: "", climbs: 13, avgGrade: 4.2 },
+      { label: "Week 3", tickLabel: "", climbs: 12, avgGrade: 4.3 },
+      { label: "Week 4", tickLabel: "", climbs: 15, avgGrade: 4.4 },
+      { label: "Week 5", tickLabel: "", climbs: 14, avgGrade: 4.5 },
+      { label: "Week 6", tickLabel: "Mar", climbs: 12, avgGrade: 4.6 },
+      { label: "Week 7", tickLabel: "", climbs: 13, avgGrade: 4.7 },
+      { label: "Week 8", tickLabel: "", climbs: 14, avgGrade: 4.9 },
+      { label: "Week 9", tickLabel: "Apr", climbs: 15, avgGrade: 5.0 },
+      { label: "Week 10", tickLabel: "", climbs: 13, avgGrade: 5.1 },
+    ],
+    metrics: [
+      { label: "Avg Grade Change", value: "+0.6 V", context: "vs early weeks" },
+      { label: "Highest Grade", value: "V7", context: "best send in range" },
+      { label: "Volume Change", value: "+18%", context: "total climbs logged" },
+      { label: "Consistency", value: "72%", context: "weeks with 2+ sessions" },
+    ],
+    milestones: [
+      {
+        title: "First V5 send",
+        detail: "You broke into V5 after three straight weeks of steady volume.",
+        periodLabel: "Week 4",
+      },
+      {
+        title: "Best session by volume",
+        detail: "Logged 9 climbs in one session without a dip in average grade.",
+        periodLabel: "Week 7",
+      },
+      {
+        title: "Highest average grade week",
+        detail: "Your strongest week balanced fewer attempts with better outcomes.",
+        periodLabel: "Week 10",
+      },
+    ],
+  },
+  "6-months": {
+    insight: "You’re climbing more and gradually pushing into higher grades.",
+    chartPoints: [
+      { label: "Nov", tickLabel: "Nov", climbs: 39, avgGrade: 3.9 },
+      { label: "Dec", tickLabel: "Dec", climbs: 42, avgGrade: 4.1 },
+      { label: "Jan", tickLabel: "Jan", climbs: 45, avgGrade: 4.2 },
+      { label: "Feb", tickLabel: "Feb", climbs: 47, avgGrade: 4.5 },
+      { label: "Mar", tickLabel: "Mar", climbs: 51, avgGrade: 4.7 },
+      { label: "Apr", tickLabel: "Apr", climbs: 49, avgGrade: 4.9 },
+    ],
+    metrics: [
+      { label: "Avg Grade Change", value: "+1.0 V", context: "since November" },
+      { label: "Highest Grade", value: "V7", context: "top send this spring" },
+      { label: "Volume Change", value: "+26%", context: "monthly climbs logged" },
+      { label: "Consistency", value: "78%", context: "weeks with climbing activity" },
+    ],
+    milestones: [
+      {
+        title: "First V6 flash",
+        detail: "A standout session that raised your ceiling without a spike in volume.",
+        periodLabel: "February",
+      },
+      {
+        title: "Most active month",
+        detail: "March paired your highest monthly volume with a stronger average grade.",
+        periodLabel: "March",
+      },
+      {
+        title: "Best sustained grade block",
+        detail: "The last six weeks held your average grade above V4.5.",
+        periodLabel: "April",
+      },
+    ],
+  },
+  "all-time": {
+    insight: "Your biggest jumps came when volume stayed healthy and average grade moved with it.",
+    chartPoints: [
+      { label: "2022", tickLabel: "2022", climbs: 118, avgGrade: 2.8 },
+      { label: "2023", tickLabel: "2023", climbs: 164, avgGrade: 3.4 },
+      { label: "2024", tickLabel: "2024", climbs: 201, avgGrade: 4.0 },
+      { label: "2025", tickLabel: "2025", climbs: 228, avgGrade: 4.6 },
+      { label: "2026", tickLabel: "2026", climbs: 96, avgGrade: 5.0 },
+    ],
+    metrics: [
+      { label: "Avg Grade Change", value: "+2.2 V", context: "since first logged year" },
+      { label: "Highest Grade", value: "V8", context: "all-time best send" },
+      { label: "Volume Change", value: "+93%", context: "annual climbs at peak" },
+      { label: "Consistency", value: "81%", context: "months with climbing logged" },
+    ],
+    milestones: [
+      {
+        title: "First V4 block",
+        detail: "The first sustained stretch where your average week hovered around V4.",
+        periodLabel: "2024",
+      },
+      {
+        title: "Breakthrough year",
+        detail: "The strongest combined jump in volume and average grade so far.",
+        periodLabel: "2025",
+      },
+      {
+        title: "Current peak trend",
+        detail: "This year is tracking toward the highest average grade yet.",
+        periodLabel: "2026",
+      },
+    ],
+  },
+}
