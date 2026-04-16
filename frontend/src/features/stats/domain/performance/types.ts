@@ -1,3 +1,10 @@
+export type PerformanceRange = "10-weeks" | "6-months" | "all-time"
+
+export type PerformanceRangeOption = {
+  value: PerformanceRange
+  label: string
+}
+
 export type PerformanceHero = {
   label: string
   value: number
@@ -23,8 +30,15 @@ export type PerformanceGradeBand = {
   sendRate: number
 }
 
+export type PerformancePyramidBand = {
+  label: string
+  count: number
+}
+
 export type PerformanceViewModel = {
+  periodLabel: string
   hero: PerformanceHero
+  pyramid: PerformancePyramidBand[]
   outcomes: PerformanceOutcomeItem[]
   metrics: PerformanceMetric[]
   gradeBands: PerformanceGradeBand[]

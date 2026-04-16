@@ -3,12 +3,14 @@ import ProgressionSurface from "../progression/ProgressionSurface"
 
 type PerformanceMetricGridProps = {
   metrics: PerformanceMetric[]
+  periodLabel: string
 }
 
-export default function PerformanceMetricGrid({ metrics }: PerformanceMetricGridProps) {
+export default function PerformanceMetricGrid({ metrics, periodLabel }: PerformanceMetricGridProps) {
   return (
     <ProgressionSurface>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Supporting metrics</p>
+      <p className="mt-1 text-sm leading-5 text-stone-secondary">Quick execution signals for the {periodLabel}.</p>
 
       <div className="mt-3 grid auto-rows-fr grid-cols-2 gap-2">
         {metrics.map((metric) => (

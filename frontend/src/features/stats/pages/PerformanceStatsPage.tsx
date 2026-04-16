@@ -1,13 +1,19 @@
+import { useMemo, useState } from "react"
 import BackButton from "../../../components/BackButton"
 import BottomNav from "../../../components/BottomNav"
+import GradePyramid from "../components/performance/GradePyramid"
 import GradeBandPerformance from "../components/performance/GradeBandPerformance"
 import OutcomeBreakdown from "../components/performance/OutcomeBreakdown"
-import PerformanceHero from "../components/performance/PerformanceHero"
 import PerformanceInsight from "../components/performance/PerformanceInsight"
 import PerformanceMetricGrid from "../components/performance/PerformanceMetricGrid"
-import { performanceMockData } from "../domain/performance/mockPerformanceData"
+import PerformanceRangeControl from "../components/performance/PerformanceRangeControl"
+import { performanceMockData, performanceRangeOptions } from "../domain/performance/mockPerformanceData"
+import type { PerformanceRange } from "../domain/performance/types"
 
 export default function PerformanceStatsPage() {
+  const [selectedRange, setSelectedRange] = useState<PerformanceRange>("10-weeks")
+  const performanceView = useMemo(() => performanceMockData[selectedRange], [selectedRange])
+
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
       <main className="app-safe-shell__main mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
@@ -16,24 +22,32 @@ export default function PerformanceStatsPage() {
           <h1 className="text-xl font-bold text-stone-text">Performance</h1>
         </div>
 
+        <div className="mt-4">
+          <PerformanceRangeControl
+            options={performanceRangeOptions}
+            value={selectedRange}
+            onChange={setSelectedRange}
+          />
+        </div>
+
         <div className="mt-5">
-          <PerformanceHero hero={performanceMockData.hero} />
+          <GradePyramid bands={performanceView.pyramid} periodLabel={performanceView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <OutcomeBreakdown items={performanceMockData.outcomes} />
+          <OutcomeBreakdown items={performanceView.outcomes} periodLabel={performanceView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <PerformanceMetricGrid metrics={performanceMockData.metrics} />
+          <PerformanceMetricGrid metrics={performanceView.metrics} periodLabel={performanceView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <GradeBandPerformance bands={performanceMockData.gradeBands} />
+          <GradeBandPerformance bands={performanceView.gradeBands} periodLabel={performanceView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <PerformanceInsight insight={performanceMockData.insight} />
+          <PerformanceInsight insight={performanceView.insight} />
         </div>
       </main>
 
