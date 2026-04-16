@@ -7,7 +7,7 @@ export default function ArchetypeIdentityBlock({ label, description }: Archetype
   return (
     <div className="text-center">
       <h2 className="text-[1.65rem] font-bold leading-tight text-stone-text">{label}</h2>
-      <p className="mt-2 text-sm leading-6 text-stone-secondary">{description}</p>
+      <p className="mt-1.5 text-[13px] leading-5 text-stone-muted">{description}</p>
     </div>
   )
 }

@@ -32,9 +32,9 @@ export default function ArchetypeStatsPage() {
         </div>
 
         <div className="mt-5">
-          <ProgressionSurface className="px-4 py-5">
+          <ProgressionSurface className="px-4 pb-4 pt-3">
             <ArchetypeRadarChart axes={viewModel.radarAxes} />
-            <div className="mt-2">
+            <div className="mt-0.5">
               <ArchetypeIdentityBlock label={viewModel.archetypeLabel} description={viewModel.description} />
             </div>
           </ProgressionSurface>

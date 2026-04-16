@@ -4,13 +4,16 @@ type ArchetypeRadarChartProps = {
   axes: ArchetypeAxisValue[]
 }
 
-const SIZE = 284
-const CENTER = SIZE / 2
-const MAX_RADIUS = 90
+const WIDTH = 320
+const HEIGHT = 286
+const CENTER_X = WIDTH / 2
+const CENTER_Y = 136
+const MAX_RADIUS = 106
+const LABEL_OFFSET = 14
 const RING_COUNT = 4
 const GRID_COLOR = "color-mix(in srgb, var(--stone-border) 84%, transparent)"
 const AXIS_COLOR = "color-mix(in srgb, var(--stone-border) 72%, transparent)"
-const LABEL_COLOR = "var(--stone-secondary)"
+const LABEL_COLOR = "var(--stone-text)"
 const FILL_COLOR = "color-mix(in srgb, var(--ember) 26%, transparent)"
 const STROKE_COLOR = "var(--ember)"
 const DOT_FILL = "color-mix(in srgb, var(--ember) 92%, white 8%)"
@@ -18,8 +21,8 @@ const DOT_STROKE = "var(--stone-surface)"
 
 function polarToCartesian(angleRadians: number, radius: number) {
   return {
-    x: CENTER + Math.cos(angleRadians) * radius,
-    y: CENTER + Math.sin(angleRadians) * radius,
+    x: CENTER_X + Math.cos(angleRadians) * radius,
+    y: CENTER_Y + Math.sin(angleRadians) * radius,
   }
 }
 
@@ -40,7 +43,7 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
     const radius = (axis.value / 100) * MAX_RADIUS
     const axisEnd = polarToCartesian(angle, MAX_RADIUS)
     const point = polarToCartesian(angle, radius)
-    const labelPosition = polarToCartesian(angle, MAX_RADIUS + 26)
+    const labelPosition = polarToCartesian(angle, MAX_RADIUS + LABEL_OFFSET)
 
     return {
       ...axis,
@@ -51,9 +54,9 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
   })
 
   return (
-    <div className="mx-auto w-full max-w-[320px]">
+    <div className="mx-auto w-full max-w-[348px]">
       <svg
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="h-auto w-full overflow-visible"
         role="img"
         aria-label="Archetype radar chart"
@@ -78,8 +81,8 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
         {plottedPoints.map((axis) => (
           <line
             key={`${axis.label}-axis`}
-            x1={CENTER}
-            y1={CENTER}
+            x1={CENTER_X}
+            y1={CENTER_Y}
             x2={axis.axisEnd.x}
             y2={axis.axisEnd.y}
             stroke={AXIS_COLOR}
@@ -107,11 +110,11 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
             x={axis.labelPosition.x}
             y={axis.labelPosition.y}
             textAnchor={
-              axis.labelPosition.x < CENTER - 8 ? "end" : axis.labelPosition.x > CENTER + 8 ? "start" : "middle"
+              axis.labelPosition.x < CENTER_X - 8 ? "end" : axis.labelPosition.x > CENTER_X + 8 ? "start" : "middle"
             }
             dominantBaseline="middle"
             fill={LABEL_COLOR}
-            className="text-[11px] font-medium"
+            className="text-[12px] font-semibold"
           >
             {axis.label}
           </text>
