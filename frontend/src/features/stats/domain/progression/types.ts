@@ -10,7 +10,7 @@ export type ProgressionChartPoint = {
 export type ProgressionMetric = {
   label: string
   value: string
-  context: string
+  description: string
 }
 
 export type ProgressionMilestone = {

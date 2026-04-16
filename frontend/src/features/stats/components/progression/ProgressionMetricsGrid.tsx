@@ -12,17 +12,30 @@ export default function ProgressionMetricsGrid({ metrics }: ProgressionMetricsGr
         Supporting metrics
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
+      <div className="mt-3 grid auto-rows-fr grid-cols-2 gap-2">
         {metrics.map((metric) => (
           <article
             key={metric.label}
-            className="rounded-[22px] bg-stone-bg px-4 py-3 dark:bg-stone-alt"
+            className="grid h-full min-h-[94px] grid-rows-[auto_auto_minmax(2rem,auto)] rounded-[20px] bg-stone-bg px-3.5 py-2.5 dark:bg-stone-alt"
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-muted">
               {metric.label}
             </p>
-            <p className="mt-2 text-lg font-semibold text-stone-text">{metric.value}</p>
-            <p className="mt-1 text-xs leading-5 text-stone-secondary">{metric.context}</p>
+            <p className="mt-1.5 self-start text-[1.125rem] font-semibold leading-none text-stone-text">
+              {metric.value}
+            </p>
+            <p
+              className="mt-1 text-[11px] leading-4 text-stone-secondary"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {metric.description}
+            </p>
           </article>
         ))}
       </div>

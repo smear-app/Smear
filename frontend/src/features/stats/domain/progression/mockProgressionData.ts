@@ -22,10 +22,10 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Week 10", tickLabel: "", climbs: 13, avgGrade: 5.1 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+0.6 V", context: "vs early weeks" },
-      { label: "Highest Grade", value: "V7", context: "best send in range" },
-      { label: "Volume Change", value: "+18%", context: "total climbs logged" },
-      { label: "Consistency", value: "72%", context: "weeks with 2+ sessions" },
+      { label: "Avg Grade Change", value: "+0.6 V", description: "over last 10 weeks" },
+      { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
+      { label: "Consistency", value: "3.2 / week", description: "avg sessions per week" },
+      { label: "Highest Grade", value: "V6", description: "highest this period" },
     ],
     milestones: [
       {
@@ -56,10 +56,10 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Apr", tickLabel: "Apr", climbs: 49, avgGrade: 4.9 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+1.0 V", context: "since November" },
-      { label: "Highest Grade", value: "V7", context: "top send this spring" },
-      { label: "Volume Change", value: "+26%", context: "monthly climbs logged" },
-      { label: "Consistency", value: "78%", context: "weeks with climbing activity" },
+      { label: "Avg Grade Change", value: "+1.0 V", description: "over last 6 months" },
+      { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
+      { label: "Consistency", value: "3.0 / week", description: "avg sessions per week" },
+      { label: "Highest Grade", value: "V7", description: "highest this period" },
     ],
     milestones: [
       {
@@ -89,10 +89,10 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "2026", tickLabel: "2026", climbs: 96, avgGrade: 5.0 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+2.2 V", context: "since first logged year" },
-      { label: "Highest Grade", value: "V8", context: "all-time best send" },
-      { label: "Volume Change", value: "+93%", context: "annual climbs at peak" },
-      { label: "Consistency", value: "81%", context: "months with climbing logged" },
+      { label: "Avg Grade Change", value: "+2.2 V", description: "over tracked history" },
+      { label: "Working Grade", value: "V3-V5", description: "most climbed range" },
+      { label: "Consistency", value: "2.8 / week", description: "avg sessions per week" },
+      { label: "Highest Grade", value: "V8", description: "highest this period" },
     ],
     milestones: [
       {
