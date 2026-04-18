@@ -1,7 +1,8 @@
-import type { ArchetypeAxisValue } from "../../domain/archetype/types"
+import type { ArchetypePerformanceScale, ArchetypeRadarAxis } from "../../domain/archetype/types"
 
 type ArchetypeRadarChartProps = {
-  axes: ArchetypeAxisValue[]
+  axes: ArchetypeRadarAxis[]
+  performanceScale: ArchetypePerformanceScale
 }
 
 const WIDTH = 320
@@ -14,10 +15,29 @@ const RING_COUNT = 4
 const GRID_COLOR = "color-mix(in srgb, var(--stone-border) 84%, transparent)"
 const AXIS_COLOR = "color-mix(in srgb, var(--stone-border) 72%, transparent)"
 const LABEL_COLOR = "var(--stone-text)"
-const FILL_COLOR = "color-mix(in srgb, var(--ember) 26%, transparent)"
-const STROKE_COLOR = "var(--ember)"
-const DOT_FILL = "color-mix(in srgb, var(--ember) 92%, white 8%)"
+const SCALE_LABEL_COLOR = "var(--stone-muted)"
+const PERFORMANCE_SCALE_COLOR = "color-mix(in srgb, var(--ember) 76%, var(--stone-text) 24%)"
+const LABEL_HALO = "var(--stone-surface)"
+const PERFORMANCE_FILL = "color-mix(in srgb, var(--ember) 26%, transparent)"
+const PERFORMANCE_STROKE = "var(--ember)"
+const PERFORMANCE_DOT_FILL = "color-mix(in srgb, var(--ember) 92%, white 8%)"
+const VOLUME_STROKE = "color-mix(in srgb, var(--stone-secondary) 78%, var(--stone-border) 22%)"
+const VOLUME_FILL = "var(--stone-secondary)"
 const DOT_STROKE = "var(--stone-surface)"
+const SCALE_LEVELS = Array.from({ length: RING_COUNT }, (_, index) => ((index + 1) / RING_COUNT) * 100)
+const SHARED_SCALE_X = CENTER_X - 8
+const PERFORMANCE_SCALE_X = CENTER_X + 8
+
+function textHaloProps(fill: string) {
+  return {
+    fill,
+    stroke: LABEL_HALO,
+    strokeWidth: 3.25,
+    paintOrder: "stroke fill" as const,
+    strokeLinejoin: "round" as const,
+    strokeLinecap: "round" as const,
+  }
+}
 
 function polarToCartesian(angleRadians: number, radius: number) {
   return {
@@ -34,21 +54,22 @@ function toPolygonPath(points: Array<{ x: number; y: number }>) {
   return `${points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ")} Z`
 }
 
-export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) {
+export default function ArchetypeRadarChart({ axes, performanceScale }: ArchetypeRadarChartProps) {
   const angleStep = (Math.PI * 2) / axes.length
   const startAngle = -Math.PI / 2
   const ringLevels = Array.from({ length: RING_COUNT }, (_, index) => (index + 1) / RING_COUNT)
   const plottedPoints = axes.map((axis, index) => {
     const angle = startAngle + angleStep * index
-    const radius = (axis.value / 100) * MAX_RADIUS
     const axisEnd = polarToCartesian(angle, MAX_RADIUS)
-    const point = polarToCartesian(angle, radius)
+    const performancePoint = polarToCartesian(angle, (axis.performance / 100) * MAX_RADIUS)
+    const volumePoint = polarToCartesian(angle, (axis.volume / 100) * MAX_RADIUS)
     const labelPosition = polarToCartesian(angle, MAX_RADIUS + LABEL_OFFSET)
 
     return {
       ...axis,
       axisEnd,
-      point,
+      performancePoint,
+      volumePoint,
       labelPosition,
     }
   })
@@ -73,7 +94,7 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
               d={toPolygonPath(points)}
               fill="none"
               stroke={GRID_COLOR}
-              strokeWidth={level === ringLevels.length ? 1.25 : 1}
+              strokeWidth={level === ringLevels.length ? 1.35 : level >= 0.75 ? 1.1 : 1}
             />
           )
         })}
@@ -90,19 +111,85 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
           />
         ))}
 
-        <path d={toPolygonPath(plottedPoints.map((axis) => axis.point))} fill={FILL_COLOR} stroke={STROKE_COLOR} strokeWidth="2.5" />
+        <path
+          d={toPolygonPath(plottedPoints.map((axis) => axis.volumePoint))}
+          fill={VOLUME_FILL}
+          fillOpacity="0.08"
+          stroke="none"
+        />
+
+        <path
+          d={toPolygonPath(plottedPoints.map((axis) => axis.volumePoint))}
+          fill="none"
+          stroke={VOLUME_STROKE}
+          strokeWidth="1.75"
+          strokeLinejoin="round"
+        />
+
+        <path
+          d={toPolygonPath(plottedPoints.map((axis) => axis.performancePoint))}
+          fill={PERFORMANCE_FILL}
+          stroke="none"
+        />
+
+        <path
+          d={toPolygonPath(plottedPoints.map((axis) => axis.performancePoint))}
+          fill="none"
+          stroke={PERFORMANCE_STROKE}
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
 
         {plottedPoints.map((axis) => (
           <circle
             key={`${axis.label}-point`}
-            cx={axis.point.x}
-            cy={axis.point.y}
+            cx={axis.performancePoint.x}
+            cy={axis.performancePoint.y}
             r="4.5"
-            fill={DOT_FILL}
+            fill={PERFORMANCE_DOT_FILL}
             stroke={DOT_STROKE}
             strokeWidth="2"
           />
         ))}
+
+        <g aria-hidden="true" pointerEvents="none">
+          {SCALE_LEVELS.map((scaleValue) => {
+            const radius = (scaleValue / 100) * MAX_RADIUS
+            const position = polarToCartesian(startAngle, radius)
+
+            return (
+              <text
+                key={`shared-scale-${scaleValue}`}
+                x={SHARED_SCALE_X}
+                y={position.y}
+                textAnchor="end"
+                dominantBaseline="middle"
+                className="text-[9.5px] font-semibold"
+                {...textHaloProps(SCALE_LABEL_COLOR)}
+              >
+                {scaleValue}
+              </text>
+            )
+          })}
+
+          {performanceScale.ticks.map((tick) => {
+            const position = polarToCartesian(startAngle, (tick.level / 100) * MAX_RADIUS)
+
+            return (
+              <text
+                key={`performance-scale-${tick.level}`}
+                x={PERFORMANCE_SCALE_X}
+                y={position.y}
+                textAnchor="start"
+                dominantBaseline="middle"
+                className="text-[9.5px] font-semibold"
+                {...textHaloProps(PERFORMANCE_SCALE_COLOR)}
+              >
+                {tick.label}
+              </text>
+            )
+          })}
+        </g>
 
         {plottedPoints.map((axis) => (
           <text

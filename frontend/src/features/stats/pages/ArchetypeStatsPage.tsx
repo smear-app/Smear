@@ -3,6 +3,7 @@ import BackButton from "../../../components/BackButton"
 import BottomNav from "../../../components/BottomNav"
 import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownList"
 import ArchetypeIdentityBlock from "../components/archetype/ArchetypeIdentityBlock"
+import ArchetypeRadarLegend from "../components/archetype/ArchetypeRadarLegend"
 import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
 import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentControl"
 import ArchetypeStrengthsSection from "../components/archetype/ArchetypeStrengthsSection"
@@ -32,8 +33,11 @@ export default function ArchetypeStatsPage() {
         </div>
 
         <div className="mt-5">
-          <ProgressionSurface className="px-4 pb-4 pt-3">
-            <ArchetypeRadarChart axes={viewModel.radarAxes} />
+          <ProgressionSurface className="relative px-4 pb-4 pt-3">
+            <div className="pointer-events-none absolute right-4 top-3 z-10">
+              <ArchetypeRadarLegend />
+            </div>
+            <ArchetypeRadarChart axes={viewModel.radarAxes} performanceScale={viewModel.performanceScale} />
             <div className="mt-0.5">
               <ArchetypeIdentityBlock label={viewModel.archetypeLabel} description={viewModel.description} />
             </div>
