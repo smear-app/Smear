@@ -1,5 +1,10 @@
 import type {
+  ArchetypeCategoryOutcomeBreakdownItem,
+  ArchetypeCategoryOutcomeCounts,
   ArchetypeFacetBreakdownItem,
+  ArchetypeOutcomeCount,
+  ArchetypeOutcomeBreakdownSegment,
+  ArchetypeOutcomeTone,
   ArchetypeSegment,
   ArchetypeSegmentModel,
   ArchetypeSegmentOption,
@@ -30,6 +35,40 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
       { label: "Overhang", performance: 82, volume: 74 },
       { label: "Cave", performance: 67, volume: 58 },
     ],
+    categoryOutcomes: [
+      {
+        label: "Slab",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 5 },
+          { tone: "attempted", count: 5 },
+        ],
+      },
+      {
+        label: "Vertical",
+        outcomes: [
+          { tone: "flash", count: 3 },
+          { tone: "send", count: 6 },
+          { tone: "attempted", count: 4 },
+        ],
+      },
+      {
+        label: "Overhang",
+        outcomes: [
+          { tone: "flash", count: 4 },
+          { tone: "send", count: 5 },
+          { tone: "attempted", count: 3 },
+        ],
+      },
+      {
+        label: "Cave",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 2 },
+          { tone: "attempted", count: 3 },
+        ],
+      },
+    ],
     trends: [
       { label: "More overhang", change: "+12%" },
       { label: "Less slab", change: "-8%" },
@@ -52,6 +91,48 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
       { label: "Coordination", performance: 72, volume: 61 },
       { label: "Balance", performance: 44, volume: 39 },
       { label: "Power", performance: 68, volume: 63 },
+    ],
+    categoryOutcomes: [
+      {
+        label: "Static",
+        outcomes: [
+          { tone: "flash", count: 1 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 5 },
+        ],
+      },
+      {
+        label: "Dynamic",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 5 },
+          { tone: "attempted", count: 2 },
+        ],
+      },
+      {
+        label: "Coordination",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 2 },
+        ],
+      },
+      {
+        label: "Balance",
+        outcomes: [
+          { tone: "flash", count: 1 },
+          { tone: "send", count: 2 },
+          { tone: "attempted", count: 3 },
+        ],
+      },
+      {
+        label: "Power",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 1 },
+        ],
+      },
     ],
     trends: [
       { label: "More dynamic", change: "+12%" },
@@ -77,6 +158,56 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
       { label: "Jug", performance: 58, volume: 51 },
       { label: "Volume", performance: 41, volume: 46 },
     ],
+    categoryOutcomes: [
+      {
+        label: "Crimp",
+        outcomes: [
+          { tone: "flash", count: 4 },
+          { tone: "send", count: 5 },
+          { tone: "attempted", count: 2 },
+        ],
+      },
+      {
+        label: "Sloper",
+        outcomes: [
+          { tone: "flash", count: 1 },
+          { tone: "send", count: 3 },
+          { tone: "attempted", count: 4 },
+        ],
+      },
+      {
+        label: "Pinch",
+        outcomes: [
+          { tone: "flash", count: 3 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 1 },
+        ],
+      },
+      {
+        label: "Pocket",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 3 },
+          { tone: "attempted", count: 1 },
+        ],
+      },
+      {
+        label: "Jug",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 1 },
+        ],
+      },
+      {
+        label: "Volume",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 2 },
+          { tone: "attempted", count: 1 },
+        ],
+      },
+    ],
     trends: [
       { label: "More pinch", change: "+9%" },
       { label: "Less sloper", change: "-7%" },
@@ -92,6 +223,74 @@ function toBreakdownItem(label: string, value: number): ArchetypeFacetBreakdownI
   }
 }
 
+const OUTCOME_LABELS: Record<ArchetypeOutcomeTone, string> = {
+  flash: "Flash",
+  send: "Send",
+  attempted: "Attempted",
+}
+
+const OUTCOME_ORDER: ArchetypeOutcomeTone[] = ["flash", "send", "attempted"]
+
+function toRoundedPercentages(counts: number[]) {
+  const total = counts.reduce((sum, count) => sum + count, 0)
+
+  if (total === 0) {
+    return counts.map(() => 0)
+  }
+
+  const rawPercentages = counts.map((count) => (count / total) * 100)
+  const roundedDown = rawPercentages.map((percentage) => Math.floor(percentage))
+  let remaining = 100 - roundedDown.reduce((sum, percentage) => sum + percentage, 0)
+
+  const byRemainder = rawPercentages
+    .map((percentage, index) => ({
+      index,
+      remainder: percentage - roundedDown[index],
+    }))
+    .sort((left, right) => right.remainder - left.remainder)
+
+  for (let index = 0; index < byRemainder.length && remaining > 0; index += 1) {
+    roundedDown[byRemainder[index].index] += 1
+    remaining -= 1
+  }
+
+  return roundedDown
+}
+
+function toOutcomeBreakdownSegments(outcomeCounts: ArchetypeOutcomeCount[]): ArchetypeOutcomeBreakdownSegment[] {
+  const countsByTone = new Map(outcomeCounts.map((item) => [item.tone, item.count]))
+  const orderedCounts = OUTCOME_ORDER.map((tone) => ({
+    tone,
+    count: countsByTone.get(tone) ?? 0,
+  }))
+  const percentages = toRoundedPercentages(orderedCounts.map((item) => item.count))
+
+  return orderedCounts.map((item, index) => ({
+    tone: item.tone,
+    label: OUTCOME_LABELS[item.tone],
+    count: item.count,
+    percentage: percentages[index],
+    percentageLabel: `${percentages[index]}%`,
+  }))
+}
+
+function toCategoryOutcomeBreakdownItems(
+  axisLabels: string[],
+  categoryOutcomes: ArchetypeCategoryOutcomeCounts[],
+): ArchetypeCategoryOutcomeBreakdownItem[] {
+  const outcomesByLabel = new Map(categoryOutcomes.map((item) => [item.label, item.outcomes]))
+
+  return axisLabels.map((label) => {
+    const outcomes = toOutcomeBreakdownSegments(outcomesByLabel.get(label) ?? [])
+
+    return {
+      label,
+      totalCount: outcomes.reduce((sum, outcome) => sum + outcome.count, 0),
+      outcomes,
+    }
+  })
+}
+
 export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeViewModel {
   const model = archetypeSegmentData[segment]
   const sorted = [...model.axes].sort((left, right) => right.performance - left.performance)
@@ -101,9 +300,12 @@ export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeVie
     description: model.description,
     radarAxes: model.axes,
     performanceScale: model.performanceScale,
+    breakdown: toCategoryOutcomeBreakdownItems(
+      model.axes.map((axis) => axis.label),
+      model.categoryOutcomes,
+    ),
     strengths: sorted.slice(0, 3).map((item) => toBreakdownItem(item.label, item.performance)),
     growthAreas: sorted.slice(-2).reverse().map((item) => toBreakdownItem(item.label, item.performance)),
-    breakdown: model.axes.map((item) => toBreakdownItem(item.label, item.performance)),
     trends: model.trends,
   }
 }

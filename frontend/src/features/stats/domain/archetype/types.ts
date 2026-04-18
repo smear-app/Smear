@@ -15,6 +15,32 @@ export type ArchetypePerformanceScale = {
   ticks: ArchetypePerformanceScaleTick[]
 }
 
+export type ArchetypeOutcomeTone = "flash" | "send" | "attempted"
+
+export type ArchetypeOutcomeCount = {
+  tone: ArchetypeOutcomeTone
+  count: number
+}
+
+export type ArchetypeOutcomeBreakdownSegment = {
+  tone: ArchetypeOutcomeTone
+  label: string
+  count: number
+  percentage: number
+  percentageLabel: string
+}
+
+export type ArchetypeCategoryOutcomeCounts = {
+  label: string
+  outcomes: ArchetypeOutcomeCount[]
+}
+
+export type ArchetypeCategoryOutcomeBreakdownItem = {
+  label: string
+  totalCount: number
+  outcomes: ArchetypeOutcomeBreakdownSegment[]
+}
+
 export type ArchetypeTrendItem = {
   label: string
   change: string
@@ -30,6 +56,7 @@ export type ArchetypeSegmentModel = {
   description: string
   axes: ArchetypeRadarAxis[]
   performanceScale: ArchetypePerformanceScale
+  categoryOutcomes: ArchetypeCategoryOutcomeCounts[]
   trends: ArchetypeTrendItem[]
 }
 
@@ -44,8 +71,8 @@ export type ArchetypeViewModel = {
   description: string
   radarAxes: ArchetypeRadarAxis[]
   performanceScale: ArchetypePerformanceScale
+  breakdown: ArchetypeCategoryOutcomeBreakdownItem[]
   strengths: ArchetypeFacetBreakdownItem[]
   growthAreas: ArchetypeFacetBreakdownItem[]
-  breakdown: ArchetypeFacetBreakdownItem[]
   trends: ArchetypeTrendItem[]
 }
