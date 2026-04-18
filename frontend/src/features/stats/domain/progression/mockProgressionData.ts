@@ -31,17 +31,17 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       {
         title: "First V5 send",
         detail: "You broke into V5 after three straight weeks of steady volume.",
-        periodLabel: "Week 4",
+        occurredAt: "2026-02-28T12:00:00Z",
       },
       {
         title: "Best session by volume",
         detail: "Logged 9 climbs in one session without a dip in average grade.",
-        periodLabel: "Week 7",
+        occurredAt: "2026-03-22T12:00:00Z",
       },
       {
         title: "Highest average grade week",
         detail: "Your strongest week balanced fewer attempts with better outcomes.",
-        periodLabel: "Week 10",
+        occurredAt: "2026-04-12T12:00:00Z",
       },
     ],
   },
@@ -65,17 +65,17 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       {
         title: "First V6 flash",
         detail: "A standout session that raised your ceiling without a spike in volume.",
-        periodLabel: "February",
+        occurredAt: "2026-02-03T12:00:00Z",
       },
       {
         title: "Most active month",
         detail: "March paired your highest monthly volume with a stronger average grade.",
-        periodLabel: "March",
+        occurredAt: "2026-03-13T12:00:00Z",
       },
       {
         title: "Best sustained grade block",
         detail: "The last six weeks held your average grade above V4.5.",
-        periodLabel: "April",
+        occurredAt: "2026-04-16T12:00:00Z",
       },
     ],
   },
@@ -98,17 +98,17 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       {
         title: "First V4 block",
         detail: "The first sustained stretch where your average week hovered around V4.",
-        periodLabel: "2024",
+        occurredAt: "2025-05-20T12:00:00Z",
       },
       {
         title: "Breakthrough year",
         detail: "The strongest combined jump in volume and average grade so far.",
-        periodLabel: "2025",
+        occurredAt: "2025-10-03T12:00:00Z",
       },
       {
         title: "Current peak trend",
         detail: "This year is tracking toward the highest average grade yet.",
-        periodLabel: "2026",
+        occurredAt: "2026-03-29T12:00:00Z",
       },
     ],
   },

@@ -1,4 +1,5 @@
 import type { ProgressionMilestone } from "../../domain/progression/types"
+import { formatRelativeTime } from "../../../../lib/relativeTime"
 import ProgressionSurface from "./ProgressionSurface"
 
 type ProgressionMilestonesListProps = {
@@ -20,7 +21,7 @@ export default function ProgressionMilestonesList({ milestones }: ProgressionMil
       <div className="mt-4 space-y-0">
         {milestones.map((milestone, index) => (
           <article
-            key={`${milestone.periodLabel}-${milestone.title}`}
+            key={`${milestone.occurredAt}-${milestone.title}`}
             className={`relative pl-8 ${index > 0 ? "border-t border-stone-border/80 pt-4 dark:border-white/[0.06]" : ""} ${
               index < milestones.length - 1 ? "pb-4" : ""
             }`}
@@ -36,7 +37,7 @@ export default function ProgressionMilestonesList({ milestones }: ProgressionMil
               </div>
 
               <span className="shrink-0 rounded-full bg-stone-bg px-2.5 py-1 text-[11px] font-semibold text-stone-secondary dark:bg-stone-alt">
-                {milestone.periodLabel}
+                <span className="whitespace-nowrap">{formatRelativeTime(milestone.occurredAt)}</span>
               </span>
             </div>
           </article>

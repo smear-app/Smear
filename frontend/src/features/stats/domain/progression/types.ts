@@ -16,7 +16,7 @@ export type ProgressionMetric = {
 export type ProgressionMilestone = {
   title: string
   detail: string
-  periodLabel: string
+  occurredAt: string
 }
 
 export type ProgressionRangeOption = {
