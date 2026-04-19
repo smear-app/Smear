@@ -22,7 +22,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Week 10", tickLabel: "", climbs: 13, avgGrade: 5.1 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+0.6 V", description: "over last 10 weeks" },
+      { label: "Working Grade Change", value: "+0.6 V", description: "over last 10 weeks" },
       { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
       { label: "Consistency", value: "3.2 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V6", description: "highest this period" },
@@ -42,7 +42,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       },
       {
         id: "10w-highest-average-grade-week",
-        title: "Highest average grade week",
+        title: "Highest working grade week",
         achievedAt: "2026-04-12T12:00:00Z",
         metadata: { averageGrade: 5.1 },
       },
@@ -71,7 +71,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Apr", tickLabel: "Apr", climbs: 49, avgGrade: 4.9 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+1.0 V", description: "over last 6 months" },
+      { label: "Working Grade Change", value: "+1.0 V", description: "over last 6 months" },
       { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
       { label: "Consistency", value: "3.0 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V7", description: "highest this period" },
@@ -110,7 +110,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
     ],
   },
   "all-time": {
-    insight: "Your biggest jumps came when volume stayed healthy and average grade moved with it.",
+    insight: "Your biggest jumps came when volume stayed healthy and working grade moved with it.",
     chartPoints: [
       { label: "2022", tickLabel: "2022", climbs: 118, avgGrade: 2.8 },
       { label: "2023", tickLabel: "2023", climbs: 164, avgGrade: 3.4 },
@@ -119,7 +119,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "2026", tickLabel: "2026", climbs: 96, avgGrade: 5.0 },
     ],
     metrics: [
-      { label: "Avg Grade Change", value: "+2.2 V", description: "over tracked history" },
+      { label: "Working Grade Change", value: "+2.2 V", description: "over tracked history" },
       { label: "Working Grade", value: "V3-V5", description: "most climbed range" },
       { label: "Consistency", value: "2.8 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V8", description: "highest this period" },

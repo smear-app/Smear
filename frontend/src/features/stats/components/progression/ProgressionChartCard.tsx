@@ -100,7 +100,7 @@ export default function ProgressionChartCard({
     <ProgressionSurface>
       <div className="flex items-center justify-between gap-4">
         <AxisLegendLabel label="Climbs" color={BAR_FILL} align="left" />
-        <AxisLegendLabel label="Avg V-Grade" color={LINE_COLOR} align="right" />
+        <AxisLegendLabel label="Working Grade" color={LINE_COLOR} align="right" />
       </div>
 
       <div className="mt-3">
@@ -108,7 +108,7 @@ export default function ProgressionChartCard({
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className="h-auto w-full overflow-visible"
           role="img"
-          aria-label="Progression chart showing climbs as bars and average grade as a line"
+          aria-label="Progression chart showing climbs as bars and working grade as a line"
         >
           {minorGridLines.map((line) => (
             <line

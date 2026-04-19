@@ -76,7 +76,7 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
     <ProgressionSurface>
       <div className="flex items-center justify-between gap-4">
         <AxisLegend label="Climbs" color={BAR_FILL} align="left" />
-        <AxisLegend label="Avg V-Grade" color={LINE_COLOR} align="right" />
+        <AxisLegend label="Working Grade" color={LINE_COLOR} align="right" />
       </div>
 
       <div className="mt-3">
@@ -84,7 +84,7 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className="h-auto w-full overflow-visible"
           role="img"
-          aria-label="Session trends chart showing climbs and average grade by session"
+          aria-label="Session trends chart showing climbs and working grade by session"
         >
           {minorLines.map((line) => (
             <line

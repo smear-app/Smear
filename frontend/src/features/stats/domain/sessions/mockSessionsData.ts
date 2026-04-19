@@ -10,9 +10,9 @@ export const sessionsMockData: SessionsViewModel = {
   ],
   trendMetrics: [
     { label: "Avg Climbs / Session", value: "14", description: "across recent sessions" },
-    { label: "Avg Session Grade", value: "V4.6", description: "average session intensity" },
+    { label: "Working Grade", value: "V4.6", description: "working session intensity" },
     { label: "Best Session Volume", value: "22 climbs", description: "most climbs in one session" },
-    { label: "Best Session Grade", value: "V6 avg", description: "strongest session average" },
+    { label: "Best Session Grade", value: "V6 working", description: "strongest session working grade" },
   ],
   sessions: [
     {
@@ -21,7 +21,7 @@ export const sessionsMockData: SessionsViewModel = {
       selectorMeta: "Latest session",
       summary: [
         { label: "Total Climbs", value: "18" },
-        { label: "Avg Grade", value: "V4.8" },
+        { label: "Working Grade", value: "V4.8" },
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 45m" },
       ],
@@ -45,7 +45,7 @@ export const sessionsMockData: SessionsViewModel = {
       selectorMeta: "Previous session",
       summary: [
         { label: "Total Climbs", value: "14" },
-        { label: "Avg Grade", value: "V4.6" },
+        { label: "Working Grade", value: "V4.6" },
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 32m" },
       ],
@@ -69,7 +69,7 @@ export const sessionsMockData: SessionsViewModel = {
       selectorMeta: "Mid-March session",
       summary: [
         { label: "Total Climbs", value: "18" },
-        { label: "Avg Grade", value: "V4.8" },
+        { label: "Working Grade", value: "V4.8" },
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 58m" },
       ],
@@ -85,7 +85,7 @@ export const sessionsMockData: SessionsViewModel = {
         { label: "V5", count: 6 },
         { label: "V6", count: 2 },
       ],
-      insight: "High-volume session with a lower average grade than usual early, then stronger conversion once you settled into V5s.",
+      insight: "High-volume session with a lower working grade than usual early, then stronger conversion once you settled into V5s.",
     },
   ],
 }

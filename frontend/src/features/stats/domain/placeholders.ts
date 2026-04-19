@@ -3,7 +3,7 @@ import type { StatsAreaId, StatsAreaPlaceholder } from "./types"
 export const statsPreviewPlaceholders: Record<StatsAreaId, StatsAreaPlaceholder> = {
   progression: {
     descriptor: "Trending up",
-    primaryMetric: "+0.6 avg grade",
+    primaryMetric: "+0.6 working grade",
     secondaryText: "over the last 8 weeks",
   },
   archetype: {
