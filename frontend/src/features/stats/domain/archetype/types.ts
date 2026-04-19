@@ -51,11 +51,6 @@ export type ArchetypeCategoryOutcomeBreakdownItem = {
   outcomes: ArchetypeOutcomeBreakdownSegment[]
 }
 
-export type ArchetypeTrendItem = {
-  label: string
-  change: string
-}
-
 export type ArchetypeSegmentOption = {
   value: ArchetypeSegment
   label: string
@@ -67,13 +62,6 @@ export type ArchetypeSegmentModel = {
   axes: ArchetypeRadarAxisMetrics[]
   performanceScale: ArchetypePerformanceScale
   categoryOutcomes: ArchetypeCategoryOutcomeCounts[]
-  trends: ArchetypeTrendItem[]
-}
-
-export type ArchetypeFacetBreakdownItem = {
-  label: string
-  value: number
-  percentageLabel: string
 }
 
 export type ArchetypeViewModel = {
@@ -82,7 +70,4 @@ export type ArchetypeViewModel = {
   radarAxes: ArchetypeRadarAxis[]
   performanceScale: ArchetypePerformanceScale
   breakdown: ArchetypeCategoryOutcomeBreakdownItem[]
-  strengths: ArchetypeFacetBreakdownItem[]
-  growthAreas: ArchetypeFacetBreakdownItem[]
-  trends: ArchetypeTrendItem[]
 }

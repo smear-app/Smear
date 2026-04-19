@@ -1,7 +1,6 @@
 import type {
   ArchetypeCategoryOutcomeBreakdownItem,
   ArchetypeCategoryOutcomeCounts,
-  ArchetypeFacetBreakdownItem,
   ArchetypeOutcomeCount,
   ArchetypeOutcomeBreakdownSegment,
   ArchetypeOutcomeTone,
@@ -73,10 +72,6 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
         ],
       },
     ],
-    trends: [
-      { label: "More overhang", change: "+12%" },
-      { label: "Less slab", change: "-8%" },
-    ],
   },
   movement: {
     archetypeLabel: "Dynamic / Coordination",
@@ -137,10 +132,6 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
           { tone: "attempted", count: 1 },
         ],
       },
-    ],
-    trends: [
-      { label: "More dynamic", change: "+12%" },
-      { label: "More power", change: "+6%" },
     ],
   },
   holds: {
@@ -212,19 +203,7 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
         ],
       },
     ],
-    trends: [
-      { label: "More pinch", change: "+9%" },
-      { label: "Less sloper", change: "-7%" },
-    ],
   },
-}
-
-function toBreakdownItem(label: string, value: number): ArchetypeFacetBreakdownItem {
-  return {
-    label,
-    value,
-    percentageLabel: `${value}%`,
-  }
 }
 
 const OUTCOME_LABELS: Record<ArchetypeOutcomeTone, string> = {
@@ -377,7 +356,6 @@ function toRadarAxes(model: ArchetypeSegmentModel): ArchetypeRadarAxis[] {
 
 export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeViewModel {
   const model = archetypeSegmentData[segment]
-  const sorted = [...model.axes].sort((left, right) => right.performance - left.performance)
   const radarAxes = toRadarAxes(model)
 
   return {
@@ -389,8 +367,5 @@ export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeVie
       model.axes.map((axis) => axis.label),
       model.categoryOutcomes,
     ),
-    strengths: sorted.slice(0, 3).map((item) => toBreakdownItem(item.label, item.performance)),
-    growthAreas: sorted.slice(-2).reverse().map((item) => toBreakdownItem(item.label, item.performance)),
-    trends: model.trends,
   }
 }

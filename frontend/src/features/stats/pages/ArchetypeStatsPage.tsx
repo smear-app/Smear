@@ -49,7 +49,7 @@ export default function ArchetypeStatsPage() {
         </div>
 
         <div className="mt-4">
-          <ArchetypeTrendCard items={viewModel.trends} />
+          <ArchetypeTrendCard />
         </div>
       </main>
 
