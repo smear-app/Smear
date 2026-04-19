@@ -6,7 +6,7 @@ type PerformanceMetricGridProps = {
   periodLabel: string
 }
 
-export default function PerformanceMetricGrid({ metrics, periodLabel }: PerformanceMetricGridProps) {
+export default function PerformanceMetricGrid({ metrics }: PerformanceMetricGridProps) {
   return (
     <ProgressionSurface>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Supporting metrics</p>
