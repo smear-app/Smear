@@ -6,6 +6,8 @@ export const progressionRangeOptions: ProgressionRangeOption[] = [
   { value: "all-time", label: "All Time" },
 ]
 
+export const defaultProgressionRange: ProgressionRange = "10-weeks"
+
 export const progressionMockData: Record<ProgressionRange, ProgressionViewModel> = {
   "10-weeks": {
     insight: "Avg grade is trending upward while volume remains steady.",

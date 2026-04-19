@@ -6,12 +6,16 @@ import ProgressionInsightCard from "../components/progression/ProgressionInsight
 import ProgressionMetricsGrid from "../components/progression/ProgressionMetricsGrid"
 import ProgressionMilestonesList from "../components/progression/ProgressionMilestonesList"
 import ProgressionRangeControl from "../components/progression/ProgressionRangeControl"
-import { progressionMockData, progressionRangeOptions } from "../domain/progression/mockProgressionData"
+import {
+  defaultProgressionRange,
+  progressionMockData,
+  progressionRangeOptions,
+} from "../domain/progression/mockProgressionData"
 import { selectProgressionMilestones } from "../domain/progression/selectProgressionMilestones"
 import type { ProgressionRange } from "../domain/progression/types"
 
 export default function ProgressionStatsPage() {
-  const [selectedRange, setSelectedRange] = useState<ProgressionRange>("10-weeks")
+  const [selectedRange, setSelectedRange] = useState<ProgressionRange>(defaultProgressionRange)
   const progressionView = useMemo(() => progressionMockData[selectedRange], [selectedRange])
   const milestones = useMemo(() => selectProgressionMilestones(progressionView), [progressionView])
 

@@ -1,17 +1,16 @@
 import { Link } from "react-router-dom"
-import type { IconType } from "react-icons"
-import { FiActivity, FiCalendar, FiChevronRight, FiCompass, FiTarget, FiTrendingUp } from "react-icons/fi"
-import type { StatsCardConfig, StatsPreviewTone, StatsPreviewVisualKind } from "../domain/types"
+import { FiActivity, FiChevronRight } from "react-icons/fi"
+import type { StatsCardConfig, StatsPreviewTone, StatsPreviewTrendPoint, StatsPreviewVisualKind } from "../domain/types"
 
 type StatsPreviewCardProps = {
   card: StatsCardConfig
+  trendPoints?: StatsPreviewTrendPoint[]
 }
 
 const TONE_STYLES: Record<
   StatsPreviewTone,
   {
     accent: string
-    icon: string
     border: string
     activePreview: string
     mutedPreview: string
@@ -19,43 +18,31 @@ const TONE_STYLES: Record<
 > = {
   ember: {
     accent: "text-ember",
-    icon: "bg-ember-soft text-ember",
     border: "border-ember/20",
     activePreview: "bg-ember",
     mutedPreview: "bg-ember/15",
   },
   lichen: {
     accent: "text-lichen",
-    icon: "bg-lichen/15 text-lichen",
     border: "border-lichen/20",
     activePreview: "bg-lichen",
     mutedPreview: "bg-lichen/15",
   },
   gold: {
     accent: "text-ember",
-    icon: "bg-ember-soft text-ember",
     border: "border-ember/20",
     activePreview: "bg-ember",
     mutedPreview: "bg-ember/15",
   },
   slate: {
     accent: "text-stone-secondary",
-    icon: "bg-stone-alt text-stone-secondary",
     border: "border-stone-border",
     activePreview: "bg-stone-secondary",
     mutedPreview: "bg-stone-alt",
   },
 }
 
-const VISUAL_ICONS: Record<StatsPreviewVisualKind, IconType> = {
-  trend: FiTrendingUp,
-  profile: FiCompass,
-  outcome: FiTarget,
-  cadence: FiCalendar,
-}
-
-export default function StatsPreviewCard({ card }: StatsPreviewCardProps) {
-  const Icon = VISUAL_ICONS[card.visualKind]
+export default function StatsPreviewCard({ card, trendPoints }: StatsPreviewCardProps) {
   const tone = TONE_STYLES[card.tone]
 
   return (
@@ -63,49 +50,42 @@ export default function StatsPreviewCard({ card }: StatsPreviewCardProps) {
       to={card.path}
       state={{ fromStatsOverview: true }}
       aria-label={`Open ${card.title} stats`}
-      className={`group block rounded-[30px] border ${tone.border} bg-stone-surface px-5 py-5 text-left shadow-[0_14px_34px_rgba(89,68,51,0.08)] transition duration-200 hover:-translate-y-0.5 hover:bg-stone-alt dark:border-white/[0.06] dark:shadow-[0_16px_34px_rgba(0,0,0,0.22)] active:translate-y-0`}
+      className={`group block rounded-[30px] border ${tone.border} bg-stone-surface px-5 py-4 text-left shadow-[0_14px_34px_rgba(89,68,51,0.08)] transition duration-200 hover:-translate-y-0.5 hover:bg-stone-alt dark:border-white/[0.06] dark:shadow-[0_16px_34px_rgba(0,0,0,0.22)] active:translate-y-0`}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-xl font-bold text-stone-text">{card.title}</h2>
-          <p className={`mt-1 text-sm font-semibold ${tone.accent}`}>{card.descriptor}</p>
+          <p className={`mt-0.5 text-sm font-semibold ${tone.accent}`}>{card.descriptor}</p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <span className={`flex h-9 w-9 items-center justify-center rounded-full ${tone.icon}`}>
-            <Icon className="h-4 w-4" />
-          </span>
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors group-hover:text-ember">
-            <FiChevronRight className="h-4 w-4" />
-          </span>
-        </div>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors group-hover:text-ember">
+          <FiChevronRight className="h-4 w-4" />
+        </span>
       </div>
 
-      <div className="mt-5 flex items-end justify-between gap-5">
+      <div className="mt-3.5 flex items-end justify-between gap-5">
         <div className="min-w-0 flex-1">
-          <p className="text-[1.65rem] font-bold leading-none text-stone-text">{card.primaryMetric}</p>
-          <p className="mt-2 text-sm leading-5 text-stone-secondary">{card.secondaryText}</p>
+          <p className="text-lg font-semibold leading-tight text-stone-text">{card.primaryMetric}</p>
+          <p className="mt-1.5 text-sm leading-5 text-stone-secondary">{card.secondaryText}</p>
         </div>
 
-        <StatsPreviewVisual kind={card.visualKind} tone={card.tone} />
+        <StatsPreviewVisual kind={card.visualKind} tone={card.tone} trendPoints={trendPoints} />
       </div>
     </Link>
   )
 }
 
-function StatsPreviewVisual({ kind, tone }: { kind: StatsPreviewVisualKind; tone: StatsPreviewTone }) {
+function StatsPreviewVisual({
+  kind,
+  tone,
+  trendPoints,
+}: {
+  kind: StatsPreviewVisualKind
+  tone: StatsPreviewTone
+  trendPoints?: StatsPreviewTrendPoint[]
+}) {
   if (kind === "trend") {
-    return (
-      <div aria-hidden="true" className="flex h-20 w-24 shrink-0 items-end gap-1.5">
-        {[34, 42, 38, 52, 64, 76].map((height, index) => (
-          <span
-            key={height}
-            className={`w-2.5 rounded-full ${index >= 4 ? TONE_STYLES[tone].activePreview : TONE_STYLES[tone].mutedPreview}`}
-            style={{ height: `${height}%` }}
-          />
-        ))}
-      </div>
-    )
+    return <ProgressionPreviewBars points={trendPoints ?? []} tone={tone} />
   }
 
   if (kind === "profile") {
@@ -142,6 +122,31 @@ function StatsPreviewVisual({ kind, tone }: { kind: StatsPreviewVisualKind; tone
           }`}
         />
       ))}
+    </div>
+  )
+}
+
+function ProgressionPreviewBars({ points, tone }: { points: StatsPreviewTrendPoint[]; tone: StatsPreviewTone }) {
+  const placeholderHeights = [34, 52, 42]
+  const hasPoints = points.length > 0
+
+  return (
+    <div aria-hidden="true" className="flex h-20 w-24 shrink-0 items-end justify-center gap-2.5">
+      {hasPoints
+        ? points.map((point) => (
+            <span
+              key={point.id}
+              className={`w-3.5 rounded-full ${TONE_STYLES[tone].activePreview}`}
+              style={{ height: `${point.heightPercent}%` }}
+            />
+          ))
+        : placeholderHeights.map((height) => (
+            <span
+              key={height}
+              className={`w-3.5 rounded-full ${TONE_STYLES[tone].mutedPreview}`}
+              style={{ height: `${height}%` }}
+            />
+          ))}
     </div>
   )
 }
