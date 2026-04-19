@@ -9,7 +9,6 @@ type OutcomeBreakdownProps = {
 const TONE_STYLES: Record<PerformanceOutcomeItem["tone"], string> = {
   flash: "var(--ember)",
   send: "color-mix(in srgb, var(--ember) 76%, white 24%)",
-  project: "color-mix(in srgb, var(--ember) 34%, var(--stone-surface) 66%)",
   unfinished: "color-mix(in srgb, var(--stone-border) 90%, transparent)",
 }
 
@@ -84,15 +83,6 @@ export default function OutcomeBreakdown({ items, periodLabel }: OutcomeBreakdow
             </article>
           ))}
         </div>
-      </div>
-
-      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5">
-        {items.map((item) => (
-          <div key={`${item.label}-pill`} className="rounded-full bg-stone-bg px-3 py-1.5 text-xs font-medium text-stone-secondary dark:bg-stone-alt">
-            <span className="font-semibold text-stone-text">{item.label}</span>
-            <span className="ml-1">{item.count}</span>
-          </div>
-        ))}
       </div>
     </ProgressionSurface>
   )

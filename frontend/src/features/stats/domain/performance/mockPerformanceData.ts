@@ -25,7 +25,6 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     outcomes: [
       { label: "Flash", count: 12, percentage: 28, tone: "flash" },
       { label: "Send", count: 15, percentage: 34, tone: "send" },
-      { label: "Project", count: 10, percentage: 23, tone: "project" },
       { label: "Unfinished", count: 7, percentage: 15, tone: "unfinished" },
     ],
     metrics: [
@@ -61,7 +60,6 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     outcomes: [
       { label: "Flash", count: 24, percentage: 25, tone: "flash" },
       { label: "Send", count: 31, percentage: 33, tone: "send" },
-      { label: "Project", count: 22, percentage: 24, tone: "project" },
       { label: "Unfinished", count: 16, percentage: 18, tone: "unfinished" },
     ],
     metrics: [
@@ -97,7 +95,6 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     outcomes: [
       { label: "Flash", count: 48, percentage: 22, tone: "flash" },
       { label: "Send", count: 73, percentage: 33, tone: "send" },
-      { label: "Project", count: 59, percentage: 27, tone: "project" },
       { label: "Unfinished", count: 40, percentage: 18, tone: "unfinished" },
     ],
     metrics: [
