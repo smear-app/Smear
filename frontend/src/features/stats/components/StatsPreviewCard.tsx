@@ -61,6 +61,7 @@ export default function StatsPreviewCard({ card }: StatsPreviewCardProps) {
   return (
     <Link
       to={card.path}
+      state={{ fromStatsOverview: true }}
       aria-label={`Open ${card.title} stats`}
       className={`group block rounded-[30px] border ${tone.border} bg-stone-surface px-5 py-5 text-left shadow-[0_14px_34px_rgba(89,68,51,0.08)] transition duration-200 hover:-translate-y-0.5 hover:bg-stone-alt dark:border-white/[0.06] dark:shadow-[0_16px_34px_rgba(0,0,0,0.22)] active:translate-y-0`}
     >

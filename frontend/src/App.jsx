@@ -15,6 +15,7 @@ import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
 import SocialPage from "./pages/SocialPage"
 import StatsPage from "./pages/StatsPage"
+import StatsDetailScrollReset from "./features/stats/components/StatsDetailScrollReset"
 import ArchetypeStatsPage from "./features/stats/pages/ArchetypeStatsPage"
 import PerformanceStatsPage from "./features/stats/pages/PerformanceStatsPage"
 import ProgressionStatsPage from "./features/stats/pages/ProgressionStatsPage"
@@ -166,10 +167,42 @@ function ProtectedApp() {
             }
           />
           <Route path="/stats" element={<StatsPage />} />
-          <Route path="/stats/progression" element={<ProgressionStatsPage />} />
-          <Route path="/stats/archetype" element={<ArchetypeStatsPage />} />
-          <Route path="/stats/performance" element={<PerformanceStatsPage />} />
-          <Route path="/stats/sessions" element={<SessionsStatsPage />} />
+          <Route
+            path="/stats/progression"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <ProgressionStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/archetype"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <ArchetypeStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/performance"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <PerformanceStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/sessions"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <SessionsStatsPage />
+              </>
+            }
+          />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
