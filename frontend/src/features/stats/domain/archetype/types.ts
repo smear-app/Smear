@@ -1,9 +1,19 @@
 export type ArchetypeSegment = "terrain" | "movement" | "holds"
 
-export type ArchetypeRadarAxis = {
+export type ArchetypeRadarAxisMetrics = {
   label: string
   performance: number
   volume: number
+}
+
+export type ArchetypeRadarAxisDisplay = {
+  performanceLabel: string
+  volumeLabel: string
+  metadataSeparator: string
+}
+
+export type ArchetypeRadarAxis = ArchetypeRadarAxisMetrics & {
+  display: ArchetypeRadarAxisDisplay
 }
 
 export type ArchetypePerformanceScaleTick = {
@@ -54,7 +64,7 @@ export type ArchetypeSegmentOption = {
 export type ArchetypeSegmentModel = {
   archetypeLabel: string
   description: string
-  axes: ArchetypeRadarAxis[]
+  axes: ArchetypeRadarAxisMetrics[]
   performanceScale: ArchetypePerformanceScale
   categoryOutcomes: ArchetypeCategoryOutcomeCounts[]
   trends: ArchetypeTrendItem[]

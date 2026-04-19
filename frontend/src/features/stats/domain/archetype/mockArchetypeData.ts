@@ -5,6 +5,10 @@ import type {
   ArchetypeOutcomeCount,
   ArchetypeOutcomeBreakdownSegment,
   ArchetypeOutcomeTone,
+  ArchetypePerformanceScale,
+  ArchetypeRadarAxis,
+  ArchetypeRadarAxisDisplay,
+  ArchetypeRadarAxisMetrics,
   ArchetypeSegment,
   ArchetypeSegmentModel,
   ArchetypeSegmentOption,
@@ -230,6 +234,68 @@ const OUTCOME_LABELS: Record<ArchetypeOutcomeTone, string> = {
 }
 
 const OUTCOME_ORDER: ArchetypeOutcomeTone[] = ["flash", "send", "attempted"]
+const RADAR_METADATA_SEPARATOR = "•"
+
+function toVGradeNumber(label: string) {
+  const match = /^V(\d+)$/.exec(label)
+
+  return match ? Number(match[1]) : null
+}
+
+function formatPerformanceGrade(value: number, performanceScale: ArchetypePerformanceScale) {
+  const ticks = [...performanceScale.ticks].sort((left, right) => left.level - right.level)
+
+  if (ticks.length === 0) {
+    return `V${Math.round(value)}`
+  }
+
+  const fallbackTick = ticks.reduce((closest, tick) => {
+    return Math.abs(tick.level - value) < Math.abs(closest.level - value) ? tick : closest
+  }, ticks[0])
+
+  if (value <= ticks[0].level) {
+    return ticks[0].label
+  }
+
+  const lastTick = ticks[ticks.length - 1]
+
+  if (value >= lastTick.level) {
+    return lastTick.label
+  }
+
+  for (let index = 1; index < ticks.length; index += 1) {
+    const lowerTick = ticks[index - 1]
+    const upperTick = ticks[index]
+
+    if (value <= upperTick.level) {
+      const lowerGrade = toVGradeNumber(lowerTick.label)
+      const upperGrade = toVGradeNumber(upperTick.label)
+
+      if (lowerGrade === null || upperGrade === null) {
+        return fallbackTick.label
+      }
+
+      const progress = (value - lowerTick.level) / (upperTick.level - lowerTick.level)
+      const grade = Math.round(lowerGrade + (upperGrade - lowerGrade) * progress)
+
+      return `V${grade}`
+    }
+  }
+
+  return fallbackTick.label
+}
+
+export function formatArchetypeRadarAxisDisplay(
+  axis: ArchetypeRadarAxisMetrics,
+  performanceScale: ArchetypePerformanceScale,
+  volumeCount: number,
+): ArchetypeRadarAxisDisplay {
+  return {
+    performanceLabel: formatPerformanceGrade(axis.performance, performanceScale),
+    volumeLabel: String(volumeCount),
+    metadataSeparator: RADAR_METADATA_SEPARATOR,
+  }
+}
 
 function toRoundedPercentages(counts: number[]) {
   const total = counts.reduce((sum, count) => sum + count, 0)
@@ -291,14 +357,33 @@ function toCategoryOutcomeBreakdownItems(
   })
 }
 
+function toVolumeCountByLabel(categoryOutcomes: ArchetypeCategoryOutcomeCounts[]) {
+  return new Map(
+    categoryOutcomes.map((item) => [
+      item.label,
+      item.outcomes.reduce((sum, outcome) => sum + outcome.count, 0),
+    ]),
+  )
+}
+
+function toRadarAxes(model: ArchetypeSegmentModel): ArchetypeRadarAxis[] {
+  const volumeCountByLabel = toVolumeCountByLabel(model.categoryOutcomes)
+
+  return model.axes.map((axis) => ({
+    ...axis,
+    display: formatArchetypeRadarAxisDisplay(axis, model.performanceScale, volumeCountByLabel.get(axis.label) ?? 0),
+  }))
+}
+
 export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeViewModel {
   const model = archetypeSegmentData[segment]
   const sorted = [...model.axes].sort((left, right) => right.performance - left.performance)
+  const radarAxes = toRadarAxes(model)
 
   return {
     archetypeLabel: model.archetypeLabel,
     description: model.description,
-    radarAxes: model.axes,
+    radarAxes,
     performanceScale: model.performanceScale,
     breakdown: toCategoryOutcomeBreakdownItems(
       model.axes.map((axis) => axis.label),

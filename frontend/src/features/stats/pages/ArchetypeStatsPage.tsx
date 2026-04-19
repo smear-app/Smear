@@ -37,7 +37,7 @@ export default function ArchetypeStatsPage() {
             <div className="pointer-events-none absolute right-4 top-3 z-10">
               <ArchetypeRadarLegend />
             </div>
-            <ArchetypeRadarChart axes={viewModel.radarAxes} performanceScale={viewModel.performanceScale} />
+            <ArchetypeRadarChart axes={viewModel.radarAxes} />
             <div className="mt-0.5">
               <ArchetypeIdentityBlock label={viewModel.archetypeLabel} description={viewModel.description} />
             </div>
