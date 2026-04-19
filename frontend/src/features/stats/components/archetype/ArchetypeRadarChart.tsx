@@ -9,14 +9,17 @@ const CENTER_X = WIDTH / 2
 const BASE_CENTER_Y = 136
 const PLOT_RADIUS = 106
 const PLOT_TO_LABEL_GAP = 10
-const LABEL_SAFE_INSET = 8
+const PLOT_SAFE_GAP = 6
+const LABEL_HORIZONTAL_SAFE_INSET = 0
+const LABEL_VERTICAL_SAFE_INSET = 8
 const LABEL_LINE_HEIGHT = 13
-const HEIGHT = BASE_CENTER_Y + PLOT_RADIUS + PLOT_TO_LABEL_GAP + LABEL_LINE_HEIGHT + LABEL_SAFE_INSET
+const LABEL_BLOCK_HEIGHT = LABEL_LINE_HEIGHT * 2
+const HEIGHT = BASE_CENTER_Y + PLOT_RADIUS + PLOT_TO_LABEL_GAP + LABEL_LINE_HEIGHT + LABEL_VERTICAL_SAFE_INSET
 const LABEL_SAFE_BOUNDS = {
-  left: LABEL_SAFE_INSET,
-  right: WIDTH - LABEL_SAFE_INSET,
-  top: LABEL_SAFE_INSET,
-  bottom: HEIGHT - LABEL_SAFE_INSET,
+  left: LABEL_HORIZONTAL_SAFE_INSET,
+  right: WIDTH - LABEL_HORIZONTAL_SAFE_INSET,
+  top: LABEL_VERTICAL_SAFE_INSET,
+  bottom: HEIGHT - LABEL_VERTICAL_SAFE_INSET,
 }
 const RING_COUNT = 4
 const GRID_COLOR = "color-mix(in srgb, var(--stone-border) 84%, transparent)"
@@ -37,6 +40,19 @@ type LabelBlockMetrics = {
   categoryWidth: number
   metadataWidth: number
   blockWidth: number
+}
+type Point = { x: number; y: number }
+type LabelBlockBounds = {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+type LabelBlockLayout = {
+  x: number
+  labelY: number
+  textAnchor: LabelTextAnchor
+  bounds: LabelBlockBounds
 }
 
 function polarToCartesian(angleRadians: number, radius: number, centerY: number) {
@@ -93,35 +109,6 @@ function getLabelBlockMetrics(axis: ArchetypeRadarAxis): LabelBlockMetrics {
   }
 }
 
-function getLineTextLength(lineWidth: number, maxLineWidth: number) {
-  return lineWidth > maxLineWidth ? maxLineWidth : undefined
-}
-
-function getAvailableLineWidth(x: number, textAnchor: LabelTextAnchor) {
-  if (textAnchor === "start") {
-    return Math.max(0, LABEL_SAFE_BOUNDS.right - x)
-  }
-
-  if (textAnchor === "end") {
-    return Math.max(0, x - LABEL_SAFE_BOUNDS.left)
-  }
-
-  return Math.max(0, Math.min(x - LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right - x) * 2)
-}
-
-function applyLineWidthGuards(
-  layout: { x: number; labelY: number; textAnchor: LabelTextAnchor },
-  metrics: LabelBlockMetrics,
-) {
-  const maxLineWidth = getAvailableLineWidth(layout.x, layout.textAnchor)
-
-  return {
-    ...layout,
-    categoryTextLength: getLineTextLength(metrics.categoryWidth, maxLineWidth),
-    metadataTextLength: getLineTextLength(metrics.metadataWidth, maxLineWidth),
-  }
-}
-
 function getAxisLabelSide(angleRadians: number): AxisLabelSide {
   const x = Math.cos(angleRadians)
   const y = Math.sin(angleRadians)
@@ -137,96 +124,238 @@ function getAxisLabelSide(angleRadians: number): AxisLabelSide {
   return x < 0 ? "left" : "right"
 }
 
-function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics, centerY: number) {
-  const side = getAxisLabelSide(angleRadians)
-  const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
+function getBoundsForAnchor(x: number, top: number, textAnchor: LabelTextAnchor, metrics: LabelBlockMetrics) {
+  const left =
+    textAnchor === "start" ? x : textAnchor === "end" ? x - metrics.blockWidth : x - metrics.blockWidth / 2
 
-  if (side === "top") {
-    return applyLineWidthGuards(
-      {
-        x: clamp(
-          CENTER_X,
-          LABEL_SAFE_BOUNDS.left + metrics.blockWidth / 2,
-          LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
-        ),
-        labelY: clamp(
-          axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_LINE_HEIGHT,
-          LABEL_SAFE_BOUNDS.top,
-          LABEL_SAFE_BOUNDS.bottom,
-        ),
-        textAnchor: "middle" as LabelTextAnchor,
-      },
-      metrics,
-    )
+  return {
+    left,
+    right: left + metrics.blockWidth,
+    top,
+    bottom: top + LABEL_BLOCK_HEIGHT,
   }
+}
 
-  if (side === "bottom") {
-    return applyLineWidthGuards(
-      {
-        x: clamp(
-          CENTER_X,
-          LABEL_SAFE_BOUNDS.left + metrics.blockWidth / 2,
-          LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
-        ),
-        labelY: clamp(
-          axisEnd.y + PLOT_TO_LABEL_GAP,
-          LABEL_SAFE_BOUNDS.top,
-          LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT,
-        ),
-        textAnchor: "middle" as LabelTextAnchor,
-      },
-      metrics,
-    )
+function toLabelLayout(x: number, top: number, textAnchor: LabelTextAnchor, metrics: LabelBlockMetrics): LabelBlockLayout {
+  return {
+    x,
+    labelY: top + LABEL_LINE_HEIGHT / 2,
+    textAnchor,
+    bounds: getBoundsForAnchor(x, top, textAnchor, metrics),
   }
+}
 
-  if (side === "left") {
-    return applyLineWidthGuards(
-      {
-        x: clamp(axisEnd.x - PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
-        labelY: clamp(
-          axisEnd.y - LABEL_LINE_HEIGHT / 2,
-          LABEL_SAFE_BOUNDS.top,
-          LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT,
-        ),
-        textAnchor: "end" as LabelTextAnchor,
-      },
-      metrics,
-    )
-  }
-
-  return applyLineWidthGuards(
-    {
-      x: clamp(axisEnd.x + PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
-      labelY: clamp(
-        axisEnd.y - LABEL_LINE_HEIGHT / 2,
-        LABEL_SAFE_BOUNDS.top,
-        LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT,
-      ),
-      textAnchor: "start" as LabelTextAnchor,
-    },
-    metrics,
+function getPlotPolygon(axisCount: number, startAngle: number, angleStep: number, radius: number, centerY: number) {
+  return Array.from({ length: axisCount }, (_, index) =>
+    polarToCartesian(startAngle + angleStep * index, radius, centerY),
   )
 }
 
-function getAxisVerticalBounds(angleRadians: number, centerY: number) {
+function createSideLabelLayout(side: AxisLabelSide, axisEnd: Point, metrics: LabelBlockMetrics) {
+  if (side === "top") {
+    const x = clamp(
+      axisEnd.x,
+      LABEL_SAFE_BOUNDS.left + metrics.blockWidth / 2,
+      LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
+    )
+
+    return toLabelLayout(x, axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_BLOCK_HEIGHT, "middle", metrics)
+  }
+
+  if (side === "bottom") {
+    const x = clamp(
+      axisEnd.x,
+      LABEL_SAFE_BOUNDS.left + metrics.blockWidth / 2,
+      LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
+    )
+
+    return toLabelLayout(x, axisEnd.y + PLOT_TO_LABEL_GAP, "middle", metrics)
+  }
+
+  if (side === "left") {
+    const x = clamp(
+      axisEnd.x - PLOT_TO_LABEL_GAP,
+      LABEL_SAFE_BOUNDS.left + metrics.blockWidth,
+      LABEL_SAFE_BOUNDS.right,
+    )
+
+    return toLabelLayout(x, axisEnd.y - LABEL_BLOCK_HEIGHT / 2, "end", metrics)
+  }
+
+  const x = clamp(
+    axisEnd.x + PLOT_TO_LABEL_GAP,
+    LABEL_SAFE_BOUNDS.left,
+    LABEL_SAFE_BOUNDS.right - metrics.blockWidth,
+  )
+
+  return toLabelLayout(x, axisEnd.y - LABEL_BLOCK_HEIGHT / 2, "start", metrics)
+}
+
+function createVerticalFallbackLayout(
+  placement: "above" | "below",
+  axisEnd: Point,
+  metrics: LabelBlockMetrics,
+) {
+  const centeredX = clamp(
+    axisEnd.x,
+    LABEL_SAFE_BOUNDS.left + metrics.blockWidth / 2,
+    LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
+  )
+  const top =
+    placement === "above" ? axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_BLOCK_HEIGHT : axisEnd.y + PLOT_TO_LABEL_GAP
+
+  return toLabelLayout(centeredX, top, "middle", metrics)
+}
+
+function isPointInsideBounds(point: Point, bounds: LabelBlockBounds) {
+  return point.x >= bounds.left && point.x <= bounds.right && point.y >= bounds.top && point.y <= bounds.bottom
+}
+
+function isPointInsidePolygon(point: Point, polygon: Point[]) {
+  let isInside = false
+
+  for (let index = 0, previousIndex = polygon.length - 1; index < polygon.length; previousIndex = index, index += 1) {
+    const current = polygon[index]
+    const previous = polygon[previousIndex]
+    const crossesY = current.y > point.y !== previous.y > point.y
+
+    if (crossesY) {
+      const intersectionX = ((previous.x - current.x) * (point.y - current.y)) / (previous.y - current.y) + current.x
+
+      if (point.x < intersectionX) {
+        isInside = !isInside
+      }
+    }
+  }
+
+  return isInside
+}
+
+function getOrientation(first: Point, second: Point, third: Point) {
+  const value = (second.y - first.y) * (third.x - second.x) - (second.x - first.x) * (third.y - second.y)
+
+  if (Math.abs(value) < 0.001) {
+    return 0
+  }
+
+  return value > 0 ? 1 : 2
+}
+
+function isPointOnSegment(first: Point, second: Point, third: Point) {
+  return (
+    second.x <= Math.max(first.x, third.x) &&
+    second.x >= Math.min(first.x, third.x) &&
+    second.y <= Math.max(first.y, third.y) &&
+    second.y >= Math.min(first.y, third.y)
+  )
+}
+
+function doSegmentsIntersect(firstStart: Point, firstEnd: Point, secondStart: Point, secondEnd: Point) {
+  const firstOrientation = getOrientation(firstStart, firstEnd, secondStart)
+  const secondOrientation = getOrientation(firstStart, firstEnd, secondEnd)
+  const thirdOrientation = getOrientation(secondStart, secondEnd, firstStart)
+  const fourthOrientation = getOrientation(secondStart, secondEnd, firstEnd)
+
+  if (firstOrientation !== secondOrientation && thirdOrientation !== fourthOrientation) {
+    return true
+  }
+
+  return (
+    (firstOrientation === 0 && isPointOnSegment(firstStart, secondStart, firstEnd)) ||
+    (secondOrientation === 0 && isPointOnSegment(firstStart, secondEnd, firstEnd)) ||
+    (thirdOrientation === 0 && isPointOnSegment(secondStart, firstStart, secondEnd)) ||
+    (fourthOrientation === 0 && isPointOnSegment(secondStart, firstEnd, secondEnd))
+  )
+}
+
+function doesBoundsIntersectPolygon(bounds: LabelBlockBounds, polygon: Point[]) {
+  const boundsPoints = [
+    { x: bounds.left, y: bounds.top },
+    { x: bounds.right, y: bounds.top },
+    { x: bounds.right, y: bounds.bottom },
+    { x: bounds.left, y: bounds.bottom },
+  ]
+  const boundsEdges = boundsPoints.map((point, index) => [point, boundsPoints[(index + 1) % boundsPoints.length]])
+  const polygonEdges = polygon.map((point, index) => [point, polygon[(index + 1) % polygon.length]])
+
+  return (
+    boundsPoints.some((point) => isPointInsidePolygon(point, polygon)) ||
+    polygon.some((point) => isPointInsideBounds(point, bounds)) ||
+    boundsEdges.some(([boundsStart, boundsEnd]) =>
+      polygonEdges.some(([polygonStart, polygonEnd]) =>
+        doSegmentsIntersect(boundsStart, boundsEnd, polygonStart, polygonEnd),
+      ),
+    )
+  )
+}
+
+function isInsideLabelSafeBounds(bounds: LabelBlockBounds) {
+  return (
+    bounds.left >= LABEL_SAFE_BOUNDS.left &&
+    bounds.right <= LABEL_SAFE_BOUNDS.right &&
+    bounds.top >= LABEL_SAFE_BOUNDS.top &&
+    bounds.bottom <= LABEL_SAFE_BOUNDS.bottom
+  )
+}
+
+function isValidLabelLayout(layout: LabelBlockLayout, plotPolygon: Point[]) {
+  return isInsideLabelSafeBounds(layout.bounds) && !doesBoundsIntersectPolygon(layout.bounds, plotPolygon)
+}
+
+function getLabelBlockLayout(
+  angleRadians: number,
+  metrics: LabelBlockMetrics,
+  centerY: number,
+  plotPolygon: Point[],
+  axisCount: number,
+) {
   const side = getAxisLabelSide(angleRadians)
   const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
-  const labelY =
-    side === "top"
-      ? clamp(axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_LINE_HEIGHT, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom)
-      : side === "bottom"
-        ? clamp(axisEnd.y + PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT)
-        : clamp(axisEnd.y - LABEL_LINE_HEIGHT / 2, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT)
+  const verticalPreference = axisEnd.y >= centerY ? "below" : "above"
+  const isLowerThreeAxisVertex = axisCount === 3 && axisEnd.y > centerY
+  const verticalFallback = createVerticalFallbackLayout(
+    verticalPreference,
+    axisEnd,
+    metrics,
+  )
+  const alternateVerticalFallback = createVerticalFallbackLayout(
+    verticalPreference === "below" ? "above" : "below",
+    axisEnd,
+    metrics,
+  )
+  const candidates = isLowerThreeAxisVertex
+    ? [verticalFallback, alternateVerticalFallback, createSideLabelLayout(side, axisEnd, metrics)]
+    : [createSideLabelLayout(side, axisEnd, metrics), verticalFallback, alternateVerticalFallback]
+
+  return candidates.find((candidate) => isValidLabelLayout(candidate, plotPolygon)) ?? candidates[1]
+}
+
+function getAxisVerticalBounds(
+  angleRadians: number,
+  metrics: LabelBlockMetrics,
+  centerY: number,
+  plotPolygon: Point[],
+  axisCount: number,
+) {
+  const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
+  const layout = getLabelBlockLayout(angleRadians, metrics, centerY, plotPolygon, axisCount)
 
   return {
-    minY: Math.min(axisEnd.y, labelY),
-    maxY: Math.max(axisEnd.y, labelY + LABEL_LINE_HEIGHT),
+    minY: Math.min(axisEnd.y, layout.bounds.top),
+    maxY: Math.max(axisEnd.y, layout.bounds.bottom),
   }
 }
 
-function getCenteredPlotOffset(axisCount: number, startAngle: number, angleStep: number) {
-  const bounds = Array.from({ length: axisCount }, (_, index) =>
-    getAxisVerticalBounds(startAngle + angleStep * index, BASE_CENTER_Y),
+function getCenteredPlotOffset(labelMetrics: LabelBlockMetrics[], startAngle: number, angleStep: number) {
+  const plotPolygon = getPlotPolygon(
+    labelMetrics.length,
+    startAngle,
+    angleStep,
+    PLOT_RADIUS + PLOT_SAFE_GAP,
+    BASE_CENTER_Y,
+  )
+  const bounds = labelMetrics.map((metrics, index) =>
+    getAxisVerticalBounds(startAngle + angleStep * index, metrics, BASE_CENTER_Y, plotPolygon, labelMetrics.length),
   )
   const minY = Math.min(...bounds.map((bound) => bound.minY))
   const maxY = Math.max(...bounds.map((bound) => bound.maxY))
@@ -238,14 +367,16 @@ function getCenteredPlotOffset(axisCount: number, startAngle: number, angleStep:
 export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) {
   const angleStep = (Math.PI * 2) / axes.length
   const startAngle = -Math.PI / 2
-  const centerY = BASE_CENTER_Y + getCenteredPlotOffset(axes.length, startAngle, angleStep)
+  const labelMetrics = axes.map(getLabelBlockMetrics)
+  const centerY = BASE_CENTER_Y + getCenteredPlotOffset(labelMetrics, startAngle, angleStep)
   const ringLevels = Array.from({ length: RING_COUNT }, (_, index) => (index + 1) / RING_COUNT)
+  const plotPolygon = getPlotPolygon(axes.length, startAngle, angleStep, PLOT_RADIUS + PLOT_SAFE_GAP, centerY)
   const plottedPoints = axes.map((axis, index) => {
     const angle = startAngle + angleStep * index
     const axisEnd = polarToCartesian(angle, PLOT_RADIUS, centerY)
     const performancePoint = polarToCartesian(angle, (axis.performance / 100) * PLOT_RADIUS, centerY)
     const volumePoint = polarToCartesian(angle, (axis.volume / 100) * PLOT_RADIUS, centerY)
-    const labelLayout = getLabelBlockLayout(angle, getLabelBlockMetrics(axis), centerY)
+    const labelLayout = getLabelBlockLayout(angle, labelMetrics[index], centerY, plotPolygon, axes.length)
 
     return {
       ...axis,
@@ -345,8 +476,6 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
                 textAnchor={axis.labelLayout.textAnchor}
                 dominantBaseline="middle"
                 fill={LABEL_COLOR}
-                textLength={axis.labelLayout.categoryTextLength}
-                lengthAdjust={axis.labelLayout.categoryTextLength === undefined ? undefined : "spacingAndGlyphs"}
                 className="text-[12px] font-semibold"
               >
                 {axis.label}
@@ -356,8 +485,6 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
                 y={axis.labelLayout.labelY + LABEL_LINE_HEIGHT}
                 textAnchor={axis.labelLayout.textAnchor}
                 dominantBaseline="middle"
-                textLength={axis.labelLayout.metadataTextLength}
-                lengthAdjust={axis.labelLayout.metadataTextLength === undefined ? undefined : "spacingAndGlyphs"}
               >
                 <tspan fill={PERFORMANCE_METADATA_COLOR} className="text-[11px] font-bold">
                   {axis.display.performanceLabel}
