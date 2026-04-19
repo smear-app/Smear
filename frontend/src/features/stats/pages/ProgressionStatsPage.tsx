@@ -7,11 +7,13 @@ import ProgressionMetricsGrid from "../components/progression/ProgressionMetrics
 import ProgressionMilestonesList from "../components/progression/ProgressionMilestonesList"
 import ProgressionRangeControl from "../components/progression/ProgressionRangeControl"
 import { progressionMockData, progressionRangeOptions } from "../domain/progression/mockProgressionData"
+import { selectProgressionMilestones } from "../domain/progression/selectProgressionMilestones"
 import type { ProgressionRange } from "../domain/progression/types"
 
 export default function ProgressionStatsPage() {
   const [selectedRange, setSelectedRange] = useState<ProgressionRange>("10-weeks")
   const progressionView = useMemo(() => progressionMockData[selectedRange], [selectedRange])
+  const milestones = useMemo(() => selectProgressionMilestones(progressionView), [progressionView])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
@@ -44,7 +46,7 @@ export default function ProgressionStatsPage() {
         </div>
 
         <div className="mt-4">
-          <ProgressionMilestonesList milestones={progressionView.milestones} />
+          <ProgressionMilestonesList milestones={milestones} />
         </div>
       </main>
 

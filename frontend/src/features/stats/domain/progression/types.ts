@@ -1,3 +1,5 @@
+import type { StatsMilestone } from "../milestones/types"
+
 export type ProgressionRange = "10-weeks" | "6-months" | "all-time"
 
 export type ProgressionChartPoint = {
@@ -13,11 +15,7 @@ export type ProgressionMetric = {
   description: string
 }
 
-export type ProgressionMilestone = {
-  title: string
-  detail: string
-  occurredAt: string
-}
+export type ProgressionMilestone = StatsMilestone
 
 export type ProgressionRangeOption = {
   value: ProgressionRange
