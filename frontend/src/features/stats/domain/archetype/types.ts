@@ -6,6 +6,8 @@ export type ArchetypeRadarAxisMetrics = {
   volume: number
 }
 
+export type ArchetypeRadarAxisMetricValues = Omit<ArchetypeRadarAxisMetrics, "label">
+
 export type ArchetypeRadarAxisDisplay = {
   performanceLabel: string
   volumeLabel: string
@@ -59,7 +61,7 @@ export type ArchetypeSegmentOption = {
 export type ArchetypeSegmentModel = {
   archetypeLabel: string
   description: string
-  axes: ArchetypeRadarAxisMetrics[]
+  axisMetricsByTag: Record<string, ArchetypeRadarAxisMetricValues>
   performanceScale: ArchetypePerformanceScale
   categoryOutcomes: ArchetypeCategoryOutcomeCounts[]
 }

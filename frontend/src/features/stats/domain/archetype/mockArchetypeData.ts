@@ -13,12 +13,9 @@ import type {
   ArchetypeSegmentOption,
   ArchetypeViewModel,
 } from "./types"
+import { getArchetypeAxisLabels, getArchetypeSegmentOptions } from "./tagTaxonomy"
 
-export const archetypeSegmentOptions: ArchetypeSegmentOption[] = [
-  { value: "terrain", label: "Terrain" },
-  { value: "movement", label: "Movement" },
-  { value: "holds", label: "Holds" },
-]
+export const archetypeSegmentOptions: ArchetypeSegmentOption[] = getArchetypeSegmentOptions()
 
 const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
   terrain: {
@@ -32,12 +29,12 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
         { level: 100, label: "V9" },
       ],
     },
-    axes: [
-      { label: "Slab", performance: 28, volume: 22 },
-      { label: "Vertical", performance: 56, volume: 49 },
-      { label: "Overhang", performance: 82, volume: 74 },
-      { label: "Cave", performance: 67, volume: 58 },
-    ],
+    axisMetricsByTag: {
+      Slab: { performance: 28, volume: 22 },
+      Vertical: { performance: 56, volume: 49 },
+      Overhang: { performance: 82, volume: 74 },
+      Cave: { performance: 67, volume: 58 },
+    },
     categoryOutcomes: [
       {
         label: "Slab",
@@ -84,13 +81,11 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
         { level: 100, label: "V8" },
       ],
     },
-    axes: [
-      { label: "Static", performance: 38, volume: 31 },
-      { label: "Dynamic", performance: 79, volume: 70 },
-      { label: "Coordination", performance: 72, volume: 61 },
-      { label: "Balance", performance: 44, volume: 39 },
-      { label: "Power", performance: 68, volume: 63 },
-    ],
+    axisMetricsByTag: {
+      Dynamic: { performance: 79, volume: 70 },
+      Static: { performance: 38, volume: 31 },
+      Coordination: { performance: 72, volume: 61 },
+    },
     categoryOutcomes: [
       {
         label: "Static",
@@ -116,22 +111,6 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
           { tone: "attempted", count: 2 },
         ],
       },
-      {
-        label: "Balance",
-        outcomes: [
-          { tone: "flash", count: 1 },
-          { tone: "send", count: 2 },
-          { tone: "attempted", count: 3 },
-        ],
-      },
-      {
-        label: "Power",
-        outcomes: [
-          { tone: "flash", count: 2 },
-          { tone: "send", count: 4 },
-          { tone: "attempted", count: 1 },
-        ],
-      },
     ],
   },
   holds: {
@@ -145,14 +124,15 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
         { level: 100, label: "V7" },
       ],
     },
-    axes: [
-      { label: "Crimp", performance: 84, volume: 76 },
-      { label: "Sloper", performance: 36, volume: 29 },
-      { label: "Pinch", performance: 62, volume: 57 },
-      { label: "Pocket", performance: 48, volume: 42 },
-      { label: "Jug", performance: 58, volume: 51 },
-      { label: "Volume", performance: 41, volume: 46 },
-    ],
+    axisMetricsByTag: {
+      Crimp: { performance: 84, volume: 76 },
+      Sloper: { performance: 36, volume: 29 },
+      Pinch: { performance: 62, volume: 57 },
+      Pocket: { performance: 48, volume: 42 },
+      Jug: { performance: 58, volume: 51 },
+      Volume: { performance: 41, volume: 46 },
+      Undercling: { performance: 54, volume: 37 },
+    },
     categoryOutcomes: [
       {
         label: "Crimp",
@@ -200,6 +180,14 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
           { tone: "flash", count: 2 },
           { tone: "send", count: 2 },
           { tone: "attempted", count: 1 },
+        ],
+      },
+      {
+        label: "Undercling",
+        outcomes: [
+          { tone: "flash", count: 1 },
+          { tone: "send", count: 3 },
+          { tone: "attempted", count: 2 },
         ],
       },
     ],
@@ -345,18 +333,23 @@ function toVolumeCountByLabel(categoryOutcomes: ArchetypeCategoryOutcomeCounts[]
   )
 }
 
-function toRadarAxes(model: ArchetypeSegmentModel): ArchetypeRadarAxis[] {
+function toRadarAxes(segment: ArchetypeSegment, model: ArchetypeSegmentModel): ArchetypeRadarAxis[] {
   const volumeCountByLabel = toVolumeCountByLabel(model.categoryOutcomes)
 
-  return model.axes.map((axis) => ({
-    ...axis,
-    display: formatArchetypeRadarAxisDisplay(axis, model.performanceScale, volumeCountByLabel.get(axis.label) ?? 0),
-  }))
+  return getArchetypeAxisLabels(segment).map((label) => {
+    const metrics = model.axisMetricsByTag[label] ?? { performance: 0, volume: 0 }
+    const axis = { label, ...metrics }
+
+    return {
+      ...axis,
+      display: formatArchetypeRadarAxisDisplay(axis, model.performanceScale, volumeCountByLabel.get(axis.label) ?? 0),
+    }
+  })
 }
 
 export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeViewModel {
   const model = archetypeSegmentData[segment]
-  const radarAxes = toRadarAxes(model)
+  const radarAxes = toRadarAxes(segment, model)
 
   return {
     archetypeLabel: model.archetypeLabel,
@@ -364,7 +357,7 @@ export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeVie
     radarAxes,
     performanceScale: model.performanceScale,
     breakdown: toCategoryOutcomeBreakdownItems(
-      model.axes.map((axis) => axis.label),
+      radarAxes.map((axis) => axis.label),
       model.categoryOutcomes,
     ),
   }
