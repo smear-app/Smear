@@ -5,18 +5,19 @@ type ArchetypeRadarChartProps = {
 }
 
 const WIDTH = 320
-const HEIGHT = 286
 const CENTER_X = WIDTH / 2
-const CENTER_Y = 136
+const BASE_CENTER_Y = 136
 const PLOT_RADIUS = 106
 const PLOT_TO_LABEL_GAP = 10
-const LABEL_SAFE_BOUNDS = {
-  left: 8,
-  right: WIDTH - 8,
-  top: 8,
-  bottom: HEIGHT - 8,
-}
+const LABEL_SAFE_INSET = 8
 const LABEL_LINE_HEIGHT = 13
+const HEIGHT = BASE_CENTER_Y + PLOT_RADIUS + PLOT_TO_LABEL_GAP + LABEL_LINE_HEIGHT + LABEL_SAFE_INSET
+const LABEL_SAFE_BOUNDS = {
+  left: LABEL_SAFE_INSET,
+  right: WIDTH - LABEL_SAFE_INSET,
+  top: LABEL_SAFE_INSET,
+  bottom: HEIGHT - LABEL_SAFE_INSET,
+}
 const RING_COUNT = 4
 const GRID_COLOR = "color-mix(in srgb, var(--stone-border) 84%, transparent)"
 const AXIS_COLOR = "color-mix(in srgb, var(--stone-border) 72%, transparent)"
@@ -38,10 +39,10 @@ type LabelBlockMetrics = {
   blockWidth: number
 }
 
-function polarToCartesian(angleRadians: number, radius: number) {
+function polarToCartesian(angleRadians: number, radius: number, centerY: number) {
   return {
     x: CENTER_X + Math.cos(angleRadians) * radius,
-    y: CENTER_Y + Math.sin(angleRadians) * radius,
+    y: centerY + Math.sin(angleRadians) * radius,
   }
 }
 
@@ -136,9 +137,9 @@ function getAxisLabelSide(angleRadians: number): AxisLabelSide {
   return x < 0 ? "left" : "right"
 }
 
-function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
+function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics, centerY: number) {
   const side = getAxisLabelSide(angleRadians)
-  const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS)
+  const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
 
   if (side === "top") {
     return applyLineWidthGuards(
@@ -207,16 +208,44 @@ function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
   )
 }
 
+function getAxisVerticalBounds(angleRadians: number, centerY: number) {
+  const side = getAxisLabelSide(angleRadians)
+  const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
+  const labelY =
+    side === "top"
+      ? clamp(axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_LINE_HEIGHT, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom)
+      : side === "bottom"
+        ? clamp(axisEnd.y + PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT)
+        : clamp(axisEnd.y - LABEL_LINE_HEIGHT / 2, LABEL_SAFE_BOUNDS.top, LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT)
+
+  return {
+    minY: Math.min(axisEnd.y, labelY),
+    maxY: Math.max(axisEnd.y, labelY + LABEL_LINE_HEIGHT),
+  }
+}
+
+function getCenteredPlotOffset(axisCount: number, startAngle: number, angleStep: number) {
+  const bounds = Array.from({ length: axisCount }, (_, index) =>
+    getAxisVerticalBounds(startAngle + angleStep * index, BASE_CENTER_Y),
+  )
+  const minY = Math.min(...bounds.map((bound) => bound.minY))
+  const maxY = Math.max(...bounds.map((bound) => bound.maxY))
+  const contentHeight = maxY - minY
+
+  return (HEIGHT - contentHeight) / 2 - minY
+}
+
 export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) {
   const angleStep = (Math.PI * 2) / axes.length
   const startAngle = -Math.PI / 2
+  const centerY = BASE_CENTER_Y + getCenteredPlotOffset(axes.length, startAngle, angleStep)
   const ringLevels = Array.from({ length: RING_COUNT }, (_, index) => (index + 1) / RING_COUNT)
   const plottedPoints = axes.map((axis, index) => {
     const angle = startAngle + angleStep * index
-    const axisEnd = polarToCartesian(angle, PLOT_RADIUS)
-    const performancePoint = polarToCartesian(angle, (axis.performance / 100) * PLOT_RADIUS)
-    const volumePoint = polarToCartesian(angle, (axis.volume / 100) * PLOT_RADIUS)
-    const labelLayout = getLabelBlockLayout(angle, getLabelBlockMetrics(axis))
+    const axisEnd = polarToCartesian(angle, PLOT_RADIUS, centerY)
+    const performancePoint = polarToCartesian(angle, (axis.performance / 100) * PLOT_RADIUS, centerY)
+    const volumePoint = polarToCartesian(angle, (axis.volume / 100) * PLOT_RADIUS, centerY)
+    const labelLayout = getLabelBlockLayout(angle, getLabelBlockMetrics(axis), centerY)
 
     return {
       ...axis,
@@ -238,7 +267,7 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
         {ringLevels.map((level) => {
           const points = plottedPoints.map((_, index) => {
             const angle = startAngle + angleStep * index
-            return polarToCartesian(angle, PLOT_RADIUS * level)
+            return polarToCartesian(angle, PLOT_RADIUS * level, centerY)
           })
 
           return (
@@ -256,7 +285,7 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
           <line
             key={`${axis.label}-axis`}
             x1={CENTER_X}
-            y1={CENTER_Y}
+            y1={centerY}
             x2={axis.axisEnd.x}
             y2={axis.axisEnd.y}
             stroke={AXIS_COLOR}

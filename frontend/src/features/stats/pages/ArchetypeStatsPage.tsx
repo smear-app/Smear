@@ -32,7 +32,7 @@ export default function ArchetypeStatsPage() {
         </div>
 
         <div className="mt-5">
-          <ProgressionSurface className="relative px-4 pb-4 pt-3">
+          <ProgressionSurface className="relative px-4 py-4">
             <div className="pointer-events-none absolute right-4 top-3 z-10">
               <ArchetypeRadarLegend />
             </div>
