@@ -9,8 +9,7 @@ const HEIGHT = 286
 const CENTER_X = WIDTH / 2
 const CENTER_Y = 136
 const PLOT_RADIUS = 106
-const LABEL_SIDE_GAP = 6
-const LABEL_VERTICAL_GAP = 8
+const PLOT_TO_LABEL_GAP = 10
 const LABEL_SAFE_BOUNDS = {
   left: 8,
   right: WIDTH - 8,
@@ -150,7 +149,7 @@ function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
           LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
         ),
         labelY: clamp(
-          axisEnd.y - LABEL_VERTICAL_GAP - LABEL_LINE_HEIGHT,
+          axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_LINE_HEIGHT,
           LABEL_SAFE_BOUNDS.top,
           LABEL_SAFE_BOUNDS.bottom,
         ),
@@ -169,7 +168,7 @@ function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
           LABEL_SAFE_BOUNDS.right - metrics.blockWidth / 2,
         ),
         labelY: clamp(
-          axisEnd.y + LABEL_VERTICAL_GAP,
+          axisEnd.y + PLOT_TO_LABEL_GAP,
           LABEL_SAFE_BOUNDS.top,
           LABEL_SAFE_BOUNDS.bottom - LABEL_LINE_HEIGHT,
         ),
@@ -182,7 +181,7 @@ function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
   if (side === "left") {
     return applyLineWidthGuards(
       {
-        x: clamp(axisEnd.x - LABEL_SIDE_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
+        x: clamp(axisEnd.x - PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
         labelY: clamp(
           axisEnd.y - LABEL_LINE_HEIGHT / 2,
           LABEL_SAFE_BOUNDS.top,
@@ -196,7 +195,7 @@ function getLabelBlockLayout(angleRadians: number, metrics: LabelBlockMetrics) {
 
   return applyLineWidthGuards(
     {
-      x: clamp(axisEnd.x + LABEL_SIDE_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
+      x: clamp(axisEnd.x + PLOT_TO_LABEL_GAP, LABEL_SAFE_BOUNDS.left, LABEL_SAFE_BOUNDS.right),
       labelY: clamp(
         axisEnd.y - LABEL_LINE_HEIGHT / 2,
         LABEL_SAFE_BOUNDS.top,

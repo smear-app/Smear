@@ -2,12 +2,11 @@ import { useMemo, useState } from "react"
 import BackButton from "../../../components/BackButton"
 import BottomNav from "../../../components/BottomNav"
 import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownList"
-import ArchetypeIdentityBlock from "../components/archetype/ArchetypeIdentityBlock"
 import ArchetypeRadarLegend from "../components/archetype/ArchetypeRadarLegend"
 import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
 import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentControl"
-import ArchetypeStrengthsSection from "../components/archetype/ArchetypeStrengthsSection"
 import ArchetypeTrendCard from "../components/archetype/ArchetypeTrendCard"
+import Insight from "../components/Insight"
 import ProgressionSurface from "../components/progression/ProgressionSurface"
 import { buildArchetypeViewModel, archetypeSegmentOptions } from "../domain/archetype/mockArchetypeData"
 import type { ArchetypeSegment } from "../domain/archetype/types"
@@ -38,14 +37,11 @@ export default function ArchetypeStatsPage() {
               <ArchetypeRadarLegend />
             </div>
             <ArchetypeRadarChart axes={viewModel.radarAxes} />
-            <div className="mt-0.5">
-              <ArchetypeIdentityBlock label={viewModel.archetypeLabel} description={viewModel.description} />
-            </div>
           </ProgressionSurface>
         </div>
 
-        <div className="mt-4">
-          <ArchetypeStrengthsSection strengths={viewModel.strengths} growthAreas={viewModel.growthAreas} />
+        <div className="mt-3">
+          <Insight title={viewModel.archetypeLabel} body={viewModel.description} />
         </div>
 
         <div className="mt-4">
