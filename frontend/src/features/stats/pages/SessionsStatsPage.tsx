@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import BackButton from "../../../components/BackButton"
 import BottomNav from "../../../components/BottomNav"
+import DetailPageHeader from "../../../components/DetailPageHeader"
 import { useAuth } from "../../../context/AuthContext"
 import { useLogbookHistory } from "../../../hooks/useLogbookHistory"
 import { DEFAULT_LOGBOOK_FILTERS } from "../../../lib/logbook"
@@ -66,10 +66,9 @@ export default function SessionsStatsPage() {
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
       <main className="app-safe-shell__main mx-auto flex min-h-screen max-w-[420px] flex-col px-5 pb-32 pt-6">
-        <div className="flex items-center gap-3">
-          <BackButton to="/stats" label="Back to Stats" ariaLabel="Back to Stats" size="sm" />
+        <DetailPageHeader backTo="/stats" backLabel="Back to Stats" backAriaLabel="Back to Stats">
           <h1 className="text-xl font-bold text-stone-text">Sessions</h1>
-        </div>
+        </DetailPageHeader>
 
         <div className="mt-5">
           <SessionsTrendChart points={sessionsMockData.trendPoints} />

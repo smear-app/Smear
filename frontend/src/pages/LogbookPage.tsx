@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { FiArrowUp, FiChevronDown, FiMapPin } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
-import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
+import DetailPageHeader from "../components/DetailPageHeader"
 import AnchoredPopover from "../components/logbook/AnchoredPopover"
 import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffold"
 import LogbookClimbList from "../components/logbook/LogbookClimbList"
@@ -443,17 +443,14 @@ export default function LogbookPage({
           }
         `}</style>
 
-        <div className="flex items-center gap-3">
-          <BackButton
-            to="/home"
-            state={{ stackTransition: "back" }}
-            label="Back to Home"
-            ariaLabel="Back to Home"
-            size="sm"
-          />
-
+        <DetailPageHeader
+          backTo="/home"
+          backState={{ stackTransition: "back" }}
+          backLabel="Back to Home"
+          backAriaLabel="Back to Home"
+        >
           <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
-        </div>
+        </DetailPageHeader>
 
         <section className="relative mt-2 rounded-[22px] border border-stone-border bg-stone-surface px-2.5 py-2.5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center gap-1">
