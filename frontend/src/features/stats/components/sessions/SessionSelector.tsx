@@ -1,4 +1,5 @@
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi"
+import type { ReactNode } from "react"
 import type { SessionDetail } from "../../domain/sessions/types"
 import ProgressionSurface from "../progression/ProgressionSurface"
 
@@ -8,6 +9,7 @@ type SessionSelectorProps = {
   total: number
   onPrevious: () => void
   onNext: () => void
+  actions?: ReactNode
 }
 
 export default function SessionSelector({
@@ -16,6 +18,7 @@ export default function SessionSelector({
   total,
   onPrevious,
   onNext,
+  actions,
 }: SessionSelectorProps) {
   return (
     <ProgressionSurface className="py-4">
@@ -29,6 +32,11 @@ export default function SessionSelector({
 
         <SelectorButton ariaLabel="Next session" onClick={onNext} disabled={currentIndex === 0} icon={<FiChevronRight className="h-4.5 w-4.5" />} />
       </div>
+      {actions ? (
+        <div className="mt-3 border-t border-stone-border/70 pt-3 dark:border-white/[0.06]">
+          {actions}
+        </div>
+      ) : null}
     </ProgressionSurface>
   )
 }
