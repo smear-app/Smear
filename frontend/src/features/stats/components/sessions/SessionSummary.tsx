@@ -1,17 +1,14 @@
-import type { SessionIdentity, SessionSummaryStat } from "../../domain/sessions/types"
+import type { SessionSummaryStat } from "../../domain/sessions/types"
 import ProgressionSurface from "../progression/ProgressionSurface"
-import SessionIdentityLine from "./SessionIdentityLine"
 
 type SessionSummaryProps = {
-  identity: SessionIdentity
   stats: SessionSummaryStat[]
 }
 
-export default function SessionSummary({ identity, stats }: SessionSummaryProps) {
+export default function SessionSummary({ stats }: SessionSummaryProps) {
   return (
     <ProgressionSurface>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Selected session</p>
-      <SessionIdentityLine identity={identity} />
       <div className="mt-3 grid grid-cols-2 gap-2">
         {stats.map((stat) => (
           <article

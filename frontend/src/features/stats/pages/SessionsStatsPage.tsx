@@ -12,6 +12,7 @@ import SessionSelector from "../components/sessions/SessionSelector"
 import SessionSummary from "../components/sessions/SessionSummary"
 import SessionDetailBreakdown from "../components/sessions/SessionDetailBreakdown"
 import SessionInsight from "../components/sessions/SessionInsight"
+import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
 import { sessionsMockData } from "../domain/sessions/mockSessionsData"
 
 type SessionsStatsLocationState = {
@@ -110,8 +111,12 @@ export default function SessionsStatsPage() {
           />
         </div>
 
-        <div className="mt-4">
-          <SessionSummary identity={selectedSession.identity} stats={selectedSession.summary} />
+        <div className="mt-2 px-1">
+          <SessionIdentityLine identity={selectedSession.identity} />
+        </div>
+
+        <div className="mt-2">
+          <SessionSummary stats={selectedSession.summary} />
         </div>
 
         <div className="mt-4">
