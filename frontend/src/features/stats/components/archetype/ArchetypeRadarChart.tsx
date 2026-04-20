@@ -10,6 +10,7 @@ const BASE_CENTER_Y = 136
 const PLOT_RADIUS = 106
 const PLOT_TO_LABEL_GAP = 10
 const PLOT_SAFE_GAP = 6
+const WALL_ANGLE_SIDE_LABEL_EDGE_INSET = 8
 const LABEL_HORIZONTAL_SAFE_INSET = 0
 const LABEL_VERTICAL_SAFE_INSET = 8
 const LABEL_LINE_HEIGHT = 13
@@ -191,6 +192,40 @@ function createSideLabelLayout(side: AxisLabelSide, axisEnd: Point, metrics: Lab
   return toLabelLayout(x, axisEnd.y - LABEL_BLOCK_HEIGHT / 2, "start", metrics)
 }
 
+function createWallAngleSideLabelLayout(
+  side: Extract<AxisLabelSide, "left" | "right">,
+  axisEnd: Point,
+  metrics: LabelBlockMetrics,
+  centerY: number,
+  sideLabelTrackWidth: number,
+) {
+  const textAnchor = side === "left" ? "end" : "start"
+  const x = side === "left"
+    ? clamp(
+        axisEnd.x - PLOT_TO_LABEL_GAP,
+        LABEL_SAFE_BOUNDS.left + WALL_ANGLE_SIDE_LABEL_EDGE_INSET + sideLabelTrackWidth,
+        LABEL_SAFE_BOUNDS.right - WALL_ANGLE_SIDE_LABEL_EDGE_INSET,
+      )
+    : clamp(
+        axisEnd.x + PLOT_TO_LABEL_GAP,
+        LABEL_SAFE_BOUNDS.left + WALL_ANGLE_SIDE_LABEL_EDGE_INSET,
+        LABEL_SAFE_BOUNDS.right - WALL_ANGLE_SIDE_LABEL_EDGE_INSET - sideLabelTrackWidth,
+      )
+  const naturalTop = axisEnd.y - PLOT_TO_LABEL_GAP - LABEL_BLOCK_HEIGHT
+  const naturalLayout = toLabelLayout(x, naturalTop, textAnchor, metrics)
+  const nearestPlotEdgeX = side === "left" ? naturalLayout.bounds.right : naturalLayout.bounds.left
+  const upperVertexY = centerY - PLOT_RADIUS - PLOT_SAFE_GAP
+  const plotBoundaryYAtLabelEdge = upperVertexY + Math.abs(nearestPlotEdgeX - CENTER_X)
+  const maxLabelBottom = plotBoundaryYAtLabelEdge - PLOT_TO_LABEL_GAP
+  const top = clamp(
+    Math.min(naturalTop, maxLabelBottom - LABEL_BLOCK_HEIGHT),
+    LABEL_SAFE_BOUNDS.top,
+    LABEL_SAFE_BOUNDS.bottom - LABEL_BLOCK_HEIGHT,
+  )
+
+  return toLabelLayout(x, top, textAnchor, metrics)
+}
+
 function createVerticalFallbackLayout(
   placement: "above" | "below",
   axisEnd: Point,
@@ -308,9 +343,14 @@ function getLabelBlockLayout(
   centerY: number,
   plotPolygon: Point[],
   axisCount: number,
+  sideLabelTrackWidth: number,
 ) {
   const side = getAxisLabelSide(angleRadians)
   const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
+  const sideLayout =
+    axisCount === 4 && (side === "left" || side === "right")
+      ? createWallAngleSideLabelLayout(side, axisEnd, metrics, centerY, sideLabelTrackWidth)
+      : createSideLabelLayout(side, axisEnd, metrics)
   const verticalPreference = axisEnd.y >= centerY ? "below" : "above"
   const isLowerThreeAxisVertex = axisCount === 3 && axisEnd.y > centerY
   const verticalFallback = createVerticalFallbackLayout(
@@ -324,8 +364,8 @@ function getLabelBlockLayout(
     metrics,
   )
   const candidates = isLowerThreeAxisVertex
-    ? [verticalFallback, alternateVerticalFallback, createSideLabelLayout(side, axisEnd, metrics)]
-    : [createSideLabelLayout(side, axisEnd, metrics), verticalFallback, alternateVerticalFallback]
+    ? [verticalFallback, alternateVerticalFallback, sideLayout]
+    : [sideLayout, verticalFallback, alternateVerticalFallback]
 
   return candidates.find((candidate) => isValidLabelLayout(candidate, plotPolygon)) ?? candidates[1]
 }
@@ -336,9 +376,10 @@ function getAxisVerticalBounds(
   centerY: number,
   plotPolygon: Point[],
   axisCount: number,
+  sideLabelTrackWidth: number,
 ) {
   const axisEnd = polarToCartesian(angleRadians, PLOT_RADIUS, centerY)
-  const layout = getLabelBlockLayout(angleRadians, metrics, centerY, plotPolygon, axisCount)
+  const layout = getLabelBlockLayout(angleRadians, metrics, centerY, plotPolygon, axisCount, sideLabelTrackWidth)
 
   return {
     minY: Math.min(axisEnd.y, layout.bounds.top),
@@ -346,7 +387,24 @@ function getAxisVerticalBounds(
   }
 }
 
+function getWallAngleSideLabelTrackWidth(labelMetrics: LabelBlockMetrics[], startAngle: number, angleStep: number) {
+  if (labelMetrics.length !== 4) {
+    return 0
+  }
+
+  return Math.max(
+    ...labelMetrics
+      .filter((_, index) => {
+        const side = getAxisLabelSide(startAngle + angleStep * index)
+
+        return side === "left" || side === "right"
+      })
+      .map((metrics) => metrics.blockWidth),
+  )
+}
+
 function getCenteredPlotOffset(labelMetrics: LabelBlockMetrics[], startAngle: number, angleStep: number) {
+  const sideLabelTrackWidth = getWallAngleSideLabelTrackWidth(labelMetrics, startAngle, angleStep)
   const plotPolygon = getPlotPolygon(
     labelMetrics.length,
     startAngle,
@@ -355,7 +413,14 @@ function getCenteredPlotOffset(labelMetrics: LabelBlockMetrics[], startAngle: nu
     BASE_CENTER_Y,
   )
   const bounds = labelMetrics.map((metrics, index) =>
-    getAxisVerticalBounds(startAngle + angleStep * index, metrics, BASE_CENTER_Y, plotPolygon, labelMetrics.length),
+    getAxisVerticalBounds(
+      startAngle + angleStep * index,
+      metrics,
+      BASE_CENTER_Y,
+      plotPolygon,
+      labelMetrics.length,
+      sideLabelTrackWidth,
+    ),
   )
   const minY = Math.min(...bounds.map((bound) => bound.minY))
   const maxY = Math.max(...bounds.map((bound) => bound.maxY))
@@ -368,6 +433,7 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
   const angleStep = (Math.PI * 2) / axes.length
   const startAngle = -Math.PI / 2
   const labelMetrics = axes.map(getLabelBlockMetrics)
+  const sideLabelTrackWidth = getWallAngleSideLabelTrackWidth(labelMetrics, startAngle, angleStep)
   const centerY = BASE_CENTER_Y + getCenteredPlotOffset(labelMetrics, startAngle, angleStep)
   const ringLevels = Array.from({ length: RING_COUNT }, (_, index) => (index + 1) / RING_COUNT)
   const plotPolygon = getPlotPolygon(axes.length, startAngle, angleStep, PLOT_RADIUS + PLOT_SAFE_GAP, centerY)
@@ -376,7 +442,14 @@ export default function ArchetypeRadarChart({ axes }: ArchetypeRadarChartProps) 
     const axisEnd = polarToCartesian(angle, PLOT_RADIUS, centerY)
     const performancePoint = polarToCartesian(angle, (axis.performance / 100) * PLOT_RADIUS, centerY)
     const volumePoint = polarToCartesian(angle, (axis.volume / 100) * PLOT_RADIUS, centerY)
-    const labelLayout = getLabelBlockLayout(angle, labelMetrics[index], centerY, plotPolygon, axes.length)
+    const labelLayout = getLabelBlockLayout(
+      angle,
+      labelMetrics[index],
+      centerY,
+      plotPolygon,
+      axes.length,
+      sideLabelTrackWidth,
+    )
 
     return {
       ...axis,
