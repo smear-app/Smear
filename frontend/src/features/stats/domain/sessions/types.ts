@@ -29,10 +29,16 @@ export type SessionSummaryStat = {
   value: string
 }
 
+export type SessionIdentity = {
+  label: string
+  reason: string
+}
+
 export type SessionDetail = {
   id: string
   selectorLabel: string
   selectorMeta: string
+  identity: SessionIdentity
   summary: SessionSummaryStat[]
   outcomes: SessionOutcomeItem[]
   gradeDistribution: SessionGradeDistributionItem[]

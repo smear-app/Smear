@@ -1,4 +1,14 @@
-import type { SessionOutcomeItem, SessionsViewModel } from "./types"
+import type { SessionIdentity, SessionOutcomeItem, SessionsViewModel } from "./types"
+
+const TEMPORARY_SESSION_IDENTITIES: Record<string, SessionIdentity> = {
+  "session-1": { label: "Volume session", reason: "+22% climbs" },
+  "session-2": { label: "Projecting session", reason: "-18% send rate" },
+  "session-3": { label: "Hard session", reason: "+0.6 avg grade" },
+}
+
+function getTemporarySessionIdentity(sessionId: string): SessionIdentity {
+  return TEMPORARY_SESSION_IDENTITIES[sessionId] ?? { label: "Balanced session", reason: "Near average" }
+}
 
 function toSessionOutcomeItems(counts: Record<SessionOutcomeItem["tone"], number>): SessionOutcomeItem[] {
   const outcomes = [
@@ -57,11 +67,12 @@ export const sessionsMockData: SessionsViewModel = {
       id: "session-1",
       selectorLabel: "Apr 10 · Movement Gym",
       selectorMeta: "Latest session",
+      identity: getTemporarySessionIdentity("session-1"),
       summary: [
         { label: "Total Climbs", value: "18" },
-        { label: "Working Grade", value: "V4.8" },
-        { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 45m" },
+        { label: "Max Grade", value: "V6" },
+        { label: "Working Grade", value: "V4.8" },
       ],
       outcomes: toSessionOutcomeItems({ flash: 4, send: 8, unfinished: 6 }),
       gradeDistribution: [
@@ -76,11 +87,12 @@ export const sessionsMockData: SessionsViewModel = {
       id: "session-2",
       selectorLabel: "Apr 03 · East Bloc",
       selectorMeta: "Previous session",
+      identity: getTemporarySessionIdentity("session-2"),
       summary: [
         { label: "Total Climbs", value: "14" },
-        { label: "Working Grade", value: "V4.6" },
-        { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 32m" },
+        { label: "Max Grade", value: "V6" },
+        { label: "Working Grade", value: "V4.6" },
       ],
       outcomes: toSessionOutcomeItems({ flash: 3, send: 5, unfinished: 6 }),
       gradeDistribution: [
@@ -95,11 +107,12 @@ export const sessionsMockData: SessionsViewModel = {
       id: "session-3",
       selectorLabel: "Mar 12 · Movement Gym",
       selectorMeta: "Mid-March session",
+      identity: getTemporarySessionIdentity("session-3"),
       summary: [
         { label: "Total Climbs", value: "18" },
-        { label: "Working Grade", value: "V4.8" },
-        { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 58m" },
+        { label: "Max Grade", value: "V6" },
+        { label: "Working Grade", value: "V4.8" },
       ],
       outcomes: toSessionOutcomeItems({ flash: 5, send: 7, unfinished: 6 }),
       gradeDistribution: [

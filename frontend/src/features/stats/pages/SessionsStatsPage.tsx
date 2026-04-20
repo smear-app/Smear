@@ -111,7 +111,7 @@ export default function SessionsStatsPage() {
         </div>
 
         <div className="mt-4">
-          <SessionSummary stats={selectedSession.summary} />
+          <SessionSummary identity={selectedSession.identity} stats={selectedSession.summary} />
         </div>
 
         <div className="mt-4">
