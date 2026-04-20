@@ -1,4 +1,42 @@
-import type { SessionsViewModel } from "./types"
+import type { SessionOutcomeItem, SessionsViewModel } from "./types"
+
+function toSessionOutcomeItems(counts: Record<SessionOutcomeItem["tone"], number>): SessionOutcomeItem[] {
+  const outcomes = [
+    { label: "Flash", tone: "flash", count: counts.flash },
+    { label: "Send", tone: "send", count: counts.send },
+    { label: "Unfinished", tone: "unfinished", count: counts.unfinished },
+  ] satisfies Array<Omit<SessionOutcomeItem, "percentage">>
+  const totalCount = outcomes.reduce((sum, item) => sum + item.count, 0)
+
+  if (totalCount === 0) {
+    return outcomes.map((item) => ({ ...item, percentage: 0 }))
+  }
+
+  const outcomePercentages = outcomes.map((item) => {
+    const exactPercentage = (item.count / totalCount) * 100
+
+    return {
+      ...item,
+      percentage: Math.floor(exactPercentage),
+      remainder: exactPercentage % 1,
+    }
+  })
+  const remainingPercentage = 100 - outcomePercentages.reduce((sum, item) => sum + item.percentage, 0)
+  const outcomeIndexesByRemainder = outcomePercentages
+    .map((item, index) => ({ index, remainder: item.remainder }))
+    .sort((first, second) => second.remainder - first.remainder)
+
+  for (let index = 0; index < remainingPercentage; index += 1) {
+    outcomePercentages[outcomeIndexesByRemainder[index].index].percentage += 1
+  }
+
+  return outcomePercentages.map((item) => ({
+    label: item.label,
+    count: item.count,
+    percentage: item.percentage,
+    tone: item.tone,
+  }))
+}
 
 export const sessionsMockData: SessionsViewModel = {
   trendPoints: [
@@ -25,12 +63,7 @@ export const sessionsMockData: SessionsViewModel = {
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 45m" },
       ],
-      outcomes: [
-        { label: "Flash", count: 4, percentage: 22, tone: "flash" },
-        { label: "Send", count: 8, percentage: 44, tone: "send" },
-        { label: "Project", count: 4, percentage: 22, tone: "project" },
-        { label: "Unfinished", count: 2, percentage: 12, tone: "unfinished" },
-      ],
+      outcomes: toSessionOutcomeItems({ flash: 4, send: 8, unfinished: 6 }),
       gradeDistribution: [
         { label: "V3", count: 4 },
         { label: "V4", count: 7 },
@@ -49,12 +82,7 @@ export const sessionsMockData: SessionsViewModel = {
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 32m" },
       ],
-      outcomes: [
-        { label: "Flash", count: 3, percentage: 21, tone: "flash" },
-        { label: "Send", count: 5, percentage: 36, tone: "send" },
-        { label: "Project", count: 4, percentage: 29, tone: "project" },
-        { label: "Unfinished", count: 2, percentage: 14, tone: "unfinished" },
-      ],
+      outcomes: toSessionOutcomeItems({ flash: 3, send: 5, unfinished: 6 }),
       gradeDistribution: [
         { label: "V3", count: 3 },
         { label: "V4", count: 5 },
@@ -73,12 +101,7 @@ export const sessionsMockData: SessionsViewModel = {
         { label: "Max Grade", value: "V6" },
         { label: "Duration", value: "1h 58m" },
       ],
-      outcomes: [
-        { label: "Flash", count: 5, percentage: 28, tone: "flash" },
-        { label: "Send", count: 7, percentage: 39, tone: "send" },
-        { label: "Project", count: 4, percentage: 22, tone: "project" },
-        { label: "Unfinished", count: 2, percentage: 11, tone: "unfinished" },
-      ],
+      outcomes: toSessionOutcomeItems({ flash: 5, send: 7, unfinished: 6 }),
       gradeDistribution: [
         { label: "V3", count: 4 },
         { label: "V4", count: 6 },

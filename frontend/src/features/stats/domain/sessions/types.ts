@@ -16,7 +16,7 @@ export type SessionOutcomeItem = {
   label: string
   count: number
   percentage: number
-  tone: "flash" | "send" | "project" | "unfinished"
+  tone: "flash" | "send" | "unfinished"
 }
 
 export type SessionGradeDistributionItem = {

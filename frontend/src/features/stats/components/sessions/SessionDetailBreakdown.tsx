@@ -15,9 +15,9 @@ export default function SessionDetailBreakdown({
   return (
     <ProgressionSurface>
       <div className="space-y-5">
-        <SessionOutcomeBreakdown items={outcomes} />
+        <SessionGradeDistribution items={gradeDistribution} />
         <div className="border-t border-stone-border/80 pt-5 dark:border-white/[0.06]">
-          <SessionGradeDistribution items={gradeDistribution} />
+          <SessionOutcomeBreakdown items={outcomes} />
         </div>
       </div>
     </ProgressionSurface>
