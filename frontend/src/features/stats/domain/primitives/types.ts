@@ -16,6 +16,8 @@ export type EnrichedClimb = {
   gymId: string | null
   gymName: string | null
   canonicalClimbId: string | null
+  sessionId: string | null
+  sessionStartedAt: string | null
   loggedAt: string
   completedAt: string | null
   gradeLabel: string | null

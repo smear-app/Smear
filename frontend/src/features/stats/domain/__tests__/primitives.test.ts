@@ -98,6 +98,70 @@ describe("stats primitives", () => {
     expect(bucketClimbsByWeek([])).toEqual([])
   })
 
+  it("assigns all climbs in a session to the week of the local session start", () => {
+    const sessionStartedAt = new Date(2026, 3, 19, 23, 30).toISOString()
+    const climbs = [
+      climb({
+        id: "late-night-start",
+        sessionId: "session-late",
+        sessionStartedAt,
+        loggedAt: sessionStartedAt,
+        outcome: "send",
+        gradeIndex: 4,
+      }),
+      climb({
+        id: "after-midnight",
+        sessionId: "session-late",
+        sessionStartedAt,
+        loggedAt: new Date(2026, 3, 20, 0, 30).toISOString(),
+        outcome: "send",
+        gradeIndex: 5,
+      }),
+    ]
+
+    const buckets = bucketClimbsByWeek(climbs)
+
+    expect(buckets).toHaveLength(1)
+    expect(buckets[0].key).toBe("2026-04-13")
+    expect(buckets[0].climbs.map((item) => item.id)).toEqual(["late-night-start", "after-midnight"])
+  })
+
+  it("uses session start rather than individual climb timestamps for weekly assignment", () => {
+    const climbs = [
+      climb({
+        id: "session-start-week",
+        sessionId: "session-spans-weeks",
+        sessionStartedAt: new Date(2026, 3, 19, 22, 30).toISOString(),
+        loggedAt: new Date(2026, 3, 19, 22, 30).toISOString(),
+      }),
+      climb({
+        id: "next-week-climb",
+        sessionId: "session-spans-weeks",
+        sessionStartedAt: new Date(2026, 3, 19, 22, 30).toISOString(),
+        loggedAt: new Date(2026, 3, 20, 1, 15).toISOString(),
+      }),
+    ]
+
+    const buckets = bucketClimbsByWeek(climbs)
+
+    expect(buckets.map((bucket) => bucket.key)).toEqual(["2026-04-13"])
+    expect(buckets[0].climbs.map((item) => item.id)).toEqual(["session-start-week", "next-week-climb"])
+  })
+
+  it("uses local week boundaries instead of UTC week boundaries for session starts", () => {
+    const sessionStartedAt = new Date(2026, 3, 19, 18, 0).toISOString()
+    const buckets = bucketClimbsByWeek([
+      climb({
+        id: "local-sunday-evening",
+        sessionId: "session-local-sunday",
+        sessionStartedAt,
+        loggedAt: sessionStartedAt,
+      }),
+    ])
+
+    expect(buckets[0].key).toBe("2026-04-13")
+  })
+
   it("counts tags by category and de-duplicates duplicate tags on one climb", () => {
     const counts = buildTagCounts(richStatsClimbs)
     expect(counts.find((item) => item.id === "crimp")).toMatchObject({ count: 3, category: "holdType" })

@@ -1,4 +1,4 @@
-import { filterSentClimbs, getGradeIndexes, type EnrichedClimb } from "../primitives"
+import { bucketClimbsByWeek, filterSentClimbs, getGradeIndexes, type EnrichedClimb } from "../primitives"
 import { calculateProgressionMetrics, type ProgressionMetrics } from "../calculators/progression"
 import type { StatsPipelineValidationIssue } from "./validateStatsPipeline"
 
@@ -20,6 +20,7 @@ export function validateProgressionMetrics(climbs: readonly EnrichedClimb[]): Pr
   const weeklyClimbCount = metrics.weekly.reduce((sum, bucket) => sum + bucket.totalClimbs, 0)
   const weeklySentClimbCount = metrics.weekly.reduce((sum, bucket) => sum + bucket.totalSentClimbs, 0)
   const expectedSentClimbCount = filterSentClimbs(climbs).length
+  const sourceBucketsByKey = new Map(bucketClimbsByWeek(climbs).map((bucket) => [bucket.key, bucket]))
 
   if (weeklyClimbCount !== climbs.length) {
     issues.push({
@@ -64,7 +65,7 @@ export function validateProgressionMetrics(climbs: readonly EnrichedClimb[]): Pr
       })
     }
 
-    const sourceClimbs = climbs.filter((climb) => climb.loggedAt >= bucket.startAt && climb.loggedAt < bucket.endAt)
+    const sourceClimbs = sourceBucketsByKey.get(bucket.key)?.climbs ?? []
     const sentSourceClimbs = filterSentClimbs(sourceClimbs)
     const sentGradeCount = getGradeIndexes(sentSourceClimbs).length
 

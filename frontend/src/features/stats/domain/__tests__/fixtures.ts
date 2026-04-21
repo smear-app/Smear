@@ -26,6 +26,8 @@ export function climb(overrides: Partial<EnrichedClimb> & Pick<EnrichedClimb, "i
     gymId: overrides.gymId ?? "gym-1",
     gymName: overrides.gymName ?? "Test Gym",
     canonicalClimbId: overrides.canonicalClimbId ?? null,
+    sessionId: overrides.sessionId ?? null,
+    sessionStartedAt: overrides.sessionStartedAt ?? null,
     loggedAt,
     completedAt: overrides.completedAt ?? (isSend ? loggedAt : null),
     gradeLabel: overrides.gradeLabel ?? (typeof overrides.gradeIndex === "number" ? `V${overrides.gradeIndex}` : null),

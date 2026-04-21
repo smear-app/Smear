@@ -26,6 +26,7 @@ const rawClimb: RawStatsClimb = {
   canonical_climb_id: "canonical-1",
   canonical_tags: ["Crimp", "Slab", "Balance"],
   session_id: "session-1",
+  session_started_at: "2026-04-01T09:30:00.000Z",
   created_at: "2026-04-01T10:00:00.000Z",
 }
 
@@ -80,6 +81,8 @@ describe("stats normalization", () => {
       gymId: "gym-1",
       gymName: "Fallback Gym",
       canonicalClimbId: "canonical-1",
+      sessionId: "session-1",
+      sessionStartedAt: "2026-04-01T09:30:00.000Z",
       loggedAt: "2026-04-01T10:00:00.000Z",
       completedAt: "2026-04-01T10:00:00.000Z",
       gradeLabel: "V5",

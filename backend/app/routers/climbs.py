@@ -29,6 +29,7 @@ SESSION_THRESHOLD_HOURS = 3
 def _row_to_climb_object(row: dict) -> ClimbObject:
     """Map a DB row (possibly with canonical_climbs join) to ClimbObject."""
     canonical = row.get("canonical_climbs") or {}
+    session = row.get("sessions") or {}
     photo_url = row.get("photo_url") or (canonical.get("photo_url") if isinstance(canonical, dict) else None)
     canonical_tags = canonical.get("canonical_tags") if isinstance(canonical, dict) else None
     return ClimbObject(
@@ -48,6 +49,7 @@ def _row_to_climb_object(row: dict) -> ClimbObject:
         canonical_climb_id=row.get("canonical_climb_id"),
         canonical_tags=canonical_tags or [],
         session_id=row.get("session_id"),
+        session_started_at=session.get("started_at") if isinstance(session, dict) else None,
         created_at=row["created_at"],
     )
 
@@ -129,7 +131,7 @@ def get_climbs(
     supabase = get_supabase()
     query = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags)", count="exact")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)", count="exact")
         .eq("user_id", user_id)
     )
 
@@ -207,7 +209,7 @@ def get_recent_climbs(user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags)")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
         .eq("user_id", user_id)
         .order("created_at", desc=True)
         .limit(5)
@@ -221,7 +223,7 @@ def get_climb_by_id(climb_id: str, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags)")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
         .eq("user_id", user_id)
         .eq("id", climb_id)
         .maybe_single()

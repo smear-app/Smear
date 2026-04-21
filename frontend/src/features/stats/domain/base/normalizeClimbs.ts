@@ -30,6 +30,8 @@ export function normalizeClimb(climb: NormalizableClimb, gymsById: ReadonlyMap<s
     gymId: climb.gym_id,
     gymName: getGymName(climb, gymsById),
     canonicalClimbId: climb.canonical_climb_id,
+    sessionId: climb.session_id,
+    sessionStartedAt: climb.session_started_at,
     loggedAt: climb.created_at,
     completedAt: outcome.isCompleted ? climb.created_at : null,
     gradeLabel: grade.gradeLabel,

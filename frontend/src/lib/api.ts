@@ -56,6 +56,7 @@ export interface ClimbObject {
   canonical_climb_id: string | null
   canonical_tags: string[]
   session_id: string | null
+  session_started_at: string | null
   created_at: string
 }
 

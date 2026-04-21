@@ -17,6 +17,7 @@ const CHART_PADDING = {
 const BAR_FILL = "color-mix(in srgb, var(--ember) 48%, var(--stone-surface) 52%)"
 const BAR_OPACITY = 0.58
 const LINE_COLOR = "color-mix(in srgb, var(--ember) 92%, white 8%)"
+const BRIDGE_LINE_COLOR = "color-mix(in srgb, var(--ember) 74%, var(--stone-muted) 26%)"
 const MAJOR_GRID_COLOR = "color-mix(in srgb, var(--stone-border) 86%, transparent)"
 const MINOR_GRID_COLOR = "color-mix(in srgb, var(--stone-border) 68%, transparent)"
 const TICK_COLOR = "var(--stone-muted)"
@@ -31,6 +32,43 @@ function buildLinePath(points: Array<{ x: number; y: number }>) {
   return points
     .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
     .join(" ")
+}
+
+function buildLineSegments(points: Array<{ x: number; y: number | null }>) {
+  return points.reduce<Array<Array<{ x: number; y: number }>>>((segments, point) => {
+    if (point.y === null) {
+      return [...segments, []]
+    }
+
+    const nextSegments = segments.length === 0 ? [[]] : segments
+    nextSegments[nextSegments.length - 1].push({ x: point.x, y: point.y })
+    return nextSegments
+  }, []).filter((segment) => segment.length > 0)
+}
+
+function buildGapBridgeSegments(points: Array<{ x: number; y: number | null }>) {
+  const bridges: Array<Array<{ x: number; y: number }>> = []
+  let previousObserved: { point: { x: number; y: number }; index: number } | null = null
+
+  points.forEach((point, index) => {
+    if (point.y === null) {
+      return
+    }
+
+    if (previousObserved && index - previousObserved.index > 1) {
+      bridges.push([
+        previousObserved.point,
+        { x: point.x, y: point.y },
+      ])
+    }
+
+    previousObserved = {
+      point: { x: point.x, y: point.y },
+      index,
+    }
+  })
+
+  return bridges
 }
 
 function formatAxisGradeLabel(value: number) {
@@ -84,8 +122,8 @@ export default function ProgressionChartCard({
       barHeight,
     }
   })
-  const linePoints = chartPoints.flatMap(({ x, y }) => (y === null ? [] : [{ x, y }]))
-  const linePath = buildLinePath(linePoints)
+  const lineSegments = buildLineSegments(chartPoints.map(({ x, y }) => ({ x, y })))
+  const bridgeSegments = buildGapBridgeSegments(chartPoints.map(({ x, y }) => ({ x, y })))
   const gradeTicks = Array.from(
     { length: gradeCeiling - gradeFloor + 1 },
     (_, index) => gradeFloor + index,
@@ -186,14 +224,30 @@ export default function ProgressionChartCard({
             )
           ))}
 
-          <path
-            d={linePath}
-            fill="none"
-            stroke={LINE_COLOR}
-            strokeWidth="4.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {lineSegments.map((segment, index) => (
+            <path
+              key={`line-${index}`}
+              d={buildLinePath(segment)}
+              fill="none"
+              stroke={LINE_COLOR}
+              strokeWidth="4.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
+
+          {bridgeSegments.map((segment, index) => (
+            <path
+              key={`bridge-${index}`}
+              d={buildLinePath(segment)}
+              fill="none"
+              stroke={BRIDGE_LINE_COLOR}
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="2 8"
+            />
+          ))}
 
           {chartPoints.map((point) => (
             point.y === null ? null : (

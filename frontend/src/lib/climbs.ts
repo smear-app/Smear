@@ -62,6 +62,7 @@ export interface Climb {
   canonical_climb_id: string | null
   canonical_tags: string[]
   session_id: string | null
+  session_started_at: string | null
   created_at: string
 }
 
@@ -109,6 +110,7 @@ function mapApiClimb(obj: ClimbObject): Climb {
     canonical_climb_id: obj.canonical_climb_id,
     canonical_tags: obj.canonical_tags,
     session_id: obj.session_id,
+    session_started_at: obj.session_started_at,
     created_at: obj.created_at,
   }
 }

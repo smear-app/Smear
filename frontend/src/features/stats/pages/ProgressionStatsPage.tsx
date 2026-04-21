@@ -37,22 +37,6 @@ function getRangeStart(range: ProgressionRange, now: Date): Date | null {
   return start
 }
 
-function getClimbsForRange(climbs: readonly EnrichedClimb[], range: ProgressionRange, now: Date): EnrichedClimb[] {
-  const start = getRangeStart(range, now)
-
-  if (start === null) {
-    return [...climbs]
-  }
-
-  const startTime = start.getTime()
-  const endTime = now.getTime()
-
-  return climbs.filter((climb) => {
-    const loggedAt = new Date(climb.loggedAt).getTime()
-    return Number.isFinite(loggedAt) && loggedAt >= startTime && loggedAt <= endTime
-  })
-}
-
 function getProgressionBinDebugRows(climbs: readonly EnrichedClimb[], metrics: ProgressionMetrics) {
   const metricsByKey = new Map(metrics.weekly.map((bucket) => [bucket.key, bucket]))
 
@@ -88,13 +72,18 @@ export default function ProgressionStatsPage() {
   const progressionView = useMemo(() => progressionMockData[selectedRange], [selectedRange])
   const selectedChartData = useMemo(() => {
     const now = new Date()
-    const selectedClimbs = getClimbsForRange(statsClimbs, selectedRange, now)
-    const metrics = calculateProgressionMetrics(selectedClimbs)
+    const rangeStart = getRangeStart(selectedRange, now)
+    const metrics = calculateProgressionMetrics(statsClimbs)
+    const firstHistoryStartAt = metrics.weekly[0]?.startAt ?? null
 
     return {
       metrics,
-      selectedClimbs,
-      view: selectProgressionViewModel(metrics),
+      selectedClimbs: statsClimbs,
+      view: selectProgressionViewModel(metrics, {
+        visibleStartAt: rangeStart,
+        visibleEndAt: now,
+        firstHistoryStartAt,
+      }),
     }
   }, [selectedRange, statsClimbs])
   const selectedChartView = selectedChartData.view
