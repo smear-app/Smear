@@ -3,6 +3,9 @@ import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
 import { useAuth } from "../../../context/AuthContext"
+import type { Climb } from "../../../lib/climbs"
+import { buildImplicitSessions as buildLogbookSessions, type LogbookSession } from "../../../lib/logbook"
+import SessionClimbActions from "../components/sessions/SessionClimbActions"
 import SessionsTrendChart from "../components/sessions/SessionsTrendChart"
 import SessionTrendMetrics from "../components/sessions/SessionTrendMetrics"
 import SessionSelector from "../components/sessions/SessionSelector"
@@ -10,7 +13,7 @@ import SessionSummary from "../components/sessions/SessionSummary"
 import SessionDetailBreakdown from "../components/sessions/SessionDetailBreakdown"
 import SessionInsight from "../components/sessions/SessionInsight"
 import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
-import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
+import { fetchStatsBase, prepareEnrichedClimbs, type RawStatsClimb } from "../domain/base"
 import { calculateSessionMetrics } from "../domain/calculators"
 import type { EnrichedClimb } from "../domain/primitives"
 import { sessionsMockData } from "../domain/sessions/mockSessionsData"
@@ -19,6 +22,7 @@ import type { SessionDetail } from "../domain/sessions/types"
 
 type SessionsStatsLocationState = {
   selectedSessionIndex?: number
+  climbsExpanded?: boolean
 }
 
 const EMPTY_SELECTED_SESSION: SessionDetail = {
@@ -38,11 +42,47 @@ const EMPTY_SELECTED_SESSION: SessionDetail = {
   insight: "",
 }
 
-export default function SessionsStatsPage() {
+function toLogbookClimb(climb: RawStatsClimb): Climb {
+  return {
+    id: climb.id,
+    user_id: climb.user_id,
+    gym_id: climb.gym_id,
+    gym_name: climb.gym_name,
+    gym_grade: climb.gym_grade,
+    gym_grade_value: climb.gym_grade_value,
+    personal_grade: climb.personal_grade,
+    personal_grade_value: climb.personal_grade_value,
+    send_type: climb.send_type,
+    tags: climb.tags,
+    photo_url: climb.photo_url,
+    climbColor: climb.hold_color,
+    notes: climb.notes,
+    canonical_climb_id: climb.canonical_climb_id,
+    canonical_tags: climb.canonical_tags,
+    session_id: climb.session_id,
+    session_started_at: climb.session_started_at,
+    created_at: climb.created_at,
+  }
+}
+
+type SessionsStatsPageProps = {
+  onDeleteClimb: (climbId: string) => Promise<void> | void
+  onEditClimb: (climb: Climb) => void
+  refreshKey?: number
+}
+
+export default function SessionsStatsPage({
+  onDeleteClimb,
+  onEditClimb,
+  refreshKey = 0,
+}: SessionsStatsPageProps) {
   const location = useLocation()
   const locationState = (location.state ?? {}) as SessionsStatsLocationState
   const { user } = useAuth()
   const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
+  const [logbookSessions, setLogbookSessions] = useState<LogbookSession[]>([])
+  const [sessionClimbsError, setSessionClimbsError] = useState<string | null>(null)
+  const [sessionClimbsLoading, setSessionClimbsLoading] = useState(false)
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(() => {
     const restoredIndex = locationState.selectedSessionIndex
 
@@ -50,6 +90,7 @@ export default function SessionsStatsPage() {
       ? Math.max(restoredIndex, 0)
       : 0
   })
+  const [climbsExpanded, setClimbsExpanded] = useState(() => Boolean(locationState.climbsExpanded))
   const sessionsView = useMemo(
     () => selectSessionsViewModel(calculateSessionMetrics(statsClimbs)),
     [statsClimbs],
@@ -60,6 +101,25 @@ export default function SessionsStatsPage() {
     : Math.min(selectedSessionIndex, realSessionCount - 1)
   const selectedSession = sessionsView.sessions[selectedRealSessionIndex] ?? EMPTY_SELECTED_SESSION
   const selectedMockSession = sessionsMockData.sessions[selectedRealSessionIndex] ?? sessionsMockData.sessions[0]
+  const logbookSessionsById = useMemo(
+    () => new Map(logbookSessions.map((session) => [session.id, session])),
+    [logbookSessions],
+  )
+  const selectedLogbookSession = logbookSessionsById.get(selectedSession.id) ?? null
+  const selectedSessionClimbs = selectedLogbookSession?.climbs ?? []
+  const detailReturnPath = `${location.pathname}${location.search}`
+  const handleDeleteClimb = async (climbId: string) => {
+    await onDeleteClimb(climbId)
+    setStatsClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
+    setLogbookSessions((currentSessions) =>
+      currentSessions
+        .map((session) => ({
+          ...session,
+          climbs: session.climbs.filter((climb) => climb.id !== climbId),
+        }))
+        .filter((session) => session.climbs.length > 0),
+    )
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -68,6 +128,9 @@ export default function SessionsStatsPage() {
       queueMicrotask(() => {
         if (!cancelled) {
           setStatsClimbs([])
+          setLogbookSessions([])
+          setSessionClimbsError(null)
+          setSessionClimbsLoading(false)
         }
       })
 
@@ -76,22 +139,37 @@ export default function SessionsStatsPage() {
       }
     }
 
+    queueMicrotask(() => {
+      if (!cancelled) {
+        setSessionClimbsLoading(true)
+        setSessionClimbsError(null)
+      }
+    })
+
     void fetchStatsBase(user.id)
       .then((statsBase) => {
         if (!cancelled) {
           setStatsClimbs(prepareEnrichedClimbs(statsBase))
+          setLogbookSessions(buildLogbookSessions(statsBase.climbs.map(toLogbookClimb)))
         }
       })
-      .catch(() => {
+      .catch((loadError) => {
         if (!cancelled) {
           setStatsClimbs([])
+          setLogbookSessions([])
+          setSessionClimbsError(loadError instanceof Error ? loadError.message : "Failed to load session climbs")
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSessionClimbsLoading(false)
         }
       })
 
     return () => {
       cancelled = true
     }
-  }, [user?.id])
+  }, [refreshKey, user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
@@ -123,6 +201,19 @@ export default function SessionsStatsPage() {
             }
             onNext={() =>
               setSelectedSessionIndex((currentIndex) => Math.max(currentIndex - 1, 0))
+            }
+            actions={
+              <SessionClimbActions
+                climbs={selectedSessionClimbs}
+                isExpanded={climbsExpanded}
+                isLoading={sessionClimbsLoading}
+                error={sessionClimbsError}
+                detailReturnPath={detailReturnPath}
+                detailReturnState={{ selectedSessionIndex: selectedRealSessionIndex, climbsExpanded }}
+                onToggleExpanded={() => setClimbsExpanded((current) => !current)}
+                onDeleteClimb={handleDeleteClimb}
+                onEditClimb={onEditClimb}
+              />
             }
           />
         </div>

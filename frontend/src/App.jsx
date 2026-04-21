@@ -199,7 +199,11 @@ function ProtectedApp() {
             element={
               <>
                 <StatsDetailScrollReset />
-                <SessionsStatsPage />
+                <SessionsStatsPage
+                  onEditClimb={handleEditClimb}
+                  onDeleteClimb={handleDeleteLoggedClimb}
+                  refreshKey={refreshKey}
+                />
               </>
             }
           />
