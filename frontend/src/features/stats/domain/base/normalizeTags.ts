@@ -1,5 +1,5 @@
 import { getClimbTagCategoryId, normalizeClimbTag } from "../../../../lib/climbTags"
-import type { EnrichedTag, TagCategory } from "../primitives"
+import type { CanonicalTagGroups, EnrichedTag, TagCategory } from "../primitives"
 
 function toTagCategory(categoryId: ReturnType<typeof getClimbTagCategoryId>): TagCategory | null {
   switch (categoryId) {
@@ -38,4 +38,25 @@ export function normalizeTags(values: readonly string[] | null | undefined): Enr
   }
 
   return [...tagsById.values()]
+}
+
+export function createEmptyCanonicalTagGroups(): CanonicalTagGroups {
+  return {
+    holdType: [],
+    movement: [],
+    terrain: [],
+    mechanics: [],
+  }
+}
+
+export function normalizeCanonicalTagGroups(values: readonly string[] | null | undefined): CanonicalTagGroups {
+  const groups = createEmptyCanonicalTagGroups()
+
+  for (const tag of normalizeTags(values)) {
+    if (tag.category) {
+      groups[tag.category].push(tag)
+    }
+  }
+
+  return groups
 }

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { normalizeClimb, normalizeGrade, normalizeOutcome, normalizeTags, prepareEnrichedClimbs } from "../base"
+import {
+  normalizeCanonicalTagGroups,
+  normalizeClimb,
+  normalizeGrade,
+  normalizeOutcome,
+  normalizeTags,
+  prepareEnrichedClimbs,
+} from "../base"
 import type { RawStatsClimb, StatsBaseData } from "../base"
 
 const rawClimb: RawStatsClimb = {
@@ -17,6 +24,7 @@ const rawClimb: RawStatsClimb = {
   hold_color: "blue",
   notes: "good climb",
   canonical_climb_id: "canonical-1",
+  canonical_tags: ["Crimp", "Slab", "Balance"],
   session_id: "session-1",
   created_at: "2026-04-01T10:00:00.000Z",
 }
@@ -54,6 +62,15 @@ describe("stats normalization", () => {
     ])
   })
 
+  it("normalizes canonical tags into grouped top-tag attribution", () => {
+    expect(normalizeCanonicalTagGroups(["Crimp", "Slab", "Balance", "Unknown"])).toEqual({
+      holdType: [{ id: "crimp", name: "crimp", category: "holdType" }],
+      movement: [],
+      terrain: [{ id: "slab", name: "slab", category: "terrain" }],
+      mechanics: [{ id: "balance", name: "balance", category: "mechanics" }],
+    })
+  })
+
   it("normalizes raw climbs into EnrichedClimb using lightweight gym fallback data", () => {
     const enriched = normalizeClimb(rawClimb, new Map([["gym-1", "Fallback Gym"]]))
 
@@ -73,6 +90,12 @@ describe("stats normalization", () => {
       isFlash: true,
       isAttempt: false,
       isCompleted: true,
+      canonicalTags: {
+        holdType: [{ id: "crimp", name: "crimp", category: "holdType" }],
+        movement: [],
+        terrain: [{ id: "slab", name: "slab", category: "terrain" }],
+        mechanics: [{ id: "balance", name: "balance", category: "mechanics" }],
+      },
       notes: "good climb",
     })
   })

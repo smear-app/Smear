@@ -21,7 +21,7 @@ export type ArchetypeMetricsValidationResult = {
 }
 
 function findSourceClimbsForTag(climbs: readonly EnrichedClimb[], tagKey: string): EnrichedClimb[] {
-  return climbs.filter((climb) => climb.tags.some((tag) => tag.id === tagKey))
+  return climbs.filter((climb) => Object.values(climb.canonicalTags).some((tags) => tags.some((tag) => tag.id === tagKey)))
 }
 
 export function validateArchetypeMetrics(climbs: readonly EnrichedClimb[]): ArchetypeMetricsValidationResult {

@@ -8,6 +8,8 @@ export type EnrichedTag = {
   category: TagCategory | null
 }
 
+export type CanonicalTagGroups = Record<TagCategory, EnrichedTag[]>
+
 export type EnrichedClimb = {
   id: string
   userId: string
@@ -25,6 +27,7 @@ export type EnrichedClimb = {
   isAttempt: boolean
   isCompleted: boolean
   tags: EnrichedTag[]
+  canonicalTags: CanonicalTagGroups
   notes: string | null
 }
 

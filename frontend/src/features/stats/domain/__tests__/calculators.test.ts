@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { calculateArchetypeMetrics, calculatePerformanceMetrics, calculateProgressionMetrics, calculateSessionMetrics } from "../calculators"
-import { climb, richStatsClimbs, tag } from "./fixtures"
+import { canonicalTags, climb, richStatsClimbs, tag } from "./fixtures"
 
 describe("stats calculators", () => {
   it("computes performance metrics from sent climbs where appropriate", () => {
@@ -118,6 +118,9 @@ describe("stats calculators", () => {
         outcome: "send",
         gradeIndex: 5,
         tags: [tag("crimp", "holdType"), tag("sloper", "holdType")],
+        canonicalTags: canonicalTags({
+          holdType: [tag("crimp", "holdType"), tag("sloper", "holdType")],
+        }),
       }),
       climb({ id: "untagged", outcome: "send", gradeIndex: 7, tags: [] }),
     ])
@@ -125,5 +128,25 @@ describe("stats calculators", () => {
     expect(metrics.holdType.find((metric) => metric.tagKey === "crimp")?.climbShare).toBe(0.5)
     expect(metrics.holdType.find((metric) => metric.tagKey === "sloper")?.climbShare).toBe(0.5)
     expect(metrics.movement.every((metric) => metric.climbCount === 0 && metric.climbShare === 0)).toBe(true)
+  })
+
+  it("uses canonical tags for archetype attribution instead of user-entered log tags", () => {
+    const metrics = calculateArchetypeMetrics([
+      climb({
+        id: "canonical-overrides-user-tags",
+        outcome: "send",
+        gradeIndex: 5,
+        tags: [tag("jug", "holdType"), tag("cave", "terrain")],
+        canonicalTags: canonicalTags({
+          holdType: [tag("crimp", "holdType")],
+          terrain: [tag("slab", "terrain")],
+        }),
+      }),
+    ])
+
+    expect(metrics.holdType.find((metric) => metric.tagKey === "crimp")?.climbCount).toBe(1)
+    expect(metrics.holdType.find((metric) => metric.tagKey === "jug")?.climbCount).toBe(0)
+    expect(metrics.terrain.find((metric) => metric.tagKey === "slab")?.climbCount).toBe(1)
+    expect(metrics.terrain.find((metric) => metric.tagKey === "cave")?.climbCount).toBe(0)
   })
 })

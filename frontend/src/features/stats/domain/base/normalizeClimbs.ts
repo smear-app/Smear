@@ -4,7 +4,7 @@ import type { EnrichedClimb } from "../primitives"
 import type { StatsBaseData } from "./fetchStatsBase"
 import { normalizeGrade } from "./normalizeGrade"
 import { normalizeOutcome } from "./normalizeOutcome"
-import { normalizeTags } from "./normalizeTags"
+import { normalizeCanonicalTagGroups, normalizeTags } from "./normalizeTags"
 
 type NormalizableClimb = ClimbObject | Climb
 
@@ -41,6 +41,7 @@ export function normalizeClimb(climb: NormalizableClimb, gymsById: ReadonlyMap<s
     isAttempt: outcome.isAttempt,
     isCompleted: outcome.isCompleted,
     tags: normalizeTags(climb.tags),
+    canonicalTags: normalizeCanonicalTagGroups(climb.canonical_tags),
     notes: climb.notes,
   }
 }

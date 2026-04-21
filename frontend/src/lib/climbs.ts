@@ -60,6 +60,7 @@ export interface Climb {
   climbColor: string | null
   notes: string | null
   canonical_climb_id: string | null
+  canonical_tags: string[]
   session_id: string | null
   created_at: string
 }
@@ -106,6 +107,7 @@ function mapApiClimb(obj: ClimbObject): Climb {
     climbColor: obj.hold_color,
     notes: obj.notes,
     canonical_climb_id: obj.canonical_climb_id,
+    canonical_tags: obj.canonical_tags,
     session_id: obj.session_id,
     created_at: obj.created_at,
   }

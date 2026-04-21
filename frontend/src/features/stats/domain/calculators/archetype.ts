@@ -83,7 +83,7 @@ function createAccumulatorsByTagKey(): Map<string, ArchetypeTagAccumulator> {
 function getKnownAttributionTags(climb: EnrichedClimb, accumulatorsByTagKey: ReadonlyMap<string, ArchetypeTagAccumulator>) {
   const tagsByKey = new Map<string, EnrichedTag>()
 
-  for (const tag of climb.tags) {
+  for (const tag of Object.values(climb.canonicalTags).flat()) {
     if (accumulatorsByTagKey.has(tag.id)) {
       tagsByKey.set(tag.id, tag)
     }
