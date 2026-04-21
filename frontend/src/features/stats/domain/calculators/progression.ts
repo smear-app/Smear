@@ -1,4 +1,5 @@
 import {
+  buildImplicitSessions,
   bucketClimbsByWeek,
   filterSentClimbs,
   getAverageGrade,
@@ -12,12 +13,21 @@ export type ProgressionBucketMetrics = {
   endAt: string
   totalClimbs: number
   totalSentClimbs: number
+  totalSessions: number
+  highestSentGrade: number | null
   averageSentGrade: number | null
   workingGrade: number | null
 }
 
 export type ProgressionMetrics = {
   weekly: ProgressionBucketMetrics[]
+}
+
+function countSessions(climbs: readonly EnrichedClimb[]): number {
+  const explicitSessionIds = new Set(climbs.flatMap((climb) => (climb.sessionId ? [climb.sessionId] : [])))
+  const climbsWithoutSessionId = climbs.filter((climb) => !climb.sessionId)
+
+  return explicitSessionIds.size + buildImplicitSessions(climbsWithoutSessionId).length
 }
 
 function calculateProgressionBucketMetrics(bucket: {
@@ -27,6 +37,9 @@ function calculateProgressionBucketMetrics(bucket: {
   climbs: readonly EnrichedClimb[]
 }): ProgressionBucketMetrics {
   const sentClimbs = filterSentClimbs(bucket.climbs)
+  const sentGradeIndexes = sentClimbs.flatMap((climb) =>
+    typeof climb.gradeIndex === "number" && Number.isFinite(climb.gradeIndex) ? [climb.gradeIndex] : [],
+  )
 
   return {
     key: bucket.key,
@@ -34,6 +47,8 @@ function calculateProgressionBucketMetrics(bucket: {
     endAt: bucket.endAt,
     totalClimbs: bucket.climbs.length,
     totalSentClimbs: sentClimbs.length,
+    totalSessions: countSessions(bucket.climbs),
+    highestSentGrade: sentGradeIndexes.length === 0 ? null : Math.max(...sentGradeIndexes),
     averageSentGrade: getAverageGrade(sentClimbs),
     workingGrade: calculateTopFortyPercentMedianWorkingGrade(sentClimbs),
   }

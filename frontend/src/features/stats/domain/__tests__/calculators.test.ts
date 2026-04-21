@@ -51,14 +51,53 @@ describe("stats calculators", () => {
     expect(metrics.weekly[0]).toMatchObject({
       totalClimbs: 3,
       totalSentClimbs: 2,
+      totalSessions: 1,
+      highestSentGrade: 6,
       averageSentGrade: 5,
       workingGrade: 6,
     })
     expect(metrics.weekly[1]).toMatchObject({
       totalClimbs: 3,
       totalSentClimbs: 2,
+      totalSessions: 2,
+      highestSentGrade: 5,
       averageSentGrade: 5,
       workingGrade: 5,
+    })
+  })
+
+  it("counts progression sessions from explicit session ids and implicit no-id sessions", () => {
+    const metrics = calculateProgressionMetrics([
+      climb({
+        id: "explicit-a",
+        sessionId: "session-1",
+        sessionStartedAt: "2026-04-06T18:00:00.000Z",
+        loggedAt: "2026-04-06T18:10:00.000Z",
+      }),
+      climb({
+        id: "explicit-b",
+        sessionId: "session-1",
+        sessionStartedAt: "2026-04-06T18:00:00.000Z",
+        loggedAt: "2026-04-06T18:20:00.000Z",
+      }),
+      climb({
+        id: "implicit-a",
+        loggedAt: "2026-04-07T18:00:00.000Z",
+      }),
+      climb({
+        id: "implicit-b",
+        loggedAt: "2026-04-07T19:00:00.000Z",
+      }),
+      climb({
+        id: "implicit-late",
+        loggedAt: "2026-04-08T00:00:00.000Z",
+      }),
+    ])
+
+    expect(metrics.weekly).toHaveLength(1)
+    expect(metrics.weekly[0]).toMatchObject({
+      totalClimbs: 5,
+      totalSessions: 3,
     })
   })
 

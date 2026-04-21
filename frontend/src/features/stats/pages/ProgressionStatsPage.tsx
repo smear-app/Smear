@@ -80,6 +80,7 @@ export default function ProgressionStatsPage() {
       metrics,
       selectedClimbs: statsClimbs,
       view: selectProgressionViewModel(metrics, {
+        range: selectedRange,
         visibleStartAt: rangeStart,
         visibleEndAt: now,
         firstHistoryStartAt,
@@ -171,7 +172,7 @@ export default function ProgressionStatsPage() {
         </div>
 
         <div className="mt-4">
-          <ProgressionMetricsGrid metrics={progressionView.metrics} />
+          <ProgressionMetricsGrid metrics={selectedChartView.metrics} />
         </div>
 
         <div className="mt-4">

@@ -1,8 +1,10 @@
 import type { ProgressionMetrics } from "../calculators/progression"
+import { safeDivide } from "../calculators/shared"
 import { getLocalWeekStart, toLocalDateKey } from "../primitives"
-import type { ProgressionChartPoint, ProgressionViewModel } from "./types"
+import type { ProgressionChartPoint, ProgressionRange, ProgressionViewModel } from "./types"
 
 export type ProgressionViewModelOptions = {
+  range?: ProgressionRange
   visibleStartAt?: Date | string | null
   visibleEndAt?: Date | string | null
   firstHistoryStartAt?: Date | string | null
@@ -40,7 +42,7 @@ function formatTickLabel(startAt: string, previousStartAt: string | null): strin
 
 function formatGradeLabel(grade: number | null): string {
   if (grade === null || !Number.isFinite(grade)) {
-    return "None"
+    return "-"
   }
 
   if (Number.isInteger(grade)) {
@@ -48,6 +50,32 @@ function formatGradeLabel(grade: number | null): string {
   }
 
   return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+}
+
+function formatChartGradeLabel(grade: number | null): string {
+  const label = formatGradeLabel(grade)
+  return label === "-" ? "None" : label
+}
+
+function formatAverage(value: number): string {
+  return Number.isFinite(value) ? value.toFixed(1) : "-"
+}
+
+function formatGradeDelta(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) {
+    return "-"
+  }
+
+  const sign = value >= 0 ? "+" : ""
+  return `${sign}${value.toFixed(1)} V`
+}
+
+function averageValues(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function getOptionalLocalWeekStart(value: Date | string | null | undefined): Date | null {
@@ -107,7 +135,7 @@ function selectChartPoints(metrics: ProgressionMetrics, options: ProgressionView
       climbs: bucket?.totalClimbs ?? 0,
       barClimbs: bucket?.totalSentClimbs ?? 0,
       avgGrade: bucket && bucket.totalClimbs > 0 ? bucket.workingGrade : null,
-      gradeLabel: formatGradeLabel(bucket?.workingGrade ?? null),
+      gradeLabel: formatChartGradeLabel(bucket?.workingGrade ?? null),
     }
   })
 }
@@ -119,8 +147,98 @@ function selectExistingChartPoints(metrics: ProgressionMetrics): ProgressionChar
     climbs: bucket.totalClimbs,
     barClimbs: bucket.totalSentClimbs,
     avgGrade: bucket.totalClimbs === 0 ? null : bucket.workingGrade,
-    gradeLabel: formatGradeLabel(bucket.workingGrade),
+    gradeLabel: formatChartGradeLabel(bucket.workingGrade),
   }))
+}
+
+function getComparisonWeekCount(range: ProgressionRange | undefined): number {
+  if (range === "6-months") {
+    return 4
+  }
+
+  if (range === "all-time") {
+    return 6
+  }
+
+  return 2
+}
+
+function selectWorkingGradeDelta(metrics: ProgressionMetrics, options: ProgressionViewModelOptions): number | null {
+  const comparisonWeekCount = getComparisonWeekCount(options.range)
+  const end = getOptionalLocalWeekStart(options.visibleEndAt ?? metrics.weekly.at(-1)?.startAt ?? new Date())
+
+  if (!end) {
+    return null
+  }
+
+  const validWorkingGrades = metrics.weekly.flatMap((bucket) => {
+    const weekStart = getLocalWeekStart(bucket.startAt)
+
+    if (!weekStart || weekStart.getTime() > end.getTime() || bucket.workingGrade === null) {
+      return []
+    }
+
+    return [bucket.workingGrade]
+  })
+
+  if (validWorkingGrades.length < comparisonWeekCount * 2) {
+    return null
+  }
+
+  const recent = validWorkingGrades.slice(-comparisonWeekCount)
+  const previous = validWorkingGrades.slice(-(comparisonWeekCount * 2), -comparisonWeekCount)
+  const recentAverage = averageValues(recent)
+  const previousAverage = averageValues(previous)
+
+  if (recentAverage === null || previousAverage === null) {
+    return null
+  }
+
+  return recentAverage - previousAverage
+}
+
+function selectSupportingMetrics(
+  metrics: ProgressionMetrics,
+  options: ProgressionViewModelOptions,
+) {
+  const bucketsByKey = new Map(metrics.weekly.map((bucket) => [bucket.key, bucket]))
+  const visibleBuckets = getVisibleWeekStarts(metrics, options).map((weekStart) => bucketsByKey.get(toLocalDateKey(weekStart)) ?? null)
+  const visibleBucketCount = visibleBuckets.length
+  const highestSentGrade = visibleBuckets.reduce<number | null>((highestGrade, bucket) => {
+    if (bucket?.highestSentGrade === null || bucket?.highestSentGrade === undefined) {
+      return highestGrade
+    }
+
+    return highestGrade === null ? bucket.highestSentGrade : Math.max(highestGrade, bucket.highestSentGrade)
+  }, null)
+  const latestWorkingGrade = [...visibleBuckets]
+    .reverse()
+    .find((bucket) => bucket?.workingGrade !== null && bucket?.workingGrade !== undefined)?.workingGrade ?? null
+  const totalClimbs = visibleBuckets.reduce((sum, bucket) => sum + (bucket?.totalClimbs ?? 0), 0)
+  const totalSessions = visibleBuckets.reduce((sum, bucket) => sum + (bucket?.totalSessions ?? 0), 0)
+
+  return [
+    {
+      label: "Highest Grade",
+      value: formatGradeLabel(highestSentGrade),
+      description: "highest this period",
+    },
+    {
+      label: "Working Range",
+      value: formatGradeLabel(latestWorkingGrade),
+      description: formatGradeDelta(selectWorkingGradeDelta(metrics, options)),
+    },
+    {
+      label: "Avg Climbs / Week",
+      value: formatAverage(safeDivide(totalClimbs, visibleBucketCount)),
+      description: "visible chart window",
+    },
+    {
+      label: "Sessions / Week",
+      value: formatAverage(safeDivide(totalSessions, visibleBucketCount)),
+      description: "visible chart window",
+    },
+  ]
 }
 
 export function selectProgressionViewModel(
@@ -132,7 +250,7 @@ export function selectProgressionViewModel(
   return {
     insight: "",
     chartPoints: shouldFillEmptyWeeks ? selectChartPoints(metrics, options) : selectExistingChartPoints(metrics),
-    metrics: [],
+    metrics: selectSupportingMetrics(metrics, options),
     milestones: [],
   }
 }
