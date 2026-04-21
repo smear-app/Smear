@@ -166,4 +166,50 @@ describe("selectSessionsViewModel", () => {
     expect(viewModel.trendPoints).toHaveLength(2)
     expect(viewModel.trendPoints.map((point) => point.sessionId)).toEqual(["older", "latest"])
   })
+
+  it("shapes trend summary metrics from the same recent-session window as the chart", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session-1", "2026-04-01T10:00:00.000Z", { totalClimbs: 100, workingGrade: 10 }),
+        makeSession("session-2", "2026-04-02T10:00:00.000Z", { totalClimbs: 2, workingGrade: 2 }),
+        makeSession("session-3", "2026-04-03T10:00:00.000Z", { totalClimbs: 4, workingGrade: null }),
+        makeSession("session-4", "2026-04-04T10:00:00.000Z", { totalClimbs: 6, workingGrade: 4 }),
+        makeSession("session-5", "2026-04-05T10:00:00.000Z", { totalClimbs: 8, workingGrade: 6 }),
+        makeSession("session-6", "2026-04-06T10:00:00.000Z", { totalClimbs: 10, workingGrade: 8 }),
+      ],
+    })
+
+    expect(viewModel.trendPoints.map((point) => point.sessionId)).toEqual([
+      "session-2",
+      "session-3",
+      "session-4",
+      "session-5",
+      "session-6",
+    ])
+    expect(viewModel.trendMetrics).toEqual([
+      { label: "Avg Climbs / Session", value: "6.0", description: "recent session window" },
+      { label: "Working Grade", value: "V5", description: "recent valid sessions" },
+      { label: "Best Session Volume", value: "10 climbs", description: "highest recent volume" },
+      { label: "Best Session Grade", value: "V8", description: "strongest recent session" },
+    ])
+  })
+
+  it("shows safe trend summary fallbacks for empty or missing working-grade windows", () => {
+    const emptyViewModel = selectSessionsViewModel({ allTimeBaseline: null, sessions: [] })
+    const noGradeViewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session", "2026-04-01T10:00:00.000Z", { totalClimbs: 0, workingGrade: null }),
+      ],
+    })
+
+    expect(emptyViewModel.trendMetrics).toEqual([
+      { label: "Avg Climbs / Session", value: "-", description: "recent session window" },
+      { label: "Working Grade", value: "None", description: "recent valid sessions" },
+      { label: "Best Session Volume", value: "-", description: "highest recent volume" },
+      { label: "Best Session Grade", value: "None", description: "strongest recent session" },
+    ])
+    expect(noGradeViewModel.trendMetrics.find((metric) => metric.label === "Working Grade")?.value).toBe("None")
+  })
 })

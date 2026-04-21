@@ -4,6 +4,7 @@ import type {
   SessionGradeDistributionItem,
   SessionOutcomeItem,
   SessionSummaryStat,
+  SessionTrendMetric,
   SessionTrendPoint,
   SessionsViewModel,
 } from "./types"
@@ -66,12 +67,28 @@ function formatGrade(grade: number | null): string {
   return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
 }
 
+function formatAverage(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) {
+    return "-"
+  }
+
+  return value.toFixed(1)
+}
+
 function formatPercent(value: number): string {
   return `${Math.round(value)}%`
 }
 
 function safePercentage(count: number, total: number): number {
   return total <= 0 ? 0 : (count / total) * 100
+}
+
+function average(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function toSummaryStats(session: SessionMetrics): SessionSummaryStat[] {
@@ -143,6 +160,40 @@ function toTrendPoint(sessionWithComparison: SessionsMetrics["sessions"][number]
   }
 }
 
+function toTrendMetrics(trendSessions: readonly SessionsMetrics["sessions"][number][]): SessionTrendMetric[] {
+  const sessions = trendSessions.map((entry) => entry.session)
+  const averageClimbs = average(sessions.map((session) => session.totalClimbs))
+  const validWorkingGrades = sessions.flatMap((session) =>
+    session.workingGrade === null || !Number.isFinite(session.workingGrade) ? [] : [session.workingGrade],
+  )
+  const averageWorkingGrade = average(validWorkingGrades)
+  const bestSessionVolume = sessions.length === 0 ? null : Math.max(...sessions.map((session) => session.totalClimbs))
+  const bestSessionGrade = validWorkingGrades.length === 0 ? null : Math.max(...validWorkingGrades)
+
+  return [
+    {
+      label: "Avg Climbs / Session",
+      value: formatAverage(averageClimbs),
+      description: "recent session window",
+    },
+    {
+      label: "Working Grade",
+      value: formatGrade(averageWorkingGrade),
+      description: "recent valid sessions",
+    },
+    {
+      label: "Best Session Volume",
+      value: bestSessionVolume === null ? "-" : `${bestSessionVolume} climbs`,
+      description: "highest recent volume",
+    },
+    {
+      label: "Best Session Grade",
+      value: formatGrade(bestSessionGrade),
+      description: "strongest recent session",
+    },
+  ]
+}
+
 export function selectSessionsViewModel(metrics: SessionsMetrics): SessionsViewModel {
   const sessionsNewestFirst = [...metrics.sessions]
     .sort((left, right) => new Date(right.session.startAt).getTime() - new Date(left.session.startAt).getTime())
@@ -150,7 +201,7 @@ export function selectSessionsViewModel(metrics: SessionsMetrics): SessionsViewM
 
   return {
     trendPoints: trendSessions.map(toTrendPoint),
-    trendMetrics: [],
+    trendMetrics: toTrendMetrics(trendSessions),
     sessions: sessionsNewestFirst.map(toSessionDetail),
   }
 }

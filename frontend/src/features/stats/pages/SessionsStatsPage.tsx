@@ -183,7 +183,7 @@ export default function SessionsStatsPage({
         </div>
 
         <div className="mt-4">
-          <SessionTrendMetrics metrics={sessionsMockData.trendMetrics} />
+          <SessionTrendMetrics metrics={sessionsView.trendMetrics} />
         </div>
 
         <div className="mt-6 flex items-center gap-3">
