@@ -1,4 +1,4 @@
-import type { EnrichedClimb } from "../primitives"
+import { getWorkingGrade, type EnrichedClimb } from "../primitives"
 
 export function safeDivide(numerator: number, denominator: number): number {
   return denominator === 0 ? 0 : numerator / denominator
@@ -58,12 +58,5 @@ export function calculateDurationMs(startAt: string, endAt: string): number | nu
 }
 
 export function calculateTopFortyPercentMedianWorkingGrade(sentClimbs: readonly EnrichedClimb[]): number | null {
-  const sortedGradeIndexes = getValidGradeIndexes(sentClimbs).sort((left, right) => right - left)
-
-  if (sortedGradeIndexes.length === 0) {
-    return null
-  }
-
-  const subsetSize = Math.max(1, Math.ceil(sentClimbs.length * 0.4))
-  return median(sortedGradeIndexes.slice(0, subsetSize))
+  return getWorkingGrade(sentClimbs, 40)
 }

@@ -9,6 +9,21 @@ function sortAscending(values: readonly number[]): number[] {
   return [...values].sort((left, right) => left - right)
 }
 
+function median(values: readonly number[]): number | null {
+  if (values.length === 0) {
+    return null
+  }
+
+  const sortedValues = sortAscending(values)
+  const midpoint = Math.floor(sortedValues.length / 2)
+
+  if (sortedValues.length % 2 === 1) {
+    return sortedValues[midpoint]
+  }
+
+  return (sortedValues[midpoint - 1] + sortedValues[midpoint]) / 2
+}
+
 function normalizeTopPercent(topPercent: number): number {
   if (!Number.isFinite(topPercent)) {
     return 0.2
@@ -46,31 +61,20 @@ export function getAverageGrade(climbs: readonly EnrichedClimb[]): number | null
 }
 
 export function getMedianGrade(climbs: readonly EnrichedClimb[]): number | null {
-  const gradeIndexes = sortAscending(getGradeIndexes(climbs))
-
-  if (gradeIndexes.length === 0) {
-    return null
-  }
-
-  const midpoint = Math.floor(gradeIndexes.length / 2)
-
-  if (gradeIndexes.length % 2 === 1) {
-    return gradeIndexes[midpoint]
-  }
-
-  return (gradeIndexes[midpoint - 1] + gradeIndexes[midpoint]) / 2
+  return median(getGradeIndexes(climbs))
 }
 
 export function getWorkingGrade(climbs: readonly EnrichedClimb[], topPercent: number): number | null {
-  const sentGradeIndexes = getGradeIndexes(filterSentClimbs(climbs)).sort((left, right) => right - left)
+  const sentClimbs = filterSentClimbs(climbs)
+  const sentGradeIndexes = getGradeIndexes(sentClimbs).sort((left, right) => right - left)
 
   if (sentGradeIndexes.length === 0) {
     return null
   }
 
   const clampedTopPercent = normalizeTopPercent(topPercent)
-  const sampleSize = Math.max(1, Math.ceil(sentGradeIndexes.length * clampedTopPercent))
+  const sampleSize = Math.max(1, Math.ceil(sentClimbs.length * clampedTopPercent))
   const topGrades = sentGradeIndexes.slice(0, sampleSize)
 
-  return topGrades.reduce((sum, gradeIndex) => sum + gradeIndex, 0) / topGrades.length
+  return median(topGrades)
 }
