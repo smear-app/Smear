@@ -6,6 +6,7 @@ export type ProgressionChartPoint = {
   label: string
   tickLabel: string
   climbs: number
+  barClimbs?: number
   avgGrade: number | null
   gradeLabel?: string
 }

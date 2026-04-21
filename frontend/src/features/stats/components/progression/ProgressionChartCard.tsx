@@ -54,7 +54,7 @@ export default function ProgressionChartCard({
 }: ProgressionChartCardProps) {
   const innerWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right
   const innerHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom
-  const maxClimbs = Math.max(0, ...points.map((point) => point.climbs))
+  const maxClimbs = Math.max(0, ...points.map((point) => point.barClimbs ?? point.climbs))
   const { paddedMax: paddedMaxClimbs, ticks: climbAxisTicks } = buildLeftAxisTicks(Math.ceil(maxClimbs * 1.05))
   const gradeValues = points.flatMap((point) =>
     point.avgGrade !== null && Number.isFinite(point.avgGrade) ? [point.avgGrade] : [],
@@ -67,14 +67,16 @@ export default function ProgressionChartCard({
   const stepWidth = points.length === 0 ? innerWidth : innerWidth / points.length
   const barWidth = Math.min(18, stepWidth * 0.56)
   const chartPoints = points.map((point, index) => {
+    const barClimbs = point.barClimbs ?? point.climbs
     const x = CHART_PADDING.left + index * stepWidth + stepWidth / 2
-    const barHeight = (point.climbs / paddedMaxClimbs) * innerHeight
+    const barHeight = (barClimbs / paddedMaxClimbs) * innerHeight
     const y = point.avgGrade === null
       ? null
       : CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
 
     return {
       ...point,
+      barClimbs,
       x,
       y,
       barX: x - barWidth / 2,
@@ -170,16 +172,18 @@ export default function ProgressionChartCard({
           ))}
 
           {chartPoints.map((point) => (
-            <rect
-              key={point.label}
-              x={point.barX}
-              y={point.barY}
-              width={barWidth}
-              height={point.barHeight}
-              rx="7"
-              fill={BAR_FILL}
-              opacity={BAR_OPACITY}
-            />
+            point.barClimbs <= 0 ? null : (
+              <rect
+                key={point.label}
+                x={point.barX}
+                y={point.barY}
+                width={barWidth}
+                height={point.barHeight}
+                rx="7"
+                fill={BAR_FILL}
+                opacity={BAR_OPACITY}
+              />
+            )
           ))}
 
           <path

@@ -19,13 +19,13 @@ function formatTickLabel(startAt: string, previousStartAt: string | null): strin
   }
 
   if (previousStartAt === null) {
-    return date.toLocaleDateString(undefined, { month: "short", timeZone: "UTC" })
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })
   }
 
   const previousDate = new Date(previousStartAt)
 
   if (!Number.isFinite(previousDate.getTime()) || previousDate.getUTCMonth() !== date.getUTCMonth()) {
-    return date.toLocaleDateString(undefined, { month: "short", timeZone: "UTC" })
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" })
   }
 
   return ""
@@ -48,7 +48,8 @@ function selectChartPoints(metrics: ProgressionMetrics): ProgressionChartPoint[]
     label: formatWeekLabel(bucket.startAt),
     tickLabel: formatTickLabel(bucket.startAt, buckets[index - 1]?.startAt ?? null),
     climbs: bucket.totalClimbs,
-    avgGrade: bucket.workingGrade,
+    barClimbs: bucket.totalSentClimbs,
+    avgGrade: bucket.totalClimbs === 0 ? null : bucket.workingGrade,
     gradeLabel: formatGradeLabel(bucket.workingGrade),
   }))
 }

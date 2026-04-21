@@ -16,10 +16,12 @@ import {
 } from "../domain/progression/mockProgressionData"
 import { selectProgressionMilestones } from "../domain/progression/selectProgressionMilestones"
 import { selectProgressionViewModel } from "../domain/progression/selectProgressionViewModel"
-import type { EnrichedClimb } from "../domain/primitives"
+import { bucketClimbsByWeek, type EnrichedClimb } from "../domain/primitives"
+import type { ProgressionMetrics } from "../domain/calculators"
 import type { ProgressionRange } from "../domain/progression/types"
 
 const TEN_WEEKS_MS = 10 * 7 * 24 * 60 * 60 * 1000
+const DEBUG_PROGRESSION_BINS_STORAGE_KEY = "smear:debug-progression-bins"
 
 function getRangeStart(range: ProgressionRange, now: Date): Date | null {
   if (range === "all-time") {
@@ -51,19 +53,76 @@ function getClimbsForRange(climbs: readonly EnrichedClimb[], range: ProgressionR
   })
 }
 
+function getProgressionBinDebugRows(climbs: readonly EnrichedClimb[], metrics: ProgressionMetrics) {
+  const metricsByKey = new Map(metrics.weekly.map((bucket) => [bucket.key, bucket]))
+
+  return bucketClimbsByWeek(climbs).map((bucket, index) => {
+    const metric = metricsByKey.get(bucket.key)
+
+    return {
+      index,
+      key: bucket.key,
+      startAt: bucket.startAt,
+      endAt: bucket.endAt,
+      totalClimbs: metric?.totalClimbs ?? bucket.climbs.length,
+      totalSentClimbs: metric?.totalSentClimbs ?? bucket.climbs.filter((climb) => climb.isSend).length,
+      workingGrade: metric?.workingGrade ?? null,
+      climbs: bucket.climbs.map((climb) => ({
+        id: climb.id,
+        loggedAt: climb.loggedAt,
+        gradeLabel: climb.gradeLabel,
+        gradeIndex: climb.gradeIndex,
+        outcome: climb.outcome,
+        isSend: climb.isSend,
+        isFlash: climb.isFlash,
+        gymName: climb.gymName,
+      })),
+    }
+  })
+}
+
 export default function ProgressionStatsPage() {
   const { user } = useAuth()
   const [selectedRange, setSelectedRange] = useState<ProgressionRange>(defaultProgressionRange)
   const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
   const progressionView = useMemo(() => progressionMockData[selectedRange], [selectedRange])
-  const selectedChartView = useMemo(() => {
+  const selectedChartData = useMemo(() => {
     const now = new Date()
     const selectedClimbs = getClimbsForRange(statsClimbs, selectedRange, now)
     const metrics = calculateProgressionMetrics(selectedClimbs)
 
-    return selectProgressionViewModel(metrics)
+    return {
+      metrics,
+      selectedClimbs,
+      view: selectProgressionViewModel(metrics),
+    }
   }, [selectedRange, statsClimbs])
+  const selectedChartView = selectedChartData.view
   const milestones = useMemo(() => selectProgressionMilestones(progressionView), [progressionView])
+
+  useEffect(() => {
+    if (window.localStorage.getItem(DEBUG_PROGRESSION_BINS_STORAGE_KEY) !== "1") {
+      return
+    }
+
+    const bins = getProgressionBinDebugRows(selectedChartData.selectedClimbs, selectedChartData.metrics)
+
+    console.groupCollapsed(`[Progression bins] range=${selectedRange}`)
+    console.table(
+      bins.map((bin) => ({
+        index: bin.index,
+        key: bin.key,
+        startAt: bin.startAt,
+        endAt: bin.endAt,
+        totalClimbs: bin.totalClimbs,
+        totalSentClimbs: bin.totalSentClimbs,
+        workingGrade: bin.workingGrade,
+        climbIds: bin.climbs.map((climb) => climb.id).join(", "),
+      })),
+    )
+    console.log("Progression bin details", bins)
+    console.groupEnd()
+  }, [selectedChartData, selectedRange])
 
   useEffect(() => {
     let cancelled = false
