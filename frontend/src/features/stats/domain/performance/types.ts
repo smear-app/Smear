@@ -1,5 +1,7 @@
 export type PerformanceRange = "10-weeks" | "6-months" | "all-time"
 
+export type PerformanceTimeframeKey = "10w" | "6m" | "all"
+
 export type PerformanceRangeOption = {
   value: PerformanceRange
   label: string
@@ -16,6 +18,7 @@ export type PerformanceOutcomeItem = {
   label: string
   count: number
   percentage: number
+  percentageLabel: string
   tone: "flash" | "send" | "unfinished"
 }
 
@@ -28,6 +31,7 @@ export type PerformanceMetric = {
 export type PerformanceGradeBand = {
   label: string
   sendRate: number
+  sendRateLabel: string
 }
 
 export type PerformancePyramidBand = {
@@ -37,10 +41,9 @@ export type PerformancePyramidBand = {
 
 export type PerformanceViewModel = {
   periodLabel: string
-  hero: PerformanceHero
   pyramid: PerformancePyramidBand[]
   outcomes: PerformanceOutcomeItem[]
   metrics: PerformanceMetric[]
   gradeBands: PerformanceGradeBand[]
-  insight: string
+  insight: string | null
 }

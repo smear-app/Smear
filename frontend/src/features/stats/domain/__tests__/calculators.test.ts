@@ -7,11 +7,14 @@ describe("stats calculators", () => {
     const metrics = calculatePerformanceMetrics(richStatsClimbs)
 
     expect(metrics.totalClimbs).toBe(6)
+    expect(metrics.totalAttempts).toBe(6)
     expect(metrics.totalSentClimbs).toBe(4)
     expect(metrics.totalFlashClimbs).toBe(1)
     expect(metrics.totalAttemptClimbs).toBe(2)
     expect(metrics.flashRate).toBe(0.25)
+    expect(metrics.averageAttemptsPerSend).toBe(1.5)
     expect(metrics.highestGrade).toBe(6)
+    expect(metrics.highestFlashGrade).toBe(4)
     expect(metrics.averageSentGrade).toBe(5)
     expect(metrics.medianSentGrade).toBe(5)
     expect(metrics.workingGrade).toBe(5.5)
@@ -20,6 +23,12 @@ describe("stats calculators", () => {
       [5, 1],
       [6, 1],
     ])
+    expect(metrics.gradePerformance.map((bucket) => [bucket.gradeIndex, bucket.totalClimbs, bucket.sentClimbs, bucket.sendRate])).toEqual([
+      [4, 1, 1, 1],
+      [5, 1, 1, 1],
+      [6, 1, 1, 1],
+      [8, 1, 0, 0],
+    ])
     expect(metrics.outcomeCounts).toEqual({ flash: 1, send: 3, attempt: 2 })
   })
 
@@ -27,7 +36,9 @@ describe("stats calculators", () => {
     const metrics = calculatePerformanceMetrics([climb({ id: "attempt", outcome: "attempt", gradeIndex: 9 })])
 
     expect(metrics.flashRate).toBe(0)
+    expect(metrics.averageAttemptsPerSend).toBe(0)
     expect(metrics.highestGrade).toBeNull()
+    expect(metrics.highestFlashGrade).toBeNull()
     expect(metrics.workingGrade).toBeNull()
     expect(metrics.gradeHistogram).toEqual([])
   })

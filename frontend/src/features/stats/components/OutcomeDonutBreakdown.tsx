@@ -4,6 +4,7 @@ export type OutcomeDonutBreakdownItem = {
   label: string
   count: number
   percentage: number
+  percentageLabel?: string
   tone: OutcomeDonutTone
 }
 
@@ -80,7 +81,7 @@ export default function OutcomeDonutBreakdown({ items, centerLabel, ariaLabel }:
               <span className="truncate text-sm font-medium text-stone-text">{item.label}</span>
             </div>
             <div className="text-right">
-              <p className="text-sm font-semibold text-stone-text">{item.percentage}%</p>
+              <p className="text-sm font-semibold text-stone-text">{item.percentageLabel ?? `${item.percentage}%`}</p>
               <p className="text-[11px] text-stone-secondary">{item.count}</p>
             </div>
           </article>

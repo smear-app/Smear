@@ -7,8 +7,7 @@ type GradePyramidProps = {
 }
 
 export default function GradePyramid({ bands, periodLabel }: GradePyramidProps) {
-  const maxCount = Math.max(...bands.map((band) => band.count))
-  const displayBands = [...bands].reverse()
+  const maxCount = Math.max(0, ...bands.map((band) => band.count))
 
   return (
     <ProgressionSurface>
@@ -16,8 +15,8 @@ export default function GradePyramid({ bands, periodLabel }: GradePyramidProps) 
       <p className="mt-1 text-sm leading-5 text-stone-secondary">Completed sends by grade in the {periodLabel}.</p>
 
       <div className="mt-4 space-y-2.5">
-        {displayBands.map((band) => {
-          const width = `${(band.count / maxCount) * 100}%`
+        {bands.map((band) => {
+          const width = maxCount === 0 ? "0%" : `${(band.count / maxCount) * 100}%`
 
           return (
             <article key={band.label} className="grid grid-cols-[2.25rem_minmax(0,1fr)_2rem] items-center gap-3">

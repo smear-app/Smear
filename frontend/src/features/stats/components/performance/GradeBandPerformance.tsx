@@ -16,7 +16,7 @@ export default function GradeBandPerformance({ bands, periodLabel }: GradeBandPe
           <article key={band.label}>
             <div className="flex items-center justify-between gap-4">
               <p className="text-sm font-medium text-stone-text">{band.label}</p>
-              <p className="text-sm font-semibold text-stone-secondary">{band.sendRate}% send</p>
+              <p className="text-sm font-semibold text-stone-secondary">{band.sendRateLabel}</p>
             </div>
             <div className="mt-2 h-1.5 rounded-full bg-stone-bg/85 dark:bg-stone-alt">
               <div
