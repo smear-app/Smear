@@ -1,11 +1,8 @@
-import { useMemo, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useEffect, useMemo, useState } from "react"
+import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
 import { useAuth } from "../../../context/AuthContext"
-import { useLogbookHistory } from "../../../hooks/useLogbookHistory"
-import { DEFAULT_LOGBOOK_FILTERS } from "../../../lib/logbook"
-import SessionClimbActions from "../components/sessions/SessionClimbActions"
 import SessionsTrendChart from "../components/sessions/SessionsTrendChart"
 import SessionTrendMetrics from "../components/sessions/SessionTrendMetrics"
 import SessionSelector from "../components/sessions/SessionSelector"
@@ -13,55 +10,88 @@ import SessionSummary from "../components/sessions/SessionSummary"
 import SessionDetailBreakdown from "../components/sessions/SessionDetailBreakdown"
 import SessionInsight from "../components/sessions/SessionInsight"
 import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
+import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
+import { calculateSessionMetrics } from "../domain/calculators"
+import type { EnrichedClimb } from "../domain/primitives"
 import { sessionsMockData } from "../domain/sessions/mockSessionsData"
+import { selectSessionsViewModel } from "../domain/sessions/selectSessionsViewModel"
+import type { SessionDetail } from "../domain/sessions/types"
 
 type SessionsStatsLocationState = {
   selectedSessionIndex?: number
-  climbsExpanded?: boolean
+}
+
+const EMPTY_SELECTED_SESSION: SessionDetail = {
+  id: "empty-session",
+  selectorLabel: "-",
+  selectorMeta: "No sessions yet",
+  identity: { label: "-", reason: "-" },
+  summary: [
+    { label: "Total Climbs", value: "-" },
+    { label: "Duration", value: "-" },
+    { label: "Max Grade", value: "None" },
+    { label: "Working Grade", value: "None" },
+  ],
+  outcomes: [],
+  outcomeTotalCount: 0,
+  gradeDistribution: [],
+  insight: "",
 }
 
 export default function SessionsStatsPage() {
   const location = useLocation()
   const locationState = (location.state ?? {}) as SessionsStatsLocationState
-  const navigate = useNavigate()
   const { user } = useAuth()
+  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(() => {
     const restoredIndex = locationState.selectedSessionIndex
 
     return typeof restoredIndex === "number"
-      ? Math.min(Math.max(restoredIndex, 0), sessionsMockData.sessions.length - 1)
+      ? Math.max(restoredIndex, 0)
       : 0
   })
-  const [climbsExpanded, setClimbsExpanded] = useState(() => Boolean(locationState.climbsExpanded))
-  const selectedSession = useMemo(
-    () => sessionsMockData.sessions[selectedSessionIndex],
-    [selectedSessionIndex],
+  const sessionsView = useMemo(
+    () => selectSessionsViewModel(calculateSessionMetrics(statsClimbs)),
+    [statsClimbs],
   )
-  const {
-    sessions: logbookSessions,
-    isLoading: sessionClimbsLoading,
-    error: sessionClimbsError,
-  } = useLogbookHistory({
-    userId: user?.id,
-    filters: DEFAULT_LOGBOOK_FILTERS,
-    sort: "newest",
-  })
-  const selectedLogbookSession = logbookSessions[selectedSessionIndex] ?? null
-  const selectedSessionClimbs = selectedLogbookSession?.climbs ?? []
-  const focusedLogbookHref = selectedLogbookSession
-    ? `/home/logbook?view=list&sort=newest&sessionId=${encodeURIComponent(selectedLogbookSession.id)}`
-    : "/home/logbook?view=list&sort=newest"
-  const detailReturnPath = `${location.pathname}${location.search}`
-  const openSelectedSessionInLogbook = () => {
-    navigate(focusedLogbookHref, {
-      state: selectedLogbookSession
-        ? {
-            focusSessionId: selectedLogbookSession.id,
-            fromStatsSessionDetail: true,
-          }
-        : undefined,
-    })
-  }
+  const realSessionCount = sessionsView.sessions.length
+  const selectedRealSessionIndex = realSessionCount === 0
+    ? 0
+    : Math.min(selectedSessionIndex, realSessionCount - 1)
+  const selectedSession = sessionsView.sessions[selectedRealSessionIndex] ?? EMPTY_SELECTED_SESSION
+  const selectedMockSession = sessionsMockData.sessions[selectedRealSessionIndex] ?? sessionsMockData.sessions[0]
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!user?.id) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+      return () => {
+        cancelled = true
+      }
+    }
+
+    void fetchStatsBase(user.id)
+      .then((statsBase) => {
+        if (!cancelled) {
+          setStatsClimbs(prepareEnrichedClimbs(statsBase))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
@@ -86,32 +116,19 @@ export default function SessionsStatsPage() {
         <div className="mt-4">
           <SessionSelector
             session={selectedSession}
-            currentIndex={selectedSessionIndex}
-            total={sessionsMockData.sessions.length}
+            currentIndex={selectedRealSessionIndex}
+            total={realSessionCount}
             onPrevious={() =>
-              setSelectedSessionIndex((currentIndex) => Math.min(currentIndex + 1, sessionsMockData.sessions.length - 1))
+              setSelectedSessionIndex((currentIndex) => Math.min(currentIndex + 1, Math.max(realSessionCount - 1, 0)))
             }
             onNext={() =>
               setSelectedSessionIndex((currentIndex) => Math.max(currentIndex - 1, 0))
-            }
-            actions={
-              <SessionClimbActions
-                climbs={selectedSessionClimbs}
-                isExpanded={climbsExpanded}
-                isLoading={sessionClimbsLoading}
-                error={sessionClimbsError}
-                logbookSessionId={selectedLogbookSession?.id ?? null}
-                detailReturnPath={detailReturnPath}
-                detailReturnState={{ selectedSessionIndex, climbsExpanded }}
-                onToggleExpanded={() => setClimbsExpanded((current) => !current)}
-                onOpenLogbook={openSelectedSessionInLogbook}
-              />
             }
           />
         </div>
 
         <div className="mt-2 px-1">
-          <SessionIdentityLine identity={selectedSession.identity} />
+          <SessionIdentityLine identity={selectedMockSession.identity} />
         </div>
 
         <div className="mt-2">
@@ -121,12 +138,13 @@ export default function SessionsStatsPage() {
         <div className="mt-4">
           <SessionDetailBreakdown
             outcomes={selectedSession.outcomes}
+            outcomeTotalCount={selectedSession.outcomeTotalCount}
             gradeDistribution={selectedSession.gradeDistribution}
           />
         </div>
 
         <div className="mt-4">
-          <SessionInsight insight={selectedSession.insight} />
+          <SessionInsight insight={selectedMockSession.insight} />
         </div>
       </main>
 

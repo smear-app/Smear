@@ -1,5 +1,7 @@
 import {
+  buildGradeHistogram,
   buildImplicitSessions,
+  buildOutcomeCounts,
   filterAttemptClimbs,
   filterFlashClimbs,
   filterSentClimbs,
@@ -8,6 +10,8 @@ import {
   getMedianGrade,
   type EnrichedClimb,
   type EnrichedSession,
+  type GradeHistogramBucket,
+  type OutcomeCounts,
 } from "../primitives"
 import {
   averageNonNull,
@@ -34,6 +38,8 @@ export type SessionMetrics = {
   averageSentGrade: number | null
   medianSentGrade: number | null
   workingGrade: number | null
+  gradeHistogram: Array<Pick<GradeHistogramBucket, "gradeIndex" | "count">>
+  outcomeCounts: OutcomeCounts
 }
 
 export type SessionBaselineMetrics = {
@@ -104,6 +110,8 @@ function calculateSingleSessionMetrics(session: EnrichedSession): SessionMetrics
     averageSentGrade: getAverageGrade(sentClimbs),
     medianSentGrade: getMedianGrade(sentClimbs),
     workingGrade: calculateTopFortyPercentMedianWorkingGrade(sentClimbs),
+    gradeHistogram: buildGradeHistogram(climbs).map(({ gradeIndex, count }) => ({ gradeIndex, count })),
+    outcomeCounts: buildOutcomeCounts(climbs),
   }
 }
 

@@ -16,12 +16,14 @@ export type SessionOutcomeItem = {
   label: string
   count: number
   percentage: number
+  percentageLabel?: string
   tone: "flash" | "send" | "unfinished"
 }
 
 export type SessionGradeDistributionItem = {
   label: string
   count: number
+  widthPercent: number
 }
 
 export type SessionSummaryStat = {
@@ -41,6 +43,7 @@ export type SessionDetail = {
   identity: SessionIdentity
   summary: SessionSummaryStat[]
   outcomes: SessionOutcomeItem[]
+  outcomeTotalCount: number
   gradeDistribution: SessionGradeDistributionItem[]
   insight: string
 }
