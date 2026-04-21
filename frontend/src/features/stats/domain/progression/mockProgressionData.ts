@@ -29,38 +29,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Consistency", value: "3.2 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V6", description: "highest this period" },
     ],
-    milestones: [
-      {
-        id: "10w-first-v5-send",
-        title: "First V5 send",
-        achievedAt: "2026-02-28T12:00:00Z",
-        metadata: { grade: "V5", category: "send" },
-      },
-      {
-        id: "10w-best-volume-session",
-        title: "Best session by volume",
-        achievedAt: "2026-03-22T12:00:00Z",
-        metadata: { climbs: 9 },
-      },
-      {
-        id: "10w-highest-average-grade-week",
-        title: "Highest working grade week",
-        achievedAt: "2026-04-12T12:00:00Z",
-        metadata: { averageGrade: 5.1 },
-      },
-      {
-        id: "10w-three-week-streak",
-        title: "Three-week consistency streak",
-        achievedAt: "2026-03-08T12:00:00Z",
-        metadata: { weeks: 3 },
-      },
-      {
-        id: "10w-first-v6-attempt",
-        title: "First V6 attempt logged",
-        achievedAt: "2026-04-02T12:00:00Z",
-        metadata: { grade: "V6", category: "attempt" },
-      },
-    ],
+    milestones: [],
   },
   "6-months": {
     insight: "You’re climbing more and gradually pushing into higher grades.",
@@ -78,38 +47,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Consistency", value: "3.0 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V7", description: "highest this period" },
     ],
-    milestones: [
-      {
-        id: "6m-first-v6-flash",
-        title: "First V6 flash",
-        achievedAt: "2026-02-03T12:00:00Z",
-        metadata: { grade: "V6", category: "flash" },
-      },
-      {
-        id: "6m-most-active-month",
-        title: "Most active month",
-        achievedAt: "2026-03-13T12:00:00Z",
-        metadata: { month: "March" },
-      },
-      {
-        id: "6m-best-sustained-grade-block",
-        title: "Best sustained grade block",
-        achievedAt: "2026-04-16T12:00:00Z",
-        metadata: { weeks: 6, averageGrade: 4.5 },
-      },
-      {
-        id: "6m-first-v7-send",
-        title: "First V7 send",
-        achievedAt: "2026-01-24T12:00:00Z",
-        metadata: { grade: "V7", category: "send" },
-      },
-      {
-        id: "6m-100-climb-period",
-        title: "100 climbs in range",
-        achievedAt: "2026-03-30T12:00:00Z",
-        metadata: { climbs: 100 },
-      },
-    ],
+    milestones: [],
   },
   "all-time": {
     insight: "Your biggest jumps came when volume stayed healthy and working grade moved with it.",
@@ -126,37 +64,6 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
       { label: "Consistency", value: "2.8 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V8", description: "highest this period" },
     ],
-    milestones: [
-      {
-        id: "all-time-first-v4-block",
-        title: "First V4 block",
-        achievedAt: "2025-05-20T12:00:00Z",
-        metadata: { grade: "V4" },
-      },
-      {
-        id: "all-time-breakthrough-year",
-        title: "Breakthrough year",
-        achievedAt: "2025-10-03T12:00:00Z",
-        metadata: { year: 2025 },
-      },
-      {
-        id: "all-time-current-peak-trend",
-        title: "Current peak trend",
-        achievedAt: "2026-03-29T12:00:00Z",
-        metadata: { year: 2026 },
-      },
-      {
-        id: "all-time-500-climbs-logged",
-        title: "500 climbs logged",
-        achievedAt: "2025-12-14T12:00:00Z",
-        metadata: { climbs: 500 },
-      },
-      {
-        id: "all-time-first-v8-send",
-        title: "First V8 send",
-        achievedAt: "2026-04-06T12:00:00Z",
-        metadata: { grade: "V8", category: "send" },
-      },
-    ],
+    milestones: [],
   },
 }

@@ -14,7 +14,6 @@ import {
   progressionMockData,
   progressionRangeOptions,
 } from "../domain/progression/mockProgressionData"
-import { selectProgressionMilestones } from "../domain/progression/selectProgressionMilestones"
 import { selectProgressionViewModel } from "../domain/progression/selectProgressionViewModel"
 import { bucketClimbsByWeek, type EnrichedClimb } from "../domain/primitives"
 import type { ProgressionMetrics } from "../domain/calculators"
@@ -88,7 +87,6 @@ export default function ProgressionStatsPage() {
     }
   }, [selectedRange, statsClimbs])
   const selectedChartView = selectedChartData.view
-  const milestones = useMemo(() => selectProgressionMilestones(progressionView), [progressionView])
 
   useEffect(() => {
     if (window.localStorage.getItem(DEBUG_PROGRESSION_BINS_STORAGE_KEY) !== "1") {
@@ -176,7 +174,7 @@ export default function ProgressionStatsPage() {
         </div>
 
         <div className="mt-4">
-          <ProgressionMilestonesList milestones={milestones} />
+          <ProgressionMilestonesList />
         </div>
       </main>
 
