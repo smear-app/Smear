@@ -17,6 +17,10 @@ export type ArchetypeTagMetric = {
   climbCount: number
   climbShare: number
   sentCount: number
+  flashCount: number
+  sendCount: number
+  attemptCount: number
+  workingGradeSourceValues: number[]
   averageSentGrade: number | null
   medianSentGrade: number | null
   workingGrade: number | null
@@ -97,6 +101,9 @@ function buildTagMetric(
   groupAttributionCount: number,
 ): ArchetypeTagMetric {
   const sentClimbs = filterSentClimbs(accumulator.climbs)
+  const workingGradeSourceValues = sentClimbs.flatMap((climb) =>
+    typeof climb.gradeIndex === "number" && Number.isFinite(climb.gradeIndex) ? [climb.gradeIndex] : [],
+  )
 
   return {
     tagKey: accumulator.tagKey,
@@ -105,6 +112,10 @@ function buildTagMetric(
     climbCount: accumulator.climbs.length,
     climbShare: safeDivide(accumulator.climbs.length, groupAttributionCount),
     sentCount: sentClimbs.length,
+    flashCount: accumulator.climbs.filter((climb) => climb.isFlash).length,
+    sendCount: accumulator.climbs.filter((climb) => climb.outcome === "send").length,
+    attemptCount: accumulator.climbs.filter((climb) => climb.isAttempt).length,
+    workingGradeSourceValues,
     averageSentGrade: getAverageGrade(sentClimbs),
     medianSentGrade: getMedianGrade(sentClimbs),
     workingGrade: calculateTopFortyPercentMedianWorkingGrade(sentClimbs),

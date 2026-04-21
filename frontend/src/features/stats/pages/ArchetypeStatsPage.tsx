@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
+import { useAuth } from "../../../context/AuthContext"
 import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownList"
 import ArchetypeRadarLegend from "../components/archetype/ArchetypeRadarLegend"
 import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
@@ -8,12 +9,56 @@ import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentCon
 import ArchetypeTrendCard from "../components/archetype/ArchetypeTrendCard"
 import Insight from "../components/Insight"
 import ProgressionSurface from "../components/progression/ProgressionSurface"
-import { buildArchetypeViewModel, archetypeSegmentOptions } from "../domain/archetype/mockArchetypeData"
+import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
+import { calculateArchetypeMetrics } from "../domain/calculators"
+import { selectArchetypeViewModel } from "../domain/archetype/selectArchetypeViewModel"
+import { getArchetypeSegmentOptions } from "../domain/archetype/tagTaxonomy"
+import type { EnrichedClimb } from "../domain/primitives"
 import type { ArchetypeSegment } from "../domain/archetype/types"
 
+const archetypeSegmentOptions = getArchetypeSegmentOptions()
+
 export default function ArchetypeStatsPage() {
+  const { user } = useAuth()
   const [selectedSegment, setSelectedSegment] = useState<ArchetypeSegment>("terrain")
-  const viewModel = useMemo(() => buildArchetypeViewModel(selectedSegment), [selectedSegment])
+  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
+  const archetypeMetrics = useMemo(() => calculateArchetypeMetrics(statsClimbs), [statsClimbs])
+  const viewModel = useMemo(
+    () => selectArchetypeViewModel(archetypeMetrics, selectedSegment),
+    [archetypeMetrics, selectedSegment],
+  )
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!user?.id) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+      return () => {
+        cancelled = true
+      }
+    }
+
+    void fetchStatsBase(user.id)
+      .then((statsBase) => {
+        if (!cancelled) {
+          setStatsClimbs(prepareEnrichedClimbs(statsBase))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">

@@ -1,12 +1,13 @@
 import { CLIMB_TAG_CATEGORIES, type ClimbTagCategoryId } from "../../../../lib/climbTags"
 import type { ArchetypeSegment, ArchetypeSegmentOption } from "./types"
 
-const ARCHETYPE_SEGMENT_ORDER: ArchetypeSegment[] = ["terrain", "movement", "holds"]
+const ARCHETYPE_SEGMENT_ORDER: ArchetypeSegment[] = ["terrain", "movement", "holds", "mechanics"]
 
 const ARCHETYPE_SEGMENT_CATEGORY_IDS = {
   terrain: "wall",
   movement: "movement",
   holds: "hold",
+  mechanics: "mechanic",
 } satisfies Record<ArchetypeSegment, ClimbTagCategoryId>
 
 function getTagCategoryById(categoryId: ClimbTagCategoryId) {

@@ -192,6 +192,49 @@ const archetypeSegmentData: Record<ArchetypeSegment, ArchetypeSegmentModel> = {
       },
     ],
   },
+  mechanics: {
+    archetypeLabel: "Balance / Power",
+    description: "Your mechanics profile compares balance, power, and dyno-style movement.",
+    performanceScale: {
+      ticks: [
+        { level: 25, label: "V2" },
+        { level: 50, label: "V4" },
+        { level: 75, label: "V6" },
+        { level: 100, label: "V8" },
+      ],
+    },
+    axisMetricsByTag: {
+      Balance: { performance: 64, volume: 58 },
+      Power: { performance: 72, volume: 66 },
+      Dyno: { performance: 48, volume: 39 },
+    },
+    categoryOutcomes: [
+      {
+        label: "Balance",
+        outcomes: [
+          { tone: "flash", count: 2 },
+          { tone: "send", count: 4 },
+          { tone: "attempted", count: 2 },
+        ],
+      },
+      {
+        label: "Power",
+        outcomes: [
+          { tone: "flash", count: 3 },
+          { tone: "send", count: 5 },
+          { tone: "attempted", count: 3 },
+        ],
+      },
+      {
+        label: "Dyno",
+        outcomes: [
+          { tone: "flash", count: 1 },
+          { tone: "send", count: 2 },
+          { tone: "attempted", count: 3 },
+        ],
+      },
+    ],
+  },
 }
 
 const OUTCOME_LABELS: Record<ArchetypeOutcomeTone, string> = {
@@ -350,10 +393,24 @@ function toRadarAxes(segment: ArchetypeSegment, model: ArchetypeSegmentModel): A
 export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeViewModel {
   const model = archetypeSegmentData[segment]
   const radarAxes = toRadarAxes(segment, model)
+  const volumeCountByLabel = toVolumeCountByLabel(model.categoryOutcomes)
 
   return {
     archetypeLabel: model.archetypeLabel,
     description: model.description,
+    categories: radarAxes.map((axis) => ({
+      categoryKey: axis.label.toLowerCase(),
+      label: axis.label,
+      sentCount: 0,
+      totalLoggedCount: volumeCountByLabel.get(axis.label) ?? 0,
+      workingGradeSourceValues: [],
+      workingGradeDisplayValue: axis.display.performanceLabel,
+      volumeDisplayValue: axis.display.volumeLabel,
+      normalizedPerformanceRadarValue: axis.performance,
+      normalizedVolumeRadarValue: axis.volume,
+      missingPerformance: false,
+      missingVolume: (volumeCountByLabel.get(axis.label) ?? 0) === 0,
+    })),
     radarAxes,
     performanceScale: model.performanceScale,
     breakdown: toCategoryOutcomeBreakdownItems(

@@ -1,4 +1,4 @@
-export type ArchetypeSegment = "terrain" | "movement" | "holds"
+export type ArchetypeSegment = "terrain" | "movement" | "holds" | "mechanics"
 
 export type ArchetypeRadarAxisMetrics = {
   label: string
@@ -53,6 +53,20 @@ export type ArchetypeCategoryOutcomeBreakdownItem = {
   outcomes: ArchetypeOutcomeBreakdownSegment[]
 }
 
+export type ArchetypeCategoryEntry = {
+  categoryKey: string
+  label: string
+  sentCount: number
+  totalLoggedCount: number
+  workingGradeSourceValues: number[]
+  workingGradeDisplayValue: string
+  volumeDisplayValue: string
+  normalizedPerformanceRadarValue: number
+  normalizedVolumeRadarValue: number
+  missingPerformance: boolean
+  missingVolume: boolean
+}
+
 export type ArchetypeSegmentOption = {
   value: ArchetypeSegment
   label: string
@@ -69,6 +83,7 @@ export type ArchetypeSegmentModel = {
 export type ArchetypeViewModel = {
   archetypeLabel: string
   description: string
+  categories: ArchetypeCategoryEntry[]
   radarAxes: ArchetypeRadarAxis[]
   performanceScale: ArchetypePerformanceScale
   breakdown: ArchetypeCategoryOutcomeBreakdownItem[]
