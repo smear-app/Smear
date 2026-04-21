@@ -97,6 +97,7 @@ export function selectPerformanceViewModel(
     periodLabel: TIMEFRAME_LABELS[timeframe],
     pyramid: selectGradePyramid(metrics),
     outcomes: selectOutcomeBreakdown(metrics),
+    outcomeTotalCount: metrics.totalClimbs,
     metrics: [
       {
         label: "Flash Rate",

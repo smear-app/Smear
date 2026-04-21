@@ -43,6 +43,7 @@ export type PerformanceViewModel = {
   periodLabel: string
   pyramid: PerformancePyramidBand[]
   outcomes: PerformanceOutcomeItem[]
+  outcomeTotalCount: number
   metrics: PerformanceMetric[]
   gradeBands: PerformanceGradeBand[]
   insight: string | null

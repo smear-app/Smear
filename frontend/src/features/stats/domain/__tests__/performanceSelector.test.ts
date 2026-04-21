@@ -85,6 +85,7 @@ describe("selectPerformanceViewModel", () => {
       ["Send", 5, "50%"],
       ["Unfinished", 3, "30%"],
     ])
+    expect(viewModel.outcomeTotalCount).toBe(10)
   })
 
   it("returns safe display values for empty metrics", () => {
@@ -111,6 +112,7 @@ describe("selectPerformanceViewModel", () => {
 
     expect(viewModel.pyramid).toEqual([])
     expect(viewModel.gradeBands).toEqual([])
+    expect(viewModel.outcomeTotalCount).toBe(0)
     expect(viewModel.outcomes.map((item) => item.percentageLabel)).toEqual(["0%", "0%", "0%"])
     expect(metricValue(viewModel.metrics, "Hardest Send")).toBe("None")
     expect(metricValue(viewModel.metrics, "Hardest Flash")).toBe("None")

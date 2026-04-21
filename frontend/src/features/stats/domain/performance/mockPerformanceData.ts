@@ -21,6 +21,7 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
       { label: "Send", count: 15, percentage: 34, percentageLabel: "34%", tone: "send" },
       { label: "Unfinished", count: 7, percentage: 15, percentageLabel: "15%", tone: "unfinished" },
     ],
+    outcomeTotalCount: 34,
     metrics: [
       { label: "Flash Rate", value: "28%", description: "of logged attempts this period" },
       { label: "Avg Attempts / Send", value: "2.3", description: "before successful send" },
@@ -50,6 +51,7 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
       { label: "Send", count: 31, percentage: 33, percentageLabel: "33%", tone: "send" },
       { label: "Unfinished", count: 16, percentage: 18, percentageLabel: "18%", tone: "unfinished" },
     ],
+    outcomeTotalCount: 71,
     metrics: [
       { label: "Flash Rate", value: "25%", description: "of logged attempts this period" },
       { label: "Avg Attempts / Send", value: "2.6", description: "before successful send" },
@@ -79,6 +81,7 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
       { label: "Send", count: 73, percentage: 33, percentageLabel: "33%", tone: "send" },
       { label: "Unfinished", count: 40, percentage: 18, percentageLabel: "18%", tone: "unfinished" },
     ],
+    outcomeTotalCount: 161,
     metrics: [
       { label: "Flash Rate", value: "22%", description: "of logged attempts overall" },
       { label: "Avg Attempts / Send", value: "2.8", description: "before successful send" },

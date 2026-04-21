@@ -4,15 +4,21 @@ import OutcomeDonutBreakdown from "../OutcomeDonutBreakdown"
 
 type OutcomeBreakdownProps = {
   items: PerformanceOutcomeItem[]
+  totalCount: number
   periodLabel: string
 }
 
-export default function OutcomeBreakdown({ items, periodLabel }: OutcomeBreakdownProps) {
+export default function OutcomeBreakdown({ items, totalCount, periodLabel }: OutcomeBreakdownProps) {
   return (
     <ProgressionSurface>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-muted">Outcome breakdown</p>
       <p className="mt-1 text-sm leading-5 text-stone-secondary">How logged attempts resolved in the {periodLabel}.</p>
-      <OutcomeDonutBreakdown items={items} centerLabel="attempts" ariaLabel="Outcome breakdown donut chart" />
+      <OutcomeDonutBreakdown
+        items={items}
+        totalCount={totalCount}
+        centerLabel="attempts"
+        ariaLabel="Outcome breakdown donut chart"
+      />
     </ProgressionSurface>
   )
 }

@@ -1,18 +1,102 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
+import { useAuth } from "../../../context/AuthContext"
 import GradePyramid from "../components/performance/GradePyramid"
 import GradeBandPerformance from "../components/performance/GradeBandPerformance"
 import OutcomeBreakdown from "../components/performance/OutcomeBreakdown"
 import PerformanceInsight from "../components/performance/PerformanceInsight"
 import PerformanceMetricGrid from "../components/performance/PerformanceMetricGrid"
 import PerformanceRangeControl from "../components/performance/PerformanceRangeControl"
+import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
+import { calculatePerformanceMetrics } from "../domain/calculators"
 import { performanceMockData, performanceRangeOptions } from "../domain/performance/mockPerformanceData"
-import type { PerformanceRange } from "../domain/performance/types"
+import { selectPerformanceViewModel } from "../domain/performance/selectPerformanceViewModel"
+import type { EnrichedClimb } from "../domain/primitives"
+import type { PerformanceRange, PerformanceTimeframeKey } from "../domain/performance/types"
+
+const PERFORMANCE_TIMEFRAME_BY_RANGE: Record<PerformanceRange, PerformanceTimeframeKey> = {
+  "10-weeks": "10w",
+  "6-months": "6m",
+  "all-time": "all",
+}
+
+const TEN_WEEKS_MS = 10 * 7 * 24 * 60 * 60 * 1000
+
+function getRangeStart(range: PerformanceRange, now: Date): Date | null {
+  if (range === "all-time") {
+    return null
+  }
+
+  if (range === "10-weeks") {
+    return new Date(now.getTime() - TEN_WEEKS_MS)
+  }
+
+  const start = new Date(now)
+  start.setMonth(start.getMonth() - 6)
+  return start
+}
+
+function getClimbsForRange(climbs: readonly EnrichedClimb[], range: PerformanceRange, now: Date): EnrichedClimb[] {
+  const start = getRangeStart(range, now)
+
+  if (start === null) {
+    return [...climbs]
+  }
+
+  const startTime = start.getTime()
+  const endTime = now.getTime()
+
+  return climbs.filter((climb) => {
+    const loggedAt = new Date(climb.loggedAt).getTime()
+    return Number.isFinite(loggedAt) && loggedAt >= startTime && loggedAt <= endTime
+  })
+}
 
 export default function PerformanceStatsPage() {
+  const { user } = useAuth()
   const [selectedRange, setSelectedRange] = useState<PerformanceRange>("10-weeks")
+  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
   const performanceView = useMemo(() => performanceMockData[selectedRange], [selectedRange])
+  const selectedMetricsView = useMemo(() => {
+    const now = new Date()
+    const selectedClimbs = getClimbsForRange(statsClimbs, selectedRange, now)
+    const metrics = calculatePerformanceMetrics(selectedClimbs)
+
+    return selectPerformanceViewModel(metrics, PERFORMANCE_TIMEFRAME_BY_RANGE[selectedRange])
+  }, [selectedRange, statsClimbs])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!user?.id) {
+      queueMicrotask(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+      return () => {
+        cancelled = true
+      }
+    }
+
+    void fetchStatsBase(user.id)
+      .then((statsBase) => {
+        if (!cancelled) {
+          setStatsClimbs(prepareEnrichedClimbs(statsBase))
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatsClimbs([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
@@ -30,19 +114,23 @@ export default function PerformanceStatsPage() {
         </div>
 
         <div className="mt-5">
-          <GradePyramid bands={performanceView.pyramid} periodLabel={performanceView.periodLabel} />
+          <GradePyramid bands={selectedMetricsView.pyramid} periodLabel={selectedMetricsView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <OutcomeBreakdown items={performanceView.outcomes} periodLabel={performanceView.periodLabel} />
+          <OutcomeBreakdown
+            items={selectedMetricsView.outcomes}
+            totalCount={selectedMetricsView.outcomeTotalCount}
+            periodLabel={selectedMetricsView.periodLabel}
+          />
         </div>
 
         <div className="mt-4">
-          <PerformanceMetricGrid metrics={performanceView.metrics} periodLabel={performanceView.periodLabel} />
+          <PerformanceMetricGrid metrics={selectedMetricsView.metrics} periodLabel={selectedMetricsView.periodLabel} />
         </div>
 
         <div className="mt-4">
-          <GradeBandPerformance bands={performanceView.gradeBands} periodLabel={performanceView.periodLabel} />
+          <GradeBandPerformance bands={selectedMetricsView.gradeBands} periodLabel={selectedMetricsView.periodLabel} />
         </div>
 
         <div className="mt-4">

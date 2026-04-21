@@ -10,6 +10,7 @@ export type OutcomeDonutBreakdownItem = {
 
 type OutcomeDonutBreakdownProps = {
   items: OutcomeDonutBreakdownItem[]
+  totalCount: number
   centerLabel: string
   ariaLabel: string
 }
@@ -20,8 +21,7 @@ const TONE_STYLES: Record<OutcomeDonutTone, string> = {
   unfinished: "color-mix(in srgb, var(--stone-border) 90%, transparent)",
 }
 
-export default function OutcomeDonutBreakdown({ items, centerLabel, ariaLabel }: OutcomeDonutBreakdownProps) {
-  const totalCount = items.reduce((sum, item) => sum + item.count, 0)
+export default function OutcomeDonutBreakdown({ items, totalCount, centerLabel, ariaLabel }: OutcomeDonutBreakdownProps) {
   const radius = 42
   const circumference = 2 * Math.PI * radius
   const chartSegments = items.map((item, index) => {
