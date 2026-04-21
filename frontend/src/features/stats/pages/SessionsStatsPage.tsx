@@ -179,7 +179,7 @@ export default function SessionsStatsPage({
         </DetailPageHeader>
 
         <div className="mt-5">
-          <SessionsTrendChart points={sessionsMockData.trendPoints} />
+          <SessionsTrendChart points={sessionsView.trendPoints} />
         </div>
 
         <div className="mt-4">

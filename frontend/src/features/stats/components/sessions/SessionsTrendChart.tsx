@@ -30,6 +30,18 @@ function buildLinePath(points: Array<{ x: number; y: number }>) {
   return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ")
 }
 
+function buildLineSegments(points: Array<{ x: number; y: number | null }>) {
+  return points.reduce<Array<Array<{ x: number; y: number }>>>((segments, point) => {
+    if (point.y === null) {
+      return [...segments, []]
+    }
+
+    const nextSegments = segments.length === 0 ? [[]] : segments
+    nextSegments[nextSegments.length - 1].push({ x: point.x, y: point.y })
+    return nextSegments
+  }, []).filter((segment) => segment.length > 0)
+}
+
 function formatGradeLabel(value: number) {
   return `V${Math.round(value)}`
 }
@@ -37,10 +49,15 @@ function formatGradeLabel(value: number) {
 export default function SessionsTrendChart({ points }: SessionsTrendChartProps) {
   const innerWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right
   const innerHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom
-  const maxClimbs = Math.max(...points.map((point) => point.climbs))
+  const maxClimbs = Math.max(0, ...points.map((point) => point.climbs))
   const climbsMax = Math.max(1, Math.ceil(maxClimbs / 4) * 4)
-  const gradeFloor = Math.max(0, Math.floor(Math.min(...points.map((point) => point.avgGrade))))
-  const gradeCeiling = Math.max(gradeFloor + 1, Math.ceil(Math.max(...points.map((point) => point.avgGrade))))
+  const gradeValues = points.flatMap((point) =>
+    point.avgGrade !== null && Number.isFinite(point.avgGrade) ? [point.avgGrade] : [],
+  )
+  const minGrade = gradeValues.length === 0 ? 0 : Math.min(...gradeValues)
+  const maxGrade = gradeValues.length === 0 ? 1 : Math.max(...gradeValues)
+  const gradeFloor = Math.max(0, Math.floor(minGrade))
+  const gradeCeiling = Math.max(gradeFloor + 1, Math.ceil(maxGrade))
   const gradeRange = gradeCeiling - gradeFloor
   const gradeTicks = Array.from({ length: gradeCeiling - gradeFloor + 1 }, (_, index) => gradeFloor + index)
   const minorLines = gradeTicks.slice(0, -1).map((tick) => ({
@@ -55,12 +72,14 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
     tick,
     y: CHART_PADDING.top + innerHeight - (tick / climbsMax) * innerHeight,
   }))
-  const stepWidth = innerWidth / points.length
+  const stepWidth = points.length === 0 ? innerWidth : innerWidth / points.length
   const barWidth = Math.min(18, stepWidth * 0.52)
   const chartPoints = points.map((point, index) => {
     const x = CHART_PADDING.left + index * stepWidth + stepWidth / 2
     const barHeight = (point.climbs / climbsMax) * innerHeight
-    const y = CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
+    const y = point.avgGrade === null
+      ? null
+      : CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
 
     return {
       ...point,
@@ -71,6 +90,7 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
       barHeight,
     }
   })
+  const lineSegments = buildLineSegments(chartPoints.map(({ x, y }) => ({ x, y })))
 
   return (
     <ProgressionSurface>
@@ -151,25 +171,30 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
             />
           ))}
 
-          <path
-            d={buildLinePath(chartPoints.map(({ x, y }) => ({ x, y })))}
-            fill="none"
-            stroke={LINE_COLOR}
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {lineSegments.map((segment, index) => (
+            <path
+              key={`line-${index}`}
+              d={buildLinePath(segment)}
+              fill="none"
+              stroke={LINE_COLOR}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          ))}
 
           {chartPoints.map((point) => (
-            <circle
-              key={`${point.sessionId}-point`}
-              cx={point.x}
-              cy={point.y}
-              r="5"
-              fill={LINE_COLOR}
-              stroke={MARKER_OUTLINE_COLOR}
-              strokeWidth="2.5"
-            />
+            point.y === null ? null : (
+              <circle
+                key={`${point.sessionId}-point`}
+                cx={point.x}
+                cy={point.y}
+                r="5"
+                fill={LINE_COLOR}
+                stroke={MARKER_OUTLINE_COLOR}
+                strokeWidth="2.5"
+              />
+            )
           ))}
 
           {chartPoints.map((point) => (

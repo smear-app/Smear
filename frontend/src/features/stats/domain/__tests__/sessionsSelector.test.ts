@@ -131,4 +131,39 @@ describe("selectSessionsViewModel", () => {
       { label: "Unfinished", count: 3, percentage: 30, percentageLabel: "30%", tone: "unfinished" },
     ])
   })
+
+  it("shapes the trend chart from the five most recent sessions in display order", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session-1", "2026-04-01T10:00:00.000Z", { totalClimbs: 1, workingGrade: 1 }),
+        makeSession("session-2", "2026-04-02T10:00:00.000Z", { totalClimbs: 2, workingGrade: 2 }),
+        makeSession("session-3", "2026-04-03T10:00:00.000Z", { totalClimbs: 3, workingGrade: 3 }),
+        makeSession("session-4", "2026-04-04T10:00:00.000Z", { totalClimbs: 4, workingGrade: 4 }),
+        makeSession("session-5", "2026-04-05T10:00:00.000Z", { totalClimbs: 5, workingGrade: 5 }),
+        makeSession("session-6", "2026-04-06T10:00:00.000Z", { totalClimbs: 6, workingGrade: null }),
+      ],
+    })
+
+    expect(viewModel.trendPoints).toEqual([
+      { sessionId: "session-2", label: "Apr 2", tickLabel: "Apr 2", climbs: 2, avgGrade: 2 },
+      { sessionId: "session-3", label: "Apr 3", tickLabel: "Apr 3", climbs: 3, avgGrade: 3 },
+      { sessionId: "session-4", label: "Apr 4", tickLabel: "Apr 4", climbs: 4, avgGrade: 4 },
+      { sessionId: "session-5", label: "Apr 5", tickLabel: "Apr 5", climbs: 5, avgGrade: 5 },
+      { sessionId: "session-6", label: "Apr 6", tickLabel: "Apr 6", climbs: 6, avgGrade: null },
+    ])
+  })
+
+  it("does not fabricate trend chart sessions when fewer than five exist", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("older", "2026-04-01T10:00:00.000Z"),
+        makeSession("latest", "2026-04-08T10:00:00.000Z"),
+      ],
+    })
+
+    expect(viewModel.trendPoints).toHaveLength(2)
+    expect(viewModel.trendPoints.map((point) => point.sessionId)).toEqual(["older", "latest"])
+  })
 })

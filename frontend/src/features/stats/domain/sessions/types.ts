@@ -3,7 +3,7 @@ export type SessionTrendPoint = {
   label: string
   tickLabel: string
   climbs: number
-  avgGrade: number
+  avgGrade: number | null
 }
 
 export type SessionTrendMetric = {

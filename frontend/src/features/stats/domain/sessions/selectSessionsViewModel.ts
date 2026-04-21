@@ -4,14 +4,27 @@ import type {
   SessionGradeDistributionItem,
   SessionOutcomeItem,
   SessionSummaryStat,
+  SessionTrendPoint,
   SessionsViewModel,
 } from "./types"
+
+const MAX_TREND_SESSIONS = 5
 
 function formatDate(value: string): string {
   const date = new Date(value)
 
   if (!Number.isFinite(date.getTime())) {
     return "-"
+  }
+
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+}
+
+function formatTickDate(value: string): string {
+  const date = new Date(value)
+
+  if (!Number.isFinite(date.getTime())) {
+    return ""
   }
 
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
@@ -118,12 +131,26 @@ function toSessionDetail(
   }
 }
 
-export function selectSessionsViewModel(metrics: SessionsMetrics): SessionsViewModel {
+function toTrendPoint(sessionWithComparison: SessionsMetrics["sessions"][number]): SessionTrendPoint {
+  const session = sessionWithComparison.session
+
   return {
-    trendPoints: [],
+    sessionId: session.sessionId,
+    label: formatDate(session.startAt),
+    tickLabel: formatTickDate(session.startAt),
+    climbs: session.totalClimbs,
+    avgGrade: session.workingGrade,
+  }
+}
+
+export function selectSessionsViewModel(metrics: SessionsMetrics): SessionsViewModel {
+  const sessionsNewestFirst = [...metrics.sessions]
+    .sort((left, right) => new Date(right.session.startAt).getTime() - new Date(left.session.startAt).getTime())
+  const trendSessions = sessionsNewestFirst.slice(0, MAX_TREND_SESSIONS).reverse()
+
+  return {
+    trendPoints: trendSessions.map(toTrendPoint),
     trendMetrics: [],
-    sessions: [...metrics.sessions]
-      .sort((left, right) => new Date(right.session.startAt).getTime() - new Date(left.session.startAt).getTime())
-      .map(toSessionDetail),
+    sessions: sessionsNewestFirst.map(toSessionDetail),
   }
 }
