@@ -17,7 +17,7 @@ from app.models import (
     LoggedGradeOption,
 )
 
-from app.routers.canonical_climbs import recompute_canonical_confidence
+from app.routers.canonical_climbs import recompute_canonical_aggregate, recompute_canonical_confidence
 from app.routers.sessions import publish_stale_sessions
 
 logger = logging.getLogger(__name__)
@@ -100,6 +100,14 @@ def _soft_delete_canonical_if_unused(supabase, canonical_climb_id: Optional[str]
     supabase.from_("canonical_climbs").update(
         {"status": "deleted", "is_active": False}
     ).eq("id", canonical_climb_id).execute()
+
+
+def _refresh_canonical_state(supabase, canonical_climb_id: Optional[str]) -> None:
+    if not canonical_climb_id:
+        return
+
+    recompute_canonical_aggregate(supabase, canonical_climb_id)
+    recompute_canonical_confidence(supabase, canonical_climb_id)
 
 
 @router.get("", response_model=PaginatedClimbsResponse)
@@ -257,7 +265,7 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
     _touch_session(supabase, session_id)
     background_tasks.add_task(publish_stale_sessions, supabase, user_id)
     if body.canonical_climb_id:
-        recompute_canonical_confidence(supabase, body.canonical_climb_id)
+        _refresh_canonical_state(supabase, body.canonical_climb_id)
         if body.photo_url:
             supabase.from_("canonical_climbs").update({"photo_url": body.photo_url}).eq(
                 "id", body.canonical_climb_id
@@ -274,6 +282,22 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    existing = (
+        supabase.from_("climbs")
+        .select("id, canonical_climb_id")
+        .eq("id", climb_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Climb not found")
+
+    if updates.get("tags") is not None:
+        updates["tags"] = [tag.lower() for tag in updates["tags"]]
+    if updates.get("send_type") is not None:
+        updates["send_type"] = updates["send_type"].lower()
+
     update_result = (
         supabase.from_("climbs")
         .update(updates)
@@ -283,6 +307,9 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     )
     if not update_result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
+    canonical_climb_id = existing.data.get("canonical_climb_id")
+    if canonical_climb_id and ("tags" in updates or "send_type" in updates):
+        _refresh_canonical_state(supabase, canonical_climb_id)
     result = supabase.from_("climbs").select("*").eq("id", climb_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
@@ -324,4 +351,5 @@ def delete_climb(climb_id: str, user_id: str = Depends(get_current_user)):
     canonical_climb_id = climb.data.get("canonical_climb_id")
 
     supabase.from_("climbs").delete().eq("id", climb_id).eq("user_id", user_id).execute()
+    _refresh_canonical_state(supabase, canonical_climb_id)
     _soft_delete_canonical_if_unused(supabase, canonical_climb_id)
