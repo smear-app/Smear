@@ -33,7 +33,7 @@ function buildLinePath(points: Array<{ x: number; y: number }>) {
     .join(" ")
 }
 
-function formatGradeLabel(value: number) {
+function formatAxisGradeLabel(value: number) {
   return `V${Math.round(value)}`
 }
 
@@ -54,20 +54,24 @@ export default function ProgressionChartCard({
 }: ProgressionChartCardProps) {
   const innerWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right
   const innerHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom
-  const maxClimbs = Math.max(...points.map((point) => point.climbs))
+  const maxClimbs = Math.max(0, ...points.map((point) => point.climbs))
   const { paddedMax: paddedMaxClimbs, ticks: climbAxisTicks } = buildLeftAxisTicks(Math.ceil(maxClimbs * 1.05))
-  const minGrade = Math.min(...points.map((point) => point.avgGrade))
-  const maxGrade = Math.max(...points.map((point) => point.avgGrade))
+  const gradeValues = points.flatMap((point) =>
+    point.avgGrade !== null && Number.isFinite(point.avgGrade) ? [point.avgGrade] : [],
+  )
+  const minGrade = gradeValues.length === 0 ? 0 : Math.min(...gradeValues)
+  const maxGrade = gradeValues.length === 0 ? 1 : Math.max(...gradeValues)
   const gradeFloor = Math.max(0, Math.floor(minGrade))
   const gradeCeiling = Math.max(gradeFloor + 1, Math.ceil(maxGrade))
   const gradeRange = gradeCeiling - gradeFloor
-  const stepWidth = innerWidth / points.length
+  const stepWidth = points.length === 0 ? innerWidth : innerWidth / points.length
   const barWidth = Math.min(18, stepWidth * 0.56)
   const chartPoints = points.map((point, index) => {
     const x = CHART_PADDING.left + index * stepWidth + stepWidth / 2
     const barHeight = (point.climbs / paddedMaxClimbs) * innerHeight
-    const y =
-      CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
+    const y = point.avgGrade === null
+      ? null
+      : CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
 
     return {
       ...point,
@@ -78,7 +82,8 @@ export default function ProgressionChartCard({
       barHeight,
     }
   })
-  const linePath = buildLinePath(chartPoints.map(({ x, y }) => ({ x, y })))
+  const linePoints = chartPoints.flatMap(({ x, y }) => (y === null ? [] : [{ x, y }]))
+  const linePath = buildLinePath(linePoints)
   const gradeTicks = Array.from(
     { length: gradeCeiling - gradeFloor + 1 },
     (_, index) => gradeFloor + index,
@@ -160,7 +165,7 @@ export default function ProgressionChartCard({
               fill={TICK_COLOR}
               className="text-[11px]"
             >
-              {formatGradeLabel(line.tick)}
+              {formatAxisGradeLabel(line.tick)}
             </text>
           ))}
 
@@ -187,16 +192,18 @@ export default function ProgressionChartCard({
           />
 
           {chartPoints.map((point) => (
-            <g key={`${point.label}-dot`}>
-              <circle
-                cx={point.x}
-                cy={point.y}
-                r="5.5"
-                fill={LINE_COLOR}
-                stroke={MARKER_OUTLINE_COLOR}
-                strokeWidth="2.5"
-              />
-            </g>
+            point.y === null ? null : (
+              <g key={`${point.label}-dot`}>
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="5.5"
+                  fill={LINE_COLOR}
+                  stroke={MARKER_OUTLINE_COLOR}
+                  strokeWidth="2.5"
+                />
+              </g>
+            )
           ))}
 
           {chartPoints.map((point) => (

@@ -17,7 +17,7 @@ export function selectProgressionPreviewPoints(
   count = 3,
 ): StatsPreviewTrendPoint[] {
   const recentPoints = selectRecentProgressionPoints(progression.chartPoints, count)
-  const gradeValues = recentPoints.map((point) => point.avgGrade)
+  const gradeValues = recentPoints.flatMap((point) => (point.avgGrade === null ? [] : [point.avgGrade]))
 
   if (gradeValues.length === 0) {
     return []
@@ -44,7 +44,7 @@ export function selectProgressionPreviewPoints(
     id: point.label,
     heightPercent: clamp(
       MIN_TREND_HEIGHT_PERCENT +
-        ((point.avgGrade - minGrade) / (maxGrade - minGrade)) *
+        (((point.avgGrade ?? minGrade) - minGrade) / (maxGrade - minGrade)) *
           (MAX_TREND_HEIGHT_PERCENT - MIN_TREND_HEIGHT_PERCENT),
       MIN_TREND_HEIGHT_PERCENT,
       MAX_TREND_HEIGHT_PERCENT,
