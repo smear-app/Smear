@@ -120,9 +120,9 @@ describe("selectSessionsViewModel", () => {
     })
 
     expect(viewModel.sessions[0].gradeDistribution).toEqual([
-      { label: "V3", count: 2, widthPercent: 40 },
-      { label: "V4", count: 5, widthPercent: 100 },
       { label: "V6", count: 3, widthPercent: 60 },
+      { label: "V4", count: 5, widthPercent: 100 },
+      { label: "V3", count: 2, widthPercent: 40 },
     ])
     expect(viewModel.sessions[0].outcomeTotalCount).toBe(10)
     expect(viewModel.sessions[0].outcomes).toEqual([

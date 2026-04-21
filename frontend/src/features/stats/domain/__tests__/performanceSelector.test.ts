@@ -88,6 +88,25 @@ describe("selectPerformanceViewModel", () => {
     expect(viewModel.outcomeTotalCount).toBe(10)
   })
 
+  it("orders grade bands from highest to lowest with values attached", () => {
+    const viewModel = selectPerformanceViewModel(
+      metricsFixture({
+        gradePerformance: [
+          { gradeIndex: 3, totalClimbs: 2, sentClimbs: 1, sendRate: 0.5 },
+          { gradeIndex: 6, totalClimbs: 4, sentClimbs: 3, sendRate: 0.75 },
+          { gradeIndex: 4, totalClimbs: 5, sentClimbs: 1, sendRate: 0.2 },
+        ],
+      }),
+      "10w",
+    )
+
+    expect(viewModel.gradeBands.map((band) => [band.label, band.sendRateLabel])).toEqual([
+      ["V6", "75% send"],
+      ["V4", "20% send"],
+      ["V3", "50% send"],
+    ])
+  })
+
   it("returns safe display values for empty metrics", () => {
     const viewModel = selectPerformanceViewModel(
       metricsFixture({

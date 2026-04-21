@@ -103,11 +103,13 @@ function toSummaryStats(session: SessionMetrics): SessionSummaryStat[] {
 function toGradeDistribution(session: SessionMetrics): SessionGradeDistributionItem[] {
   const maxCount = Math.max(0, ...session.gradeHistogram.map((bucket) => bucket.count))
 
-  return session.gradeHistogram.map((bucket) => ({
-    label: formatGrade(bucket.gradeIndex),
-    count: bucket.count,
-    widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
-  }))
+  return [...session.gradeHistogram]
+    .sort((left, right) => right.gradeIndex - left.gradeIndex)
+    .map((bucket) => ({
+      label: formatGrade(bucket.gradeIndex),
+      count: bucket.count,
+      widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
+    }))
 }
 
 function toOutcomeItems(session: SessionMetrics): SessionOutcomeItem[] {

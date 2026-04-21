@@ -78,15 +78,17 @@ function selectOutcomeBreakdown(metrics: PerformanceMetrics): PerformanceOutcome
 }
 
 function selectGradeBandPerformance(metrics: PerformanceMetrics): PerformanceGradeBand[] {
-  return metrics.gradePerformance.map((bucket) => {
-    const sendRate = toPercentValue(bucket.sendRate)
+  return [...metrics.gradePerformance]
+    .sort((left, right) => right.gradeIndex - left.gradeIndex)
+    .map((bucket) => {
+      const sendRate = toPercentValue(bucket.sendRate)
 
-    return {
-      label: formatGrade(bucket.gradeIndex),
-      sendRate,
-      sendRateLabel: `${sendRate}% send`,
-    }
-  })
+      return {
+        label: formatGrade(bucket.gradeIndex),
+        sendRate,
+        sendRateLabel: `${sendRate}% send`,
+      }
+    })
 }
 
 export function selectPerformanceViewModel(
