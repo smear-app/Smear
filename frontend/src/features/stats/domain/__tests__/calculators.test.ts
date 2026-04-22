@@ -199,4 +199,27 @@ describe("stats calculators", () => {
     expect(metrics.terrain.find((metric) => metric.tagKey === "slab")?.climbCount).toBe(1)
     expect(metrics.terrain.find((metric) => metric.tagKey === "cave")?.climbCount).toBe(0)
   })
+
+  it("falls back to logged tags when canonical archetype tags are empty", () => {
+    const metrics = calculateArchetypeMetrics([
+      climb({
+        id: "logged-tags-only",
+        outcome: "send",
+        gradeIndex: 4,
+        tags: [tag("crimp", "holdType"), tag("slab", "terrain")],
+        canonicalTags: canonicalTags(),
+      }),
+    ])
+
+    expect(metrics.holdType.find((metric) => metric.tagKey === "crimp")).toMatchObject({
+      climbCount: 1,
+      sentCount: 1,
+      workingGrade: 4,
+    })
+    expect(metrics.terrain.find((metric) => metric.tagKey === "slab")).toMatchObject({
+      climbCount: 1,
+      sentCount: 1,
+      workingGrade: 4,
+    })
+  })
 })
