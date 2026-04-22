@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { FiChevronRight } from "react-icons/fi"
+import { FiActivity, FiChevronRight } from "react-icons/fi"
 import type { StatsCardConfig, StatsPreviewTone, StatsPreviewVisualModel } from "../domain/types"
 
 type StatsPreviewCardProps = {
@@ -210,16 +210,11 @@ function PerformancePreviewRing({ visual }: { visual: Extract<StatsPreviewVisual
         strokeDasharray={`${dashLength} ${circumference}`}
         transform="rotate(-90 90 72)"
       />
-      <text
-        x="90"
-        y="72"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="var(--stone-secondary)"
-        className="text-[12px] font-medium"
-      >
-        Send %
-      </text>
+      <foreignObject x="78" y="60" width="24" height="24" className="pointer-events-none">
+        <div className="flex h-6 w-6 items-center justify-center text-stone-secondary/75 dark:text-stone-muted">
+          <FiActivity className="h-4 w-4" />
+        </div>
+      </foreignObject>
     </svg>
   )
 }
