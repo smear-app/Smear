@@ -6,6 +6,7 @@ import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownLi
 import ArchetypeRadarLegend from "../components/archetype/ArchetypeRadarLegend"
 import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
 import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentControl"
+import ArchetypeTimeframeControl from "../components/archetype/ArchetypeTimeframeControl"
 import ArchetypeTrendCard from "../components/archetype/ArchetypeTrendCard"
 import Insight from "../components/Insight"
 import ProgressionSurface from "../components/progression/ProgressionSurface"
@@ -13,6 +14,12 @@ import type { StatsBaseData } from "../domain/base"
 import { calculateArchetypeMetrics } from "../domain/calculators"
 import { selectArchetypeViewModel } from "../domain/archetype/selectArchetypeViewModel"
 import { getArchetypeSegmentOptions } from "../domain/archetype/tagTaxonomy"
+import {
+  archetypeTimeframeOptions,
+  defaultArchetypeTimeframe,
+  filterClimbsForArchetypeTimeframe,
+  type ArchetypeTimeframe,
+} from "../domain/archetype/timeframes"
 import type { EnrichedClimb } from "../domain/primitives"
 import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { ArchetypeSegment } from "../domain/archetype/types"
@@ -68,9 +75,14 @@ function summarizeEnrichedClimbs(climbs: readonly EnrichedClimb[]) {
 export default function ArchetypeStatsPage() {
   const location = useLocation()
   const [selectedSegment, setSelectedSegment] = useState<ArchetypeSegment>("terrain")
+  const [selectedTimeframe, setSelectedTimeframe] = useState<ArchetypeTimeframe>(defaultArchetypeTimeframe)
   const { statsBase, enrichedClimbs: statsClimbs } = useSharedStatsBase()
   const shouldShowDebug = import.meta.env.DEV && new URLSearchParams(location.search).has("debugArchetype")
-  const archetypeMetrics = useMemo(() => calculateArchetypeMetrics(statsClimbs), [statsClimbs])
+  const selectedClimbs = useMemo(
+    () => filterClimbsForArchetypeTimeframe(statsClimbs, selectedTimeframe, new Date()),
+    [selectedTimeframe, statsClimbs],
+  )
+  const archetypeMetrics = useMemo(() => calculateArchetypeMetrics(selectedClimbs), [selectedClimbs])
   const viewModel = useMemo(
     () => selectArchetypeViewModel(archetypeMetrics, selectedSegment),
     [archetypeMetrics, selectedSegment],
@@ -85,15 +97,20 @@ export default function ArchetypeStatsPage() {
       console.info("[ArchetypeStatsPage] shared stats base", summarizeStatsBase(statsBase))
     }
     console.info("[ArchetypeStatsPage] normalized shared inputs", summarizeEnrichedClimbs(statsClimbs))
+    console.info("[ArchetypeStatsPage] selected timeframe inputs", {
+      selectedTimeframe,
+      ...summarizeEnrichedClimbs(selectedClimbs),
+    })
     console.info("[ArchetypeStatsPage] raw archetype metrics", archetypeMetrics)
     console.info("[ArchetypeStatsPage] selected segment view model", {
       selectedSegment,
+      selectedTimeframe,
       categories: viewModel.categories,
       radarAxes: viewModel.radarAxes,
       breakdown: viewModel.breakdown,
     })
     console.info("[ArchetypeStatsPage] radar chart props", viewModel.radarAxes)
-  }, [archetypeMetrics, selectedSegment, shouldShowDebug, statsBase, statsClimbs, viewModel])
+  }, [archetypeMetrics, selectedClimbs, selectedSegment, selectedTimeframe, shouldShowDebug, statsBase, statsClimbs, viewModel])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
@@ -103,6 +120,14 @@ export default function ArchetypeStatsPage() {
         </DetailPageHeader>
 
         <div className="mt-4">
+          <ArchetypeTimeframeControl
+            options={archetypeTimeframeOptions}
+            value={selectedTimeframe}
+            onChange={setSelectedTimeframe}
+          />
+        </div>
+
+        <div className="mt-3">
           <ArchetypeSegmentControl
             options={archetypeSegmentOptions}
             value={selectedSegment}
@@ -131,6 +156,7 @@ export default function ArchetypeStatsPage() {
           <pre className="mt-4 max-h-80 overflow-auto rounded-lg border border-stone-border bg-stone-surface p-3 text-[10px] text-stone-text">
             {JSON.stringify(
               {
+                selectedTimeframe,
                 selectedSegment,
                 categories: viewModel.categories,
                 radarAxes: viewModel.radarAxes,
