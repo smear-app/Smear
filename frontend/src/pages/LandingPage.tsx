@@ -94,10 +94,6 @@ function HeroRiveSlot() {
             </text>
           ))}
         </g>
-        <line x1="330" y1="154" x2="382" y2="124" className="landing-hero-graph__annotation-line" />
-        <text x="390" y="122" className="landing-hero-graph__annotation">
-          breakthrough
-        </text>
       </svg>
       <div className="landing-rive-slot__badge">future rive: hero_arc.riv</div>
     </div>
@@ -259,37 +255,48 @@ function HeroSection() {
   return (
     <section className="landing-hero">
       <div className="landing-shell landing-hero__grid">
-        <div>
-          <Reveal direction="left">
-            <div className="landing-eyebrow">Indoor climbing progression</div>
-          </Reveal>
-          <div className="landing-hero__title-wrap">
-            <h1 className="landing-hero__title">
-              <span>Know the climber</span>
-              <span className="is-muted">you&apos;re becoming.</span>
-            </h1>
+        <div className="landing-hero__top-row">
+          <div className="landing-hero__copy-column">
+            <div className="landing-hero__copy-stack">
+              <Reveal direction="left">
+                <div className="landing-eyebrow">Indoor climbing progression</div>
+              </Reveal>
+              <div className="landing-hero__title-wrap">
+                <h1 className="landing-hero__title">
+                  <span>Know the climber you&apos;re becoming.</span>
+                </h1>
+              </div>
+              <Reveal direction="left" delay={220}>
+                <p className="landing-hero__copy">
+                  Climbers usually feel progress before they can explain it. Smear turns that blur into a readable
+                  shape, broken down by style and grounded in what actually happened on the wall.
+                </p>
+              </Reveal>
+            </div>
           </div>
-          <Reveal direction="left" delay={220}>
-            <p className="landing-hero__copy">
-              Climbers usually feel progress before they can explain it. Smear turns that blur into a readable shape,
-              broken down by style and grounded in what actually happened on the wall.
-            </p>
-          </Reveal>
-          <Reveal direction="left" delay={340} className="landing-hero__actions">
+
+          <div className="landing-hero__visual-column">
+            <Reveal direction="right" delay={180} className="landing-hero__visual-frame">
+              <HeroRiveSlot />
+            </Reveal>
+          </div>
+        </div>
+
+        <Reveal direction="left" delay={340} className="landing-hero__actions-panel">
+          <div className="landing-hero__actions">
             <a href="#access" className="landing-button landing-button--solid">
               Request early access
             </a>
             <a href="#how-it-works" className="landing-button landing-button--ghost">
               See how it works
             </a>
-          </Reveal>
-          <Reveal direction="left" delay={460}>
-            <LoadingRiveSlot />
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
 
-        <Reveal direction="right" delay={180} className="landing-hero__visual-frame">
-          <HeroRiveSlot />
+        <Reveal direction="left" delay={460} className="landing-hero__loading-panel">
+          <div className="landing-hero__loading">
+            <LoadingRiveSlot />
+          </div>
         </Reveal>
       </div>
 
@@ -350,7 +357,7 @@ function SolutionSection() {
   return (
     <section className="landing-section landing-section--dark">
       <div className="landing-shell landing-solution-grid">
-        <div>
+        <div className="landing-solution-copy">
           <Reveal direction="left">
             <div className="landing-eyebrow">The solution</div>
           </Reveal>
@@ -371,16 +378,20 @@ function SolutionSection() {
               The point is not your hardest send. It is whether you are improving in ways that are actually true.
             </p>
           </Reveal>
-          <Reveal delay={420} className="landing-stat-grid">
-            <div>
-              <strong>5</strong>
-              <span>style dimensions tracked independently per climber</span>
-            </div>
-            <div>
-              <strong>1 number</strong>
-              <span>is never the full picture of a climber&apos;s ability</span>
-            </div>
-          </Reveal>
+          <div className="landing-stat-grid">
+            <Reveal delay={420} className="landing-stat-card">
+              <div>
+                <strong>5</strong>
+                <span>style dimensions tracked independently per climber</span>
+              </div>
+            </Reveal>
+            <Reveal delay={500} className="landing-stat-card">
+              <div>
+                <strong>1 number</strong>
+                <span>is never the full picture of a climber&apos;s ability</span>
+              </div>
+            </Reveal>
+          </div>
         </div>
 
         <Reveal direction="right" delay={180} className="landing-analytics-panel">
@@ -391,7 +402,9 @@ function SolutionSection() {
             </div>
             <span>5 dimensions</span>
           </div>
-          <ArchetypeRiveSlot />
+          <div className="landing-analytics-panel__chart">
+            <ArchetypeRiveSlot />
+          </div>
         </Reveal>
       </div>
     </section>
