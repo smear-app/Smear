@@ -9,7 +9,6 @@ export const statsCards: StatsCardConfig[] = [
     meaning: "Improvement and grade trends over time",
     detailDescription: "Improvement trends, grade movement, and long-term climbing trajectory will live here.",
     tone: "ember",
-    visualKind: "trend",
     ...statsPreviewPlaceholders.progression,
   },
   {
@@ -19,7 +18,6 @@ export const statsCards: StatsCardConfig[] = [
     meaning: "Climbing style and profile identity",
     detailDescription: "Style identity, preferred terrain, and movement profile breakdowns will live here.",
     tone: "lichen",
-    visualKind: "profile",
     ...statsPreviewPlaceholders.archetype,
   },
   {
@@ -29,7 +27,6 @@ export const statsCards: StatsCardConfig[] = [
     meaning: "Current ability, outcomes, and climb quality",
     detailDescription: "Send quality, attempt efficiency, and current ability indicators will live here.",
     tone: "gold",
-    visualKind: "outcome",
     ...statsPreviewPlaceholders.performance,
   },
   {
@@ -39,7 +36,6 @@ export const statsCards: StatsCardConfig[] = [
     meaning: "Session summaries and activity patterns",
     detailDescription: "Session cadence, recent activity, and weekly climbing patterns will live here.",
     tone: "slate",
-    visualKind: "cadence",
     ...statsPreviewPlaceholders.sessions,
   },
 ]

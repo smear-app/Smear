@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom"
-import { FiActivity, FiChevronRight } from "react-icons/fi"
-import type { StatsCardConfig, StatsPreviewTone, StatsPreviewTrendPoint, StatsPreviewVisualKind } from "../domain/types"
+import { FiChevronRight } from "react-icons/fi"
+import type { StatsCardConfig, StatsPreviewTone, StatsPreviewVisualModel } from "../domain/types"
 
 type StatsPreviewCardProps = {
   card: StatsCardConfig
-  trendPoints?: StatsPreviewTrendPoint[]
+  visual: StatsPreviewVisualModel
 }
 
 const TONE_STYLES: Record<
@@ -42,7 +42,7 @@ const TONE_STYLES: Record<
   },
 }
 
-export default function StatsPreviewCard({ card, trendPoints }: StatsPreviewCardProps) {
+export default function StatsPreviewCard({ card, visual }: StatsPreviewCardProps) {
   const tone = TONE_STYLES[card.tone]
 
   return (
@@ -65,88 +65,179 @@ export default function StatsPreviewCard({ card, trendPoints }: StatsPreviewCard
 
       <div className="mt-3.5 flex items-end justify-between gap-5">
         <div className="min-w-0 flex-1">
-          <p className="text-lg font-semibold leading-tight text-stone-text">{card.primaryMetric}</p>
+          {card.primaryMetric ? (
+            <p className="text-lg font-semibold leading-tight text-stone-text">{card.primaryMetric}</p>
+          ) : null}
           <p className="mt-1.5 text-sm leading-5 text-stone-secondary">{card.secondaryText}</p>
         </div>
 
-        <StatsPreviewVisual kind={card.visualKind} tone={card.tone} trendPoints={trendPoints} />
+        <StatsPreviewVisual visual={visual} tone={card.tone} />
       </div>
     </Link>
   )
 }
 
 function StatsPreviewVisual({
-  kind,
+  visual,
   tone,
-  trendPoints,
 }: {
-  kind: StatsPreviewVisualKind
+  visual: StatsPreviewVisualModel
   tone: StatsPreviewTone
-  trendPoints?: StatsPreviewTrendPoint[]
 }) {
-  if (kind === "trend") {
-    return <ProgressionPreviewBars points={trendPoints ?? []} tone={tone} />
+  if (visual.kind === "trendDots") {
+    return <ProgressionPreviewDots visual={visual} tone={tone} />
   }
 
-  if (kind === "profile") {
-    return (
-      <div aria-hidden="true" className="grid h-20 w-24 shrink-0 place-items-center">
-        <div className="relative h-16 w-16">
-          <span className="absolute inset-x-5 top-0 h-full rounded-full bg-lichen/20" />
-          <span className="absolute inset-y-5 left-0 w-full rounded-full bg-stone-alt" />
-          <span className="absolute left-1/2 top-1/2 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-lichen/35 bg-lichen/20" />
-        </div>
-      </div>
-    )
+  if (visual.kind === "radar") {
+    return <ArchetypePreviewRadar visual={visual} />
   }
 
-  if (kind === "outcome") {
-    return (
-      <div aria-hidden="true" className="grid h-20 w-24 shrink-0 place-items-center">
-        <div className="grid h-16 w-16 place-items-center rounded-full border-[7px] border-stone-alt border-r-ember border-t-ember">
-          <FiActivity className="h-5 w-5 text-ember" />
-        </div>
-      </div>
-    )
+  if (visual.kind === "conversionRing") {
+    return <PerformancePreviewRing visual={visual} />
   }
 
-  const activeIndexes = new Set([1, 3, 5])
+  return <SessionsPreviewBars visual={visual} tone={tone} />
+}
+
+function ProgressionPreviewDots({
+  visual,
+  tone,
+}: {
+  visual: Extract<StatsPreviewVisualModel, { kind: "trendDots" }>
+  tone: StatsPreviewTone
+}) {
+  const strokeColor = visual.muted ? "var(--stone-border)" : "var(--ember)"
+  const dotClass = visual.muted ? TONE_STYLES[tone].mutedPreview : TONE_STYLES[tone].activePreview
+  const points = visual.points.map((point) => `${point.xPercent},${point.yPercent}`).join(" ")
 
   return (
-    <div aria-hidden="true" className="grid h-20 w-24 shrink-0 grid-cols-7 items-end gap-1.5">
-      {Array.from({ length: 7 }, (_, index) => (
-        <span
-          key={index}
-          className={`h-9 rounded-full ${
-            activeIndexes.has(index) ? TONE_STYLES[tone].activePreview : TONE_STYLES[tone].mutedPreview
-          }`}
+    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0 overflow-visible">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={strokeColor}
+        strokeOpacity={visual.muted ? 0.35 : 0.62}
+        strokeWidth="2.25"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {visual.points.map((point) => (
+        <circle
+          key={point.id}
+          cx={point.xPercent}
+          cy={point.yPercent}
+          r={point.active ? 4.8 : 4.2}
+          className={point.active ? dotClass : TONE_STYLES[tone].mutedPreview}
+          stroke="var(--stone-surface)"
+          strokeWidth="2"
         />
       ))}
-    </div>
+    </svg>
   )
 }
 
-function ProgressionPreviewBars({ points, tone }: { points: StatsPreviewTrendPoint[]; tone: StatsPreviewTone }) {
-  const placeholderHeights = [34, 52, 42]
-  const hasPoints = points.length > 0
+function polarToCartesian(index: number, total: number, radius: number) {
+  const angle = -Math.PI / 2 + (Math.PI * 2 * index) / total
+
+  return {
+    x: 50 + Math.cos(angle) * radius,
+    y: 40 + Math.sin(angle) * radius,
+  }
+}
+
+function toPolygonPoints(points: Array<{ x: number; y: number }>) {
+  return points.map((point) => `${point.x},${point.y}`).join(" ")
+}
+
+function ArchetypePreviewRadar({ visual }: { visual: Extract<StatsPreviewVisualModel, { kind: "radar" }> }) {
+  const axisCount = visual.axes.length
+  const gridPoints = Array.from({ length: axisCount }, (_, index) => polarToCartesian(index, axisCount, 30))
+  const valuePoints = visual.axes.map((axis, index) => polarToCartesian(index, axisCount, (axis.value / 100) * 30))
+  const active = visual.state === "active"
+  const balanced = visual.state === "balanced"
 
   return (
-    <div aria-hidden="true" className="flex h-20 w-24 shrink-0 items-end justify-center gap-2.5">
-      {hasPoints
-        ? points.map((point) => (
-            <span
-              key={point.id}
-              className={`w-3.5 rounded-full ${TONE_STYLES[tone].activePreview}`}
-              style={{ height: `${point.heightPercent}%` }}
-            />
-          ))
-        : placeholderHeights.map((height) => (
-            <span
-              key={height}
-              className={`w-3.5 rounded-full ${TONE_STYLES[tone].mutedPreview}`}
-              style={{ height: `${height}%` }}
-            />
-          ))}
+    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0 overflow-visible">
+      <polygon
+        points={toPolygonPoints(gridPoints)}
+        fill="none"
+        stroke="var(--stone-border)"
+        strokeOpacity="0.78"
+        strokeWidth="1"
+      />
+      {gridPoints.map((point, index) => (
+        <line
+          key={visual.axes[index].id}
+          x1="50"
+          y1="40"
+          x2={point.x}
+          y2={point.y}
+          stroke="var(--stone-border)"
+          strokeOpacity="0.45"
+          strokeWidth="1"
+        />
+      ))}
+      <polygon
+        points={toPolygonPoints(valuePoints)}
+        fill={active || balanced ? "var(--lichen)" : "var(--stone-border)"}
+        fillOpacity={active ? 0.24 : balanced ? 0.16 : 0.08}
+        stroke={active || balanced ? "var(--lichen)" : "var(--stone-border)"}
+        strokeOpacity={active ? 0.92 : balanced ? 0.68 : 0.42}
+        strokeWidth={active ? 2.25 : 1.75}
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+function PerformancePreviewRing({ visual }: { visual: Extract<StatsPreviewVisualModel, { kind: "conversionRing" }> }) {
+  const radius = 25
+  const circumference = 2 * Math.PI * radius
+  const dashLength = (Math.min(Math.max(visual.percent, 0), 100) / 100) * circumference
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0">
+      <circle
+        cx="50"
+        cy="40"
+        r={radius}
+        fill="none"
+        stroke="var(--stone-border)"
+        strokeOpacity="0.72"
+        strokeWidth="8"
+      />
+      <circle
+        cx="50"
+        cy="40"
+        r={radius}
+        fill="none"
+        stroke={visual.active ? "var(--ember)" : "var(--stone-secondary)"}
+        strokeOpacity={visual.active ? 0.92 : 0.28}
+        strokeWidth="8"
+        strokeLinecap="round"
+        strokeDasharray={`${dashLength} ${circumference}`}
+        transform="rotate(-90 50 40)"
+      />
+    </svg>
+  )
+}
+
+function SessionsPreviewBars({
+  visual,
+  tone,
+}: {
+  visual: Extract<StatsPreviewVisualModel, { kind: "dailyBars" }>
+  tone: StatsPreviewTone
+}) {
+  return (
+    <div aria-hidden="true" className="grid h-20 w-24 shrink-0 grid-cols-7 items-end gap-1.5">
+      {visual.bars.map((bar) => (
+        <span
+          key={bar.id}
+          className={`rounded-full ${bar.active ? TONE_STYLES[tone].activePreview : TONE_STYLES[tone].mutedPreview}`}
+          style={{ height: `${bar.heightPercent}%` }}
+        />
+      ))}
     </div>
   )
 }
