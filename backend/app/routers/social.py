@@ -9,9 +9,11 @@ from app.models import (
     FollowObject,
     FollowsResponse,
     PostCommentRequest,
+    SessionDetailObject,
     SessionCardObject,
     UserSearchResult,
 )
+from app.routers.climbs import _row_to_climb_object
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/social", tags=["social"])
@@ -74,6 +76,43 @@ def _enrich_sessions(supabase, sessions: list[dict], viewer_id: str) -> list[Ses
         comment_counts[sid] = comment_counts.get(sid, 0) + 1
 
     return [_row_to_session_card(s, viewer_id, reaction_counts, comment_counts, viewer_reactions) for s in sessions]
+
+
+def _get_session_with_access(supabase, session_id: str, viewer_id: str) -> dict:
+    result = (
+        supabase.from_("sessions")
+        .select("*, profiles!sessions_user_id_fkey(display_name, username, avatar_url)")
+        .eq("id", session_id)
+        .eq("is_published", True)
+        .maybe_single()
+        .execute()
+    )
+    session = result.data
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if session["user_id"] == viewer_id:
+        return session
+
+    visibility = session.get("visibility", "followers")
+    if visibility == "public":
+        return session
+
+    if visibility != "followers":
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    follow_result = (
+        supabase.from_("follows")
+        .select("following_id")
+        .eq("follower_id", viewer_id)
+        .eq("following_id", session["user_id"])
+        .maybe_single()
+        .execute()
+    )
+    if not follow_result.data:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    return session
 
 
 # ── Feed ──────────────────────────────────────────────────────────────────────
@@ -144,6 +183,27 @@ def get_explore(
         limit,
     )
     return _enrich_sessions(supabase, sessions, user_id)
+
+
+@router.get("/sessions/{session_id}", response_model=SessionDetailObject)
+def get_session_detail(session_id: str, user_id: str = Depends(get_current_user)):
+    supabase = get_supabase()
+    session = _get_session_with_access(supabase, session_id, user_id)
+    session_card = _enrich_sessions(supabase, [session], user_id)[0]
+
+    climbs_result = (
+        supabase.from_("climbs")
+        .select("*, canonical_climbs(photo_url)")
+        .eq("session_id", session_id)
+        .eq("user_id", session["user_id"])
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    return SessionDetailObject(
+        **session_card.model_dump(),
+        climbs=[_row_to_climb_object(row) for row in (climbs_result.data or [])],
+    )
 
 
 # ── Follows ───────────────────────────────────────────────────────────────────

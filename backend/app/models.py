@@ -215,6 +215,10 @@ class SessionCardObject(BaseModel):
     viewer_has_reacted: bool = False
 
 
+class SessionDetailObject(SessionCardObject):
+    climbs: list[ClimbObject] = []
+
+
 class EndSessionRequest(BaseModel):
     visibility: Optional[str] = None  # override profile default
 
