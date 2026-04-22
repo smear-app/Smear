@@ -1,4 +1,5 @@
 import type { ArchetypeGroupKey, ArchetypeMetrics, ArchetypeTagMetric } from "../calculators/archetype"
+import { formatVGrade } from "../primitives"
 import type {
   ArchetypeCategoryEntry,
   ArchetypeCategoryOutcomeBreakdownItem,
@@ -33,15 +34,7 @@ const SEGMENT_GROUPS = {
 } satisfies Record<ArchetypeSegment, ArchetypeGroupKey>
 
 function formatGrade(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "-"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "-")
 }
 
 function formatVolume(value: number): string {

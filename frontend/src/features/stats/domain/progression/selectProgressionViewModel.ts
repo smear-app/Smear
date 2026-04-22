@@ -1,6 +1,6 @@
 import type { ProgressionMetrics } from "../calculators/progression"
 import { safeDivide } from "../calculators/shared"
-import { getLocalWeekStart, toLocalDateKey } from "../primitives"
+import { formatVGrade, getLocalWeekStart, toLocalDateKey } from "../primitives"
 import type { ProgressionChartPoint, ProgressionRange, ProgressionViewModel } from "./types"
 
 export type ProgressionViewModelOptions = {
@@ -41,15 +41,7 @@ function formatTickLabel(startAt: string, previousStartAt: string | null): strin
 }
 
 function formatGradeLabel(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "-"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "-")
 }
 
 function formatChartGradeLabel(grade: number | null): string {

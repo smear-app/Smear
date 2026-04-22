@@ -73,7 +73,7 @@ describe("selectSessionsViewModel", () => {
       { label: "Total Climbs", value: "14" },
       { label: "Duration", value: "1h 45m" },
       { label: "Max Grade", value: "V6" },
-      { label: "Working Grade", value: "V5–V6" },
+      { label: "Working Grade", value: "V5.5" },
     ])
   })
 

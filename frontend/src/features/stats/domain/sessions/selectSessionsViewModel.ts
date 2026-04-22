@@ -1,4 +1,5 @@
 import type { SessionMetrics, SessionsMetrics } from "../calculators/sessions"
+import { formatVGrade } from "../primitives"
 import type {
   SessionDetail,
   SessionGradeDistributionItem,
@@ -56,15 +57,7 @@ function formatDuration(durationMs: number | null): string {
 }
 
 function formatGrade(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "None"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "None")
 }
 
 function formatAverage(value: number | null): string {

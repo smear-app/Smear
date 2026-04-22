@@ -1,4 +1,5 @@
 import type { PerformanceMetrics } from "../calculators/performance"
+import { formatVGrade } from "../primitives"
 import type {
   PerformanceGradeBand,
   PerformanceOutcomeItem,
@@ -14,15 +15,7 @@ const TIMEFRAME_LABELS: Record<PerformanceTimeframeKey, string> = {
 }
 
 function formatGrade(gradeIndex: number | null): string {
-  if (gradeIndex === null) {
-    return "None"
-  }
-
-  if (Number.isInteger(gradeIndex)) {
-    return `V${gradeIndex}`
-  }
-
-  return `V${Math.floor(gradeIndex)}–V${Math.ceil(gradeIndex)}`
+  return formatVGrade(gradeIndex, "None")
 }
 
 function formatPercent(value: number): string {

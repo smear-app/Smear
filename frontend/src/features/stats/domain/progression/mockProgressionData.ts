@@ -25,7 +25,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
     ],
     metrics: [
       { label: "Working Grade Change", value: "+0.6 V", description: "over last 10 weeks" },
-      { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
+      { label: "Working Grade", value: "V4.5", description: "most climbed range" },
       { label: "Consistency", value: "3.2 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V6", description: "highest this period" },
     ],
@@ -43,7 +43,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
     ],
     metrics: [
       { label: "Working Grade Change", value: "+1.0 V", description: "over last 6 months" },
-      { label: "Working Grade", value: "V4-V5", description: "most climbed range" },
+      { label: "Working Grade", value: "V4.5", description: "most climbed range" },
       { label: "Consistency", value: "3.0 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V7", description: "highest this period" },
     ],
@@ -60,7 +60,7 @@ export const progressionMockData: Record<ProgressionRange, ProgressionViewModel>
     ],
     metrics: [
       { label: "Working Grade Change", value: "+2.2 V", description: "over tracked history" },
-      { label: "Working Grade", value: "V3-V5", description: "most climbed range" },
+      { label: "Working Grade", value: "V4", description: "most climbed range" },
       { label: "Consistency", value: "2.8 / week", description: "avg sessions per week" },
       { label: "Highest Grade", value: "V8", description: "highest this period" },
     ],
