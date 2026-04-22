@@ -15,7 +15,13 @@ import LogbookPage from "./pages/LogbookPage"
 import ProfilePage from "./pages/ProfilePage"
 import SocialPage from "./pages/SocialPage"
 import StatsPage from "./pages/StatsPage"
+import StatsDetailScrollReset from "./features/stats/components/StatsDetailScrollReset"
+import ArchetypeStatsPage from "./features/stats/pages/ArchetypeStatsPage"
+import PerformanceStatsPage from "./features/stats/pages/PerformanceStatsPage"
+import ProgressionStatsPage from "./features/stats/pages/ProgressionStatsPage"
+import SessionsStatsPage from "./features/stats/pages/SessionsStatsPage"
 import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
+import { invalidateSharedStatsBase, removeClimbFromSharedStatsBase } from "./features/stats/domain/base"
 
 function ProtectedApp() {
   const { session, loading, isAdmin } = useAuth()
@@ -82,10 +88,12 @@ function ProtectedApp() {
   async function handleSaveClimb(draft) {
     if (editingClimb) {
       await updateClimb(draft, editingClimb)
+      invalidateSharedStatsBase(session.user.id)
       return {}
     }
 
     await insertClimb(draft, session.user.id)
+    invalidateSharedStatsBase(session.user.id)
     void loadRecentClimbs({ background: true })
     return {}
   }
@@ -111,6 +119,7 @@ function ProtectedApp() {
       currentClimbs.map((climb) => (climb.id === updatedClimb.id ? updatedClimb : climb)),
     )
     setEditingClimb(updatedClimb)
+    invalidateSharedStatsBase(session.user.id)
     void loadRecentClimbs({ background: true })
   }
 
@@ -118,6 +127,7 @@ function ProtectedApp() {
     await deleteClimb(climbId, session.user.id)
     setRecentClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
     setRecentClimbsTotal((currentTotal) => Math.max(0, currentTotal - 1))
+    removeClimbFromSharedStatsBase(climbId, session.user.id)
   }
 
   function handleDone() {
@@ -162,6 +172,46 @@ function ProtectedApp() {
             }
           />
           <Route path="/stats" element={<StatsPage />} />
+          <Route
+            path="/stats/progression"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <ProgressionStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/archetype"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <ArchetypeStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/performance"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <PerformanceStatsPage />
+              </>
+            }
+          />
+          <Route
+            path="/stats/sessions"
+            element={
+              <>
+                <StatsDetailScrollReset />
+                <SessionsStatsPage
+                  onEditClimb={handleEditClimb}
+                  onDeleteClimb={handleDeleteLoggedClimb}
+                  refreshKey={refreshKey}
+                />
+              </>
+            }
+          />
           <Route path="/social" element={<SocialPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />

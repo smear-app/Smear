@@ -1,5 +1,10 @@
 import type { Climb } from "./climbs"
 import {
+  buildImplicitSessions as buildStatsImplicitSessions,
+  DEFAULT_IMPLICIT_SESSION_THRESHOLD_MS,
+} from "../features/stats/domain/primitives"
+import { toEnrichedClimbs } from "../features/stats/domain/base/normalizeClimbs"
+import {
   HOLD_TAGS,
   MOVEMENT_TAGS,
   WALL_TAGS,
@@ -10,7 +15,7 @@ import {
 
 export const LOGBOOK_PAGE_SIZE = 25
 export const RECENT_CLIMBS_LIMIT = 5
-export const SESSION_THRESHOLD_MS = 3 * 60 * 60 * 1000
+export const SESSION_THRESHOLD_MS = DEFAULT_IMPLICIT_SESSION_THRESHOLD_MS
 
 export const LOGBOOK_SORT_OPTIONS = ["newest", "oldest", "hardest", "easiest"] as const
 export const LOGBOOK_VIEW_OPTIONS = ["list", "calendar"] as const
@@ -171,44 +176,33 @@ export function sortClimbs(climbs: Climb[], sort: LogbookSort): Climb[] {
 }
 
 export function buildImplicitSessions(climbs: Climb[]): LogbookSession[] {
-  return climbs.reduce<LogbookSession[]>((sessions, climb) => {
-    const previousSession = sessions.at(-1)
-    if (!previousSession) {
-      sessions.push({
-        id: `${climb.gym_id ?? "unknown"}:${climb.id}`,
-        gymId: climb.gym_id,
-        gymName: climb.gym_name,
-        startedAt: climb.created_at,
-        endedAt: climb.created_at,
-        climbs: [climb],
-      })
-      return sessions
-    }
+  const climbsById = new Map(climbs.map((climb) => [climb.id, climb]))
+  const inputOrderByClimbId = new Map(climbs.map((climb, index) => [climb.id, index]))
+  const sessions = buildStatsImplicitSessions(toEnrichedClimbs(climbs), SESSION_THRESHOLD_MS).map<LogbookSession>(
+    (session) => {
+      const sessionClimbs = session.climbIds
+        .flatMap((climbId) => {
+          const climb = climbsById.get(climbId)
+          return climb ? [climb] : []
+        })
+        .sort((left, right) => (inputOrderByClimbId.get(left.id) ?? 0) - (inputOrderByClimbId.get(right.id) ?? 0))
 
-    const lastClimb = previousSession.climbs.at(-1)
-    const withinSameGym = previousSession.gymId === climb.gym_id
-    const withinThreshold =
-      lastClimb !== undefined &&
-      Math.abs(new Date(climb.created_at).getTime() - new Date(lastClimb.created_at).getTime()) <=
-        SESSION_THRESHOLD_MS
+      return {
+        id: `${session.gymId ?? "unknown"}:${sessionClimbs[0]?.id ?? session.climbIds[0]}`,
+        gymId: session.gymId,
+        gymName: session.gymName,
+        startedAt: sessionClimbs[0]?.created_at ?? session.startAt,
+        endedAt: sessionClimbs.at(-1)?.created_at ?? session.endAt,
+        climbs: sessionClimbs,
+      }
+    },
+  )
 
-    if (withinSameGym && withinThreshold) {
-      previousSession.climbs.push(climb)
-      previousSession.startedAt = previousSession.climbs[0].created_at
-      previousSession.endedAt = climb.created_at
-      return sessions
-    }
-
-    sessions.push({
-      id: `${climb.gym_id ?? "unknown"}:${climb.id}`,
-      gymId: climb.gym_id,
-      gymName: climb.gym_name,
-      startedAt: climb.created_at,
-      endedAt: climb.created_at,
-      climbs: [climb],
-    })
-    return sessions
-  }, [])
+  return sessions.sort((left, right) => {
+    const leftOrder = inputOrderByClimbId.get(left.climbs[0]?.id ?? "") ?? 0
+    const rightOrder = inputOrderByClimbId.get(right.climbs[0]?.id ?? "") ?? 0
+    return leftOrder - rightOrder
+  })
 }
 
 export function getVisibleSessions(climbs: Climb[], filters: LogbookFilters): LogbookSession[] {
