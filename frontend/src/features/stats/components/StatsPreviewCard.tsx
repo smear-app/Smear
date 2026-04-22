@@ -42,10 +42,6 @@ const TONE_STYLES: Record<
   },
 }
 
-const PROGRESSION_LINE_COLOR = "color-mix(in srgb, var(--ember) 92%, white 8%)"
-const PROGRESSION_MUTED_LINE_COLOR = "color-mix(in srgb, var(--stone-border) 86%, transparent)"
-const PROGRESSION_MARKER_OUTLINE_COLOR = "var(--stone-surface)"
-
 export default function StatsPreviewCard({ card, visual }: StatsPreviewCardProps) {
   const tone = TONE_STYLES[card.tone]
 
@@ -91,7 +87,7 @@ function StatsPreviewVisual({
   tone: StatsPreviewTone
 }) {
   if (visual.kind === "sparkline") {
-    return <ProgressionPreviewSparkline visual={visual} />
+    return <ProgressionPreviewBars visual={visual} />
   }
 
   if (visual.kind === "radar") {
@@ -105,65 +101,30 @@ function StatsPreviewVisual({
   return <SessionsPreviewBars visual={visual} tone={tone} />
 }
 
-function buildSmoothSparklinePath(points: Array<{ x: number; y: number }>) {
-  if (points.length === 0) {
-    return ""
-  }
-
-  if (points.length === 1) {
-    return `M ${points[0].x} ${points[0].y}`
-  }
-
-  const [first, ...rest] = points
-  const commands = [`M ${first.x} ${first.y}`]
-
-  rest.slice(0, -1).forEach((point, index) => {
-    const next = rest[index + 1]
-    const midX = (point.x + next.x) / 2
-    const midY = (point.y + next.y) / 2
-    commands.push(`Q ${point.x} ${point.y} ${midX} ${midY}`)
-  })
-
-  const last = points[points.length - 1]
-  commands.push(`T ${last.x} ${last.y}`)
-
-  return commands.join(" ")
-}
-
-function ProgressionPreviewSparkline({
+function ProgressionPreviewBars({
   visual,
 }: {
   visual: Extract<StatsPreviewVisualModel, { kind: "sparkline" }>
 }) {
-  const strokeColor = visual.muted ? PROGRESSION_MUTED_LINE_COLOR : PROGRESSION_LINE_COLOR
-  const dotFill = visual.muted ? "var(--stone-border)" : PROGRESSION_LINE_COLOR
-  const points = visual.points.map((point) => ({ x: point.xPercent, y: point.yPercent }))
-  const path = buildSmoothSparklinePath(points)
+  const heights = visual.points.map((point) => {
+    const gradeHeight = 100 - point.yPercent
+    return Math.min(Math.max(gradeHeight, 28), 76)
+  })
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-full w-full overflow-visible">
-      <path
-        d={path}
-        fill="none"
-        stroke={strokeColor}
-        strokeOpacity={visual.muted ? 0.62 : 1}
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {visual.points.map((point) => (
-        <circle
+    <div aria-hidden="true" className="grid h-full w-full grid-cols-6 items-end gap-2.5 px-3 py-5">
+      {visual.points.map((point, index) => (
+        <span
           key={point.id}
-          cx={point.xPercent}
-          cy={point.yPercent}
-          r="3.6"
-          fill={dotFill}
-          fillOpacity={point.active ? 1 : 0.62}
-          stroke={PROGRESSION_MARKER_OUTLINE_COLOR}
-          strokeWidth="2"
+          className={`min-h-[12px] rounded-full ${
+            point.active && !visual.muted
+              ? "bg-ember shadow-[0_0_0_1px_color-mix(in_srgb,var(--stone-text)_8%,transparent)]"
+              : "border border-stone-border bg-stone-alt/85 dark:border-white/15 dark:bg-white/10"
+          }`}
+          style={{ height: `${heights[index]}%` }}
         />
       ))}
-    </svg>
+    </div>
   )
 }
 
@@ -222,7 +183,7 @@ function ArchetypePreviewRadar({ visual }: { visual: Extract<StatsPreviewVisualM
 }
 
 function PerformancePreviewRing({ visual }: { visual: Extract<StatsPreviewVisualModel, { kind: "conversionRing" }> }) {
-  const radius = 54
+  const radius = 40
   const circumference = 2 * Math.PI * radius
   const dashLength = (Math.min(Math.max(visual.percent, 0), 100) / 100) * circumference
 
@@ -255,7 +216,7 @@ function PerformancePreviewRing({ visual }: { visual: Extract<StatsPreviewVisual
         textAnchor="middle"
         dominantBaseline="middle"
         fill="var(--stone-secondary)"
-        className="text-[18px] font-medium"
+        className="text-[12px] font-medium"
       >
         Send %
       </text>
