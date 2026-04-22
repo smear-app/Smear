@@ -395,6 +395,10 @@ export interface SessionCardObject {
   viewer_has_reacted: boolean
 }
 
+export interface SessionDetailObject extends SessionCardObject {
+  climbs: ClimbObject[]
+}
+
 export interface SessionObject {
   id: string
   user_id: string
@@ -474,6 +478,10 @@ export async function getExploreFeed(limit = 20, offset = 0, gymId?: string): Pr
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
   if (gymId) params.set('gym_id', gymId)
   return apiFetch<SessionCardObject[]>(`/social/explore?${params}`)
+}
+
+export async function getSocialSession(sessionId: string): Promise<SessionDetailObject> {
+  return apiFetch<SessionDetailObject>(`/social/sessions/${sessionId}`)
 }
 
 export async function getFollows(): Promise<FollowsResponse> {
