@@ -9,6 +9,7 @@ import HomePage from "./HomePage"
 import EditClimbModal from "./components/EditClimbModal"
 import LogClimbModal from "./components/LogClimbModal"
 import AuthPage from "./pages/AuthPage"
+import LandingPage from "./pages/LandingPage"
 import { deleteClimb, fetchPaginatedClimbs, insertClimb, toClimbDraft, updateClimb } from "./lib/climbs"
 import ClimbDetailPage from "./pages/ClimbDetailPage"
 import LogbookPage from "./pages/LogbookPage"
@@ -258,7 +259,7 @@ function GymScopedApp() {
     <GymProvider key={user?.id ?? "anon"} storageUserId={user?.id}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<AuthRoute />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/*" element={<ProtectedApp />} />
         </Routes>
