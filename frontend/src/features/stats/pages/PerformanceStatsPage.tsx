@@ -1,18 +1,17 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
-import { useAuth } from "../../../context/AuthContext"
 import GradePyramid from "../components/performance/GradePyramid"
 import GradeBandPerformance from "../components/performance/GradeBandPerformance"
 import OutcomeBreakdown from "../components/performance/OutcomeBreakdown"
 import PerformanceInsight from "../components/performance/PerformanceInsight"
 import PerformanceMetricGrid from "../components/performance/PerformanceMetricGrid"
 import PerformanceRangeControl from "../components/performance/PerformanceRangeControl"
-import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
 import { calculatePerformanceMetrics } from "../domain/calculators"
 import { performanceMockData, performanceRangeOptions } from "../domain/performance/mockPerformanceData"
 import { selectPerformanceViewModel } from "../domain/performance/selectPerformanceViewModel"
 import type { EnrichedClimb } from "../domain/primitives"
+import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { PerformanceRange, PerformanceTimeframeKey } from "../domain/performance/types"
 
 const PERFORMANCE_TIMEFRAME_BY_RANGE: Record<PerformanceRange, PerformanceTimeframeKey> = {
@@ -54,9 +53,8 @@ function getClimbsForRange(climbs: readonly EnrichedClimb[], range: PerformanceR
 }
 
 export default function PerformanceStatsPage() {
-  const { user } = useAuth()
   const [selectedRange, setSelectedRange] = useState<PerformanceRange>("10-weeks")
-  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
+  const { enrichedClimbs: statsClimbs } = useSharedStatsBase()
   const performanceView = useMemo(() => performanceMockData[selectedRange], [selectedRange])
   const selectedMetricsView = useMemo(() => {
     const now = new Date()
@@ -65,38 +63,6 @@ export default function PerformanceStatsPage() {
 
     return selectPerformanceViewModel(metrics, PERFORMANCE_TIMEFRAME_BY_RANGE[selectedRange])
   }, [selectedRange, statsClimbs])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user?.id) {
-      queueMicrotask(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void fetchStatsBase(user.id)
-      .then((statsBase) => {
-        if (!cancelled) {
-          setStatsClimbs(prepareEnrichedClimbs(statsBase))
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">

@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
-import { useAuth } from "../../../context/AuthContext"
 import type { Climb } from "../../../lib/climbs"
 import { buildImplicitSessions as buildLogbookSessions, type LogbookSession } from "../../../lib/logbook"
 import SessionClimbActions from "../components/sessions/SessionClimbActions"
@@ -13,11 +12,11 @@ import SessionSummary from "../components/sessions/SessionSummary"
 import SessionDetailBreakdown from "../components/sessions/SessionDetailBreakdown"
 import SessionInsight from "../components/sessions/SessionInsight"
 import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
-import { fetchStatsBase, prepareEnrichedClimbs, type RawStatsClimb } from "../domain/base"
+import type { RawStatsClimb } from "../domain/base"
 import { calculateSessionMetrics } from "../domain/calculators"
-import type { EnrichedClimb } from "../domain/primitives"
 import { sessionsMockData } from "../domain/sessions/mockSessionsData"
 import { selectSessionsViewModel } from "../domain/sessions/selectSessionsViewModel"
+import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { SessionDetail } from "../domain/sessions/types"
 
 type SessionsStatsLocationState = {
@@ -74,15 +73,15 @@ type SessionsStatsPageProps = {
 export default function SessionsStatsPage({
   onDeleteClimb,
   onEditClimb,
-  refreshKey = 0,
 }: SessionsStatsPageProps) {
   const location = useLocation()
   const locationState = (location.state ?? {}) as SessionsStatsLocationState
-  const { user } = useAuth()
-  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
-  const [logbookSessions, setLogbookSessions] = useState<LogbookSession[]>([])
-  const [sessionClimbsError, setSessionClimbsError] = useState<string | null>(null)
-  const [sessionClimbsLoading, setSessionClimbsLoading] = useState(false)
+  const {
+    statsBase,
+    enrichedClimbs: statsClimbs,
+    status: statsBaseStatus,
+    error: statsBaseError,
+  } = useSharedStatsBase()
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(() => {
     const restoredIndex = locationState.selectedSessionIndex
 
@@ -94,6 +93,10 @@ export default function SessionsStatsPage({
   const sessionsView = useMemo(
     () => selectSessionsViewModel(calculateSessionMetrics(statsClimbs)),
     [statsClimbs],
+  )
+  const logbookSessions = useMemo<LogbookSession[]>(
+    () => (statsBase ? buildLogbookSessions(statsBase.climbs.map(toLogbookClimb)) : []),
+    [statsBase],
   )
   const realSessionCount = sessionsView.sessions.length
   const selectedRealSessionIndex = realSessionCount === 0
@@ -107,69 +110,12 @@ export default function SessionsStatsPage({
   )
   const selectedLogbookSession = logbookSessionsById.get(selectedSession.id) ?? null
   const selectedSessionClimbs = selectedLogbookSession?.climbs ?? []
+  const sessionClimbsLoading = statsBaseStatus === "loading" && !statsBase
+  const sessionClimbsError = statsBaseError?.message ?? null
   const detailReturnPath = `${location.pathname}${location.search}`
   const handleDeleteClimb = async (climbId: string) => {
     await onDeleteClimb(climbId)
-    setStatsClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
-    setLogbookSessions((currentSessions) =>
-      currentSessions
-        .map((session) => ({
-          ...session,
-          climbs: session.climbs.filter((climb) => climb.id !== climbId),
-        }))
-        .filter((session) => session.climbs.length > 0),
-    )
   }
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user?.id) {
-      queueMicrotask(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-          setLogbookSessions([])
-          setSessionClimbsError(null)
-          setSessionClimbsLoading(false)
-        }
-      })
-
-      return () => {
-        cancelled = true
-      }
-    }
-
-    queueMicrotask(() => {
-      if (!cancelled) {
-        setSessionClimbsLoading(true)
-        setSessionClimbsError(null)
-      }
-    })
-
-    void fetchStatsBase(user.id)
-      .then((statsBase) => {
-        if (!cancelled) {
-          setStatsClimbs(prepareEnrichedClimbs(statsBase))
-          setLogbookSessions(buildLogbookSessions(statsBase.climbs.map(toLogbookClimb)))
-        }
-      })
-      .catch((loadError) => {
-        if (!cancelled) {
-          setStatsClimbs([])
-          setLogbookSessions([])
-          setSessionClimbsError(loadError instanceof Error ? loadError.message : "Failed to load session climbs")
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setSessionClimbsLoading(false)
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [refreshKey, user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">

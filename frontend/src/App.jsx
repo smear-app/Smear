@@ -21,6 +21,7 @@ import PerformanceStatsPage from "./features/stats/pages/PerformanceStatsPage"
 import ProgressionStatsPage from "./features/stats/pages/ProgressionStatsPage"
 import SessionsStatsPage from "./features/stats/pages/SessionsStatsPage"
 import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
+import { invalidateSharedStatsBase, removeClimbFromSharedStatsBase } from "./features/stats/domain/base"
 
 function ProtectedApp() {
   const { session, loading, isAdmin } = useAuth()
@@ -87,10 +88,12 @@ function ProtectedApp() {
   async function handleSaveClimb(draft) {
     if (editingClimb) {
       await updateClimb(draft, editingClimb)
+      invalidateSharedStatsBase(session.user.id)
       return {}
     }
 
     await insertClimb(draft, session.user.id)
+    invalidateSharedStatsBase(session.user.id)
     void loadRecentClimbs({ background: true })
     return {}
   }
@@ -116,6 +119,7 @@ function ProtectedApp() {
       currentClimbs.map((climb) => (climb.id === updatedClimb.id ? updatedClimb : climb)),
     )
     setEditingClimb(updatedClimb)
+    invalidateSharedStatsBase(session.user.id)
     void loadRecentClimbs({ background: true })
   }
 
@@ -123,6 +127,7 @@ function ProtectedApp() {
     await deleteClimb(climbId, session.user.id)
     setRecentClimbs((currentClimbs) => currentClimbs.filter((climb) => climb.id !== climbId))
     setRecentClimbsTotal((currentTotal) => Math.max(0, currentTotal - 1))
+    removeClimbFromSharedStatsBase(climbId, session.user.id)
   }
 
   function handleDone() {

@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
-import { useAuth } from "../../../context/AuthContext"
 import ProgressionChartCard from "../components/progression/ProgressionChartCard"
 import ProgressionInsightCard from "../components/progression/ProgressionInsightCard"
 import ProgressionMetricsGrid from "../components/progression/ProgressionMetricsGrid"
 import ProgressionMilestonesList from "../components/progression/ProgressionMilestonesList"
 import ProgressionRangeControl from "../components/progression/ProgressionRangeControl"
-import { fetchStatsBase, prepareEnrichedClimbs } from "../domain/base"
 import { calculateProgressionMetrics } from "../domain/calculators"
 import {
   defaultProgressionRange,
@@ -16,6 +14,7 @@ import {
 } from "../domain/progression/mockProgressionData"
 import { selectProgressionViewModel } from "../domain/progression/selectProgressionViewModel"
 import { bucketClimbsByWeek, type EnrichedClimb } from "../domain/primitives"
+import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { ProgressionMetrics } from "../domain/calculators"
 import type { ProgressionRange } from "../domain/progression/types"
 
@@ -65,9 +64,8 @@ function getProgressionBinDebugRows(climbs: readonly EnrichedClimb[], metrics: P
 }
 
 export default function ProgressionStatsPage() {
-  const { user } = useAuth()
   const [selectedRange, setSelectedRange] = useState<ProgressionRange>(defaultProgressionRange)
-  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
+  const { enrichedClimbs: statsClimbs } = useSharedStatsBase()
   const progressionView = useMemo(() => progressionMockData[selectedRange], [selectedRange])
   const selectedChartData = useMemo(() => {
     const now = new Date()
@@ -111,38 +109,6 @@ export default function ProgressionStatsPage() {
     console.log("Progression bin details", bins)
     console.groupEnd()
   }, [selectedChartData, selectedRange])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user?.id) {
-      queueMicrotask(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void fetchStatsBase(user.id)
-      .then((statsBase) => {
-        if (!cancelled) {
-          setStatsClimbs(prepareEnrichedClimbs(statsBase))
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [user?.id])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">

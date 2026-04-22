@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
-import { useAuth } from "../../../context/AuthContext"
 import ArchetypeBreakdownList from "../components/archetype/ArchetypeBreakdownList"
 import ArchetypeRadarLegend from "../components/archetype/ArchetypeRadarLegend"
 import ArchetypeRadarChart from "../components/archetype/ArchetypeRadarChart"
@@ -10,11 +9,12 @@ import ArchetypeSegmentControl from "../components/archetype/ArchetypeSegmentCon
 import ArchetypeTrendCard from "../components/archetype/ArchetypeTrendCard"
 import Insight from "../components/Insight"
 import ProgressionSurface from "../components/progression/ProgressionSurface"
-import { fetchStatsBase, prepareEnrichedClimbs, type StatsBaseData } from "../domain/base"
+import type { StatsBaseData } from "../domain/base"
 import { calculateArchetypeMetrics } from "../domain/calculators"
 import { selectArchetypeViewModel } from "../domain/archetype/selectArchetypeViewModel"
 import { getArchetypeSegmentOptions } from "../domain/archetype/tagTaxonomy"
 import type { EnrichedClimb } from "../domain/primitives"
+import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { ArchetypeSegment } from "../domain/archetype/types"
 
 const archetypeSegmentOptions = getArchetypeSegmentOptions()
@@ -67,9 +67,8 @@ function summarizeEnrichedClimbs(climbs: readonly EnrichedClimb[]) {
 
 export default function ArchetypeStatsPage() {
   const location = useLocation()
-  const { user } = useAuth()
   const [selectedSegment, setSelectedSegment] = useState<ArchetypeSegment>("terrain")
-  const [statsClimbs, setStatsClimbs] = useState<EnrichedClimb[]>([])
+  const { statsBase, enrichedClimbs: statsClimbs } = useSharedStatsBase()
   const shouldShowDebug = import.meta.env.DEV && new URLSearchParams(location.search).has("debugArchetype")
   const archetypeMetrics = useMemo(() => calculateArchetypeMetrics(statsClimbs), [statsClimbs])
   const viewModel = useMemo(
@@ -82,7 +81,10 @@ export default function ArchetypeStatsPage() {
       return
     }
 
-    console.info("[ArchetypeStatsPage] normalized climb inputs", summarizeEnrichedClimbs(statsClimbs))
+    if (statsBase) {
+      console.info("[ArchetypeStatsPage] shared stats base", summarizeStatsBase(statsBase))
+    }
+    console.info("[ArchetypeStatsPage] normalized shared inputs", summarizeEnrichedClimbs(statsClimbs))
     console.info("[ArchetypeStatsPage] raw archetype metrics", archetypeMetrics)
     console.info("[ArchetypeStatsPage] selected segment view model", {
       selectedSegment,
@@ -91,46 +93,7 @@ export default function ArchetypeStatsPage() {
       breakdown: viewModel.breakdown,
     })
     console.info("[ArchetypeStatsPage] radar chart props", viewModel.radarAxes)
-  }, [archetypeMetrics, selectedSegment, shouldShowDebug, statsClimbs, viewModel])
-
-  useEffect(() => {
-    let cancelled = false
-
-    if (!user?.id) {
-      queueMicrotask(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void fetchStatsBase(user.id)
-      .then((statsBase) => {
-        if (!cancelled) {
-          const enrichedClimbs = prepareEnrichedClimbs(statsBase)
-
-          if (shouldShowDebug) {
-            console.info("[ArchetypeStatsPage] fetched stats base", summarizeStatsBase(statsBase))
-            console.info("[ArchetypeStatsPage] prepared archetype inputs", summarizeEnrichedClimbs(enrichedClimbs))
-          }
-
-          setStatsClimbs(enrichedClimbs)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStatsClimbs([])
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [shouldShowDebug, user?.id])
+  }, [archetypeMetrics, selectedSegment, shouldShowDebug, statsBase, statsClimbs, viewModel])
 
   return (
     <div className="app-safe-shell min-h-screen bg-stone-bg">
