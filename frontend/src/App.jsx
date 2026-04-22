@@ -214,7 +214,6 @@ function ProtectedApp() {
               </>
             }
           />
-          <Route path="/social" element={<SocialPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
         </Routes>
