@@ -203,17 +203,14 @@
 
   .landing-hero__top-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.88fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
     align-items: center;
     column-gap: 3rem;
   }
 
   .landing-hero__copy-column {
-    max-width: 50%;
-  }
-
-  .landing-hero__copy-stack {
-    max-width: 29rem;
+    min-width: 0;
+    /* max-width: 40rem; */
   }
 
   .landing-hero__visual-column {
@@ -247,7 +244,6 @@
 
   .landing-hero__title-wrap {
     overflow: visible;
-    min-width: 100%;
     padding-bottom: 0.18rem;
   }
 
@@ -281,31 +277,24 @@
     color: var(--landing-ink-soft);
   }
 
-  .landing-hero__actions-panel {
-    min-width: 0;
-  }
-
   .landing-hero__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.9rem;
-  }
-
-  .landing-hero__loading-panel {
     min-width: 0;
   }
 
   .landing-hero__loading {
+    min-width: 0;
     max-width: 22rem;
   }
 
   .landing-loading-slot {
     position: relative;
-    margin-top: 2.6rem;
     display: inline-flex;
     flex-direction: column;
     gap: 0.8rem;
-    border: 1px solid rgba(107, 143, 87, 0.18);
+    border: 1px solid rgba(171, 83, 41, 0.16);
     background: rgba(255, 250, 242, 0.66);
     padding: 1rem 1.05rem;
     border-radius: 1rem;
@@ -423,17 +412,17 @@
   }
 
   .landing-rive-slot__badge {
-  position: relative;
-  right: 0;
-  bottom: 0;
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-size: 0.64rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(91, 87, 79, 0.56);
-}
+    position: relative;
+    right: 0;
+    bottom: 0;
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(91, 87, 79, 0.56);
+  }
 
 
   .landing-hero__scroll-mark {
@@ -557,6 +546,7 @@
     font-size: clamp(2.9rem, 5vw, 4.5rem);
     line-height: 1.08;
     letter-spacing: -0.05em;
+    /* padding-bottom: 10px; */
   }
 
   .landing-section-title--light {
@@ -684,7 +674,7 @@
   }
 
   .landing-radar-chart__user {
-    fill: rgba(107, 143, 87, 0.18);
+    fill: var(--landing-accent-soft);
     stroke: var(--landing-accent);
     stroke-width: 1.7;
     transition-delay: 260ms;
@@ -986,15 +976,14 @@
       gap: 2rem;
     }
 
-    .landing-hero__copy-stack,
     .landing-hero__loading {
       max-width: none;
     }
 
     .landing-hero__top-row,
     .landing-hero__copy-column,
-    .landing-hero__actions-panel,
-    .landing-hero__loading-panel,
+    .landing-hero__actions,
+    .landing-hero__loading,
     .landing-hero__visual-column {
       width: 100%;
     }
@@ -1064,7 +1053,7 @@
   }
 }
 
-@media (max-width: 100px) {
+@media (max-width: 720px) {
   @layer components {
     .landing-shell {
       width: min(100vw - 1.25rem, 1120px);

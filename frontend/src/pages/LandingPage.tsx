@@ -257,22 +257,20 @@ function HeroSection() {
       <div className="landing-shell landing-hero__grid">
         <div className="landing-hero__top-row">
           <div className="landing-hero__copy-column">
-            <div className="landing-hero__copy-stack">
-              <Reveal direction="left">
-                <div className="landing-eyebrow">Indoor climbing progression</div>
-              </Reveal>
-              <div className="landing-hero__title-wrap">
-                <h1 className="landing-hero__title">
-                  <span>Know the climber you&apos;re becoming.</span>
-                </h1>
-              </div>
-              <Reveal direction="left" delay={220}>
-                <p className="landing-hero__copy">
-                  Climbers usually feel progress before they can explain it. Smear turns that blur into a readable
-                  shape, broken down by style and grounded in what actually happened on the wall.
-                </p>
-              </Reveal>
+            <Reveal direction="left">
+              <div className="landing-eyebrow">Indoor climbing progression</div>
+            </Reveal>
+            <div className="landing-hero__title-wrap">
+              <h1 className="landing-hero__title">
+                <span>Know the climber you&apos;re becoming.</span>
+              </h1>
             </div>
+            <Reveal direction="left" delay={220}>
+              <p className="landing-hero__copy">
+                Climbers usually feel progress before they can explain it. Smear turns that blur into a readable
+                shape, broken down by style and grounded in what actually happened on the wall.
+              </p>
+            </Reveal>
           </div>
 
           <div className="landing-hero__visual-column">
@@ -282,27 +280,18 @@ function HeroSection() {
           </div>
         </div>
 
-        <Reveal direction="left" delay={340} className="landing-hero__actions-panel">
-          <div className="landing-hero__actions">
-            <a href="#access" className="landing-button landing-button--solid">
-              Request early access
-            </a>
-            <a href="#how-it-works" className="landing-button landing-button--ghost">
-              See how it works
-            </a>
-          </div>
+        <Reveal direction="left" delay={340} className="landing-hero__actions">
+          <a href="#access" className="landing-button landing-button--solid">
+            Request early access
+          </a>
+          <a href="#how-it-works" className="landing-button landing-button--ghost">
+            See how it works
+          </a>
         </Reveal>
 
-        <Reveal direction="left" delay={460} className="landing-hero__loading-panel">
-          <div className="landing-hero__loading">
-            <LoadingRiveSlot />
-          </div>
+        <Reveal direction="left" delay={460} className="landing-hero__loading">
+          <LoadingRiveSlot />
         </Reveal>
-      </div>
-
-      <div className="landing-hero__scroll-mark">
-        <span>Scroll</span>
-        <i />
       </div>
     </section>
   )
@@ -362,9 +351,8 @@ function SolutionSection() {
             <div className="landing-eyebrow">The solution</div>
           </Reveal>
           <Reveal direction="left" delay={100}>
-            <h2 className="landing-section-title landing-section-title--light">
-              You are not
-              <span>one grade.</span>
+            <h2 className="landing-section-title">
+              You are not one grade.
             </h2>
           </Reveal>
           <Reveal direction="left" delay={220}>
@@ -447,8 +435,7 @@ function FeaturesSection() {
             <Reveal direction="left">
               <div className="landing-eyebrow">Features</div>
               <h2 className="landing-section-title">
-                Structure over
-                <span>feeling.</span>
+                Structure over feeling.
               </h2>
             </Reveal>
           </div>
