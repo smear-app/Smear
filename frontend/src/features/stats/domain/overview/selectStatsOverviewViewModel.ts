@@ -1,5 +1,5 @@
 import { calculateArchetypeMetrics, calculatePerformanceMetrics, calculateProgressionMetrics, calculateSessionMetrics } from "../calculators"
-import { normalizeSoftRadarValues } from "../archetype/selectArchetypeViewModel"
+import { scaleArchetypePerformanceRadarValues, scaleArchetypeVolumeRadarValues } from "../archetype/radarScaling"
 import type { ArchetypeGroupKey, ArchetypeTagMetric } from "../calculators/archetype"
 import type { EnrichedClimb } from "../primitives"
 import type { StatsAreaId, StatsAreaPlaceholder, StatsPreviewVisualModel } from "../types"
@@ -12,7 +12,6 @@ const MEANINGFUL_GRADE_DELTA = 0.5
 const PERFORMANCE_MIN_CLIMBS = 8
 const ARCHETYPE_MIN_TAGGED_CLIMBS = 6
 const ARCHETYPE_SEPARATION_MARGIN = 8
-const PERFORMANCE_VALUE_OFFSET = 1
 const PROGRESSION_SPARKLINE_POINT_COUNT = 6
 const THIRTY_DAY_LABEL = "last 30 days"
 
@@ -376,10 +375,9 @@ function toArchetypeCandidates(metricsByGroup: ReturnType<typeof calculateArchet
   const metrics = Object.entries(metricsByGroup).flatMap(([group, groupMetrics]) =>
     groupMetrics.map((metric) => ({ metric, group: group as ArchetypeGroupKey })),
   )
-  const volumeScores = normalizeSoftRadarValues(metrics.map(({ metric }) => (metric.climbCount === 0 ? null : metric.climbCount)))
-  const performanceScores = normalizeSoftRadarValues(
+  const volumeScores = scaleArchetypeVolumeRadarValues(metrics.map(({ metric }) => metric.climbCount))
+  const performanceScores = scaleArchetypePerformanceRadarValues(
     metrics.map(({ metric }) => (metric.workingGrade === null ? null : metric.workingGrade)),
-    { valueOffset: PERFORMANCE_VALUE_OFFSET },
   )
 
   return metrics.map(({ metric, group }, index) => ({
