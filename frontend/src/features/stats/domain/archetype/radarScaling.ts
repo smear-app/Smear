@@ -1,5 +1,9 @@
-const PERFORMANCE_MIN_RADIUS = 38
-const PERFORMANCE_MAX_RADIUS = 95
+const BALANCED_PERFORMANCE_MIN_RADIUS = 62
+const BALANCED_PERFORMANCE_MAX_RADIUS = 88
+const AGGRESSIVE_PERFORMANCE_MIN_RADIUS = 38
+const AGGRESSIVE_PERFORMANCE_MAX_RADIUS = 95
+const PERFORMANCE_LOW_DELTA = 0.5
+const PERFORMANCE_HIGH_DELTA = 3
 const VOLUME_MIN_RADIUS = 18
 const VOLUME_MAX_RADIUS = 90
 
@@ -39,8 +43,35 @@ function scalePresentValues(
   })
 }
 
+function interpolate(start: number, end: number, strength: number) {
+  return start + (end - start) * strength
+}
+
+function getPerformanceRadiusRange(values: readonly number[]) {
+  const minimum = Math.min(...values)
+  const maximum = Math.max(...values)
+  const gradeDelta = maximum - minimum
+  const strength = clamp(
+    (gradeDelta - PERFORMANCE_LOW_DELTA) / (PERFORMANCE_HIGH_DELTA - PERFORMANCE_LOW_DELTA),
+    0,
+    1,
+  )
+
+  return {
+    minRadius: interpolate(BALANCED_PERFORMANCE_MIN_RADIUS, AGGRESSIVE_PERFORMANCE_MIN_RADIUS, strength),
+    maxRadius: interpolate(BALANCED_PERFORMANCE_MAX_RADIUS, AGGRESSIVE_PERFORMANCE_MAX_RADIUS, strength),
+  }
+}
+
 export function scaleArchetypePerformanceRadarValues(values: readonly (number | null)[]): number[] {
-  return scalePresentValues(values, PERFORMANCE_MIN_RADIUS, PERFORMANCE_MAX_RADIUS)
+  const presentValues = values.filter(isFiniteNumber)
+
+  if (presentValues.length === 0) {
+    return values.map(() => 0)
+  }
+
+  const { minRadius, maxRadius } = getPerformanceRadiusRange(presentValues)
+  return scalePresentValues(values, minRadius, maxRadius)
 }
 
 export function scaleArchetypeVolumeRadarValues(values: readonly number[]): number[] {

@@ -74,12 +74,20 @@ describe("archetype selector", () => {
       "terrain",
     )
 
-    expect(viewModel.categories.every((category) => category.normalizedPerformanceRadarValue === 95)).toBe(true)
+    expect(viewModel.categories.every((category) => category.normalizedPerformanceRadarValue === 88)).toBe(true)
     expect(viewModel.categories.every((category) => category.normalizedVolumeRadarValue === 90)).toBe(true)
   })
 
-  it("scales performance aggressively across the category min and max", () => {
-    expect(scaleArchetypePerformanceRadarValues([3, 4, 5, 6])).toEqual([38, 57, 76, 95])
+  it("uses a compressed performance range for nearly balanced grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([5, 5.25, 5.5])).toEqual([62, 75, 88])
+  })
+
+  it("smoothly opens the performance range for moderate grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([4, 4.75, 5.5])).toEqual([52, 72, 91])
+  })
+
+  it("uses the full aggressive performance range for large grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([3, 4.5, 6])).toEqual([38, 67, 95])
   })
 
   it("scales volume with sqrt transform before normalization", () => {
