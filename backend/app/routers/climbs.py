@@ -17,7 +17,7 @@ from app.models import (
     LoggedGradeOption,
 )
 
-from app.routers.canonical_climbs import recompute_canonical_confidence
+from app.routers.canonical_climbs import recompute_canonical_aggregate, recompute_canonical_confidence
 from app.routers.sessions import publish_stale_sessions
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,9 @@ SESSION_THRESHOLD_HOURS = 3
 def _row_to_climb_object(row: dict) -> ClimbObject:
     """Map a DB row (possibly with canonical_climbs join) to ClimbObject."""
     canonical = row.get("canonical_climbs") or {}
+    session = row.get("sessions") or {}
     photo_url = row.get("photo_url") or (canonical.get("photo_url") if isinstance(canonical, dict) else None)
+    canonical_tags = canonical.get("canonical_tags") if isinstance(canonical, dict) else None
     return ClimbObject(
         id=row["id"],
         user_id=row["user_id"],
@@ -45,7 +47,9 @@ def _row_to_climb_object(row: dict) -> ClimbObject:
         hold_color=row.get("hold_color"),
         notes=row.get("notes"),
         canonical_climb_id=row.get("canonical_climb_id"),
+        canonical_tags=canonical_tags or [],
         session_id=row.get("session_id"),
+        session_started_at=session.get("started_at") if isinstance(session, dict) else None,
         created_at=row["created_at"],
     )
 
@@ -102,6 +106,14 @@ def _soft_delete_canonical_if_unused(supabase, canonical_climb_id: Optional[str]
     ).eq("id", canonical_climb_id).execute()
 
 
+def _refresh_canonical_state(supabase, canonical_climb_id: Optional[str]) -> None:
+    if not canonical_climb_id:
+        return
+
+    recompute_canonical_aggregate(supabase, canonical_climb_id)
+    recompute_canonical_confidence(supabase, canonical_climb_id)
+
+
 @router.get("", response_model=PaginatedClimbsResponse)
 def get_climbs(
     limit: int = Query(default=20, ge=1, le=100),
@@ -119,7 +131,7 @@ def get_climbs(
     supabase = get_supabase()
     query = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url)", count="exact")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)", count="exact")
         .eq("user_id", user_id)
     )
 
@@ -197,7 +209,7 @@ def get_recent_climbs(user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url)")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
         .eq("user_id", user_id)
         .order("created_at", desc=True)
         .limit(5)
@@ -211,7 +223,7 @@ def get_climb_by_id(climb_id: str, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url)")
+        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
         .eq("user_id", user_id)
         .eq("id", climb_id)
         .maybe_single()
@@ -257,13 +269,21 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
     _touch_session(supabase, session_id)
     background_tasks.add_task(publish_stale_sessions, supabase, user_id)
     if body.canonical_climb_id:
-        recompute_canonical_confidence(supabase, body.canonical_climb_id)
+        _refresh_canonical_state(supabase, body.canonical_climb_id)
         if body.photo_url:
             supabase.from_("canonical_climbs").update({"photo_url": body.photo_url}).eq(
                 "id", body.canonical_climb_id
             ).is_("photo_url", "null").execute()
             background_tasks.add_task(run_duplicate_check, body.canonical_climb_id)
-    return _row_to_climb_object(result.data[0])
+    created_id = result.data[0]["id"]
+    created = (
+        supabase.from_("climbs")
+        .select("*, canonical_climbs(photo_url, canonical_tags)")
+        .eq("id", created_id)
+        .maybe_single()
+        .execute()
+    )
+    return _row_to_climb_object(created.data or result.data[0])
 
 
 @router.patch("/{climb_id}", response_model=ClimbObject)
@@ -274,6 +294,22 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    existing = (
+        supabase.from_("climbs")
+        .select("id, canonical_climb_id")
+        .eq("id", climb_id)
+        .eq("user_id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    if not existing.data:
+        raise HTTPException(status_code=404, detail="Climb not found")
+
+    if updates.get("tags") is not None:
+        updates["tags"] = [tag.lower() for tag in updates["tags"]]
+    if updates.get("send_type") is not None:
+        updates["send_type"] = updates["send_type"].lower()
+
     update_result = (
         supabase.from_("climbs")
         .update(updates)
@@ -283,7 +319,10 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     )
     if not update_result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
-    result = supabase.from_("climbs").select("*").eq("id", climb_id).execute()
+    canonical_climb_id = existing.data.get("canonical_climb_id")
+    if canonical_climb_id and ("tags" in updates or "send_type" in updates):
+        _refresh_canonical_state(supabase, canonical_climb_id)
+    result = supabase.from_("climbs").select("*, canonical_climbs(photo_url, canonical_tags)").eq("id", climb_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
     return _row_to_climb_object(result.data[0])
@@ -301,7 +340,7 @@ def patch_climb_photo(climb_id: str, body: PatchClimbPhotoRequest, user_id: str 
     )
     if not update_result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
-    result = supabase.from_("climbs").select("*").eq("id", climb_id).execute()
+    result = supabase.from_("climbs").select("*, canonical_climbs(photo_url, canonical_tags)").eq("id", climb_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
     return _row_to_climb_object(result.data[0])
@@ -324,4 +363,5 @@ def delete_climb(climb_id: str, user_id: str = Depends(get_current_user)):
     canonical_climb_id = climb.data.get("canonical_climb_id")
 
     supabase.from_("climbs").delete().eq("id", climb_id).eq("user_id", user_id).execute()
+    _refresh_canonical_state(supabase, canonical_climb_id)
     _soft_delete_canonical_if_unused(supabase, canonical_climb_id)

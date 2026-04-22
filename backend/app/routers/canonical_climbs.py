@@ -1,5 +1,6 @@
 import logging
 import math
+from collections import Counter
 from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from typing import Optional
@@ -18,6 +19,16 @@ router = APIRouter(prefix="/canonical-climbs", tags=["canonical-climbs"])
 # Tune these thresholds as confidence score distribution becomes clearer in prod
 CONFIDENCE_VERIFIED_THRESHOLD = 0.7
 CONFIDENCE_ARCHIVED_THRESHOLD = 0.3
+# Canon tags are a community-consensus summary of the climbs linked to a
+# canonical climb, not a raw union of all submitted tags.
+# A tag only "graduates" into canonical_tags if it clears both:
+#   1. minimum supporting climb count
+#   2. minimum share of attached climbs
+# We also count each tag at most once per climb so duplicate tags inside a
+# single log cannot overweight the aggregate.
+CANONICAL_TAG_MIN_COUNT = 2
+CANONICAL_TAG_MIN_SHARE = 0.25
+MAX_CANONICAL_TAGS = 6
 
 
 def _compute_confidence(log_count: int, last_logged: Optional[str], photo_url: Optional[str]) -> float:
@@ -40,6 +51,58 @@ def _status_from_confidence(confidence: float) -> str:
     if confidence <= CONFIDENCE_ARCHIVED_THRESHOLD:
         return "archived"
     return "pending"
+
+
+def recompute_canonical_aggregate(supabase, canonical_climb_id: str) -> None:
+    """Rebuild consensus tags and activity counters from attached climbs.
+
+    canonical_tags is intended to represent the community's best shared
+    description of a climb. We derive it from all climbs attached to the
+    canonical rather than from the seed climb alone.
+
+    Rules:
+    - Read every climb linked to the canonical.
+    - Count a tag at most once per climb.
+    - Normalize tags to lowercase and ignore empty values.
+    - Keep only tags with enough support by absolute count and share.
+    - Sort by support, then alphabetically for stable tie-breaking.
+    - Cap the final list so matching stays focused on the strongest signals.
+
+    This recompute also refreshes log_count, send_count, flash_count, and
+    last_logged_at so the canonical row remains the cached aggregate view.
+    """
+    result = (
+        supabase.from_("climbs")
+        .select("tags, send_type, created_at")
+        .eq("canonical_climb_id", canonical_climb_id)
+        .execute()
+    )
+    climbs = result.data or []
+    log_count = len(climbs)
+    send_count = sum(1 for climb in climbs if climb.get("send_type") == "send")
+    flash_count = sum(1 for climb in climbs if climb.get("send_type") == "flash")
+    last_logged_at = max((climb.get("created_at") for climb in climbs if climb.get("created_at")), default=None)
+
+    tag_counts: Counter[str] = Counter()
+    for climb in climbs:
+        for tag in set(climb.get("tags") or []):
+            normalized = tag.strip().lower()
+            if normalized:
+                tag_counts[normalized] += 1
+
+    canonical_tags = [
+        tag
+        for tag, count in sorted(tag_counts.items(), key=lambda item: (-item[1], item[0]))
+        if count >= CANONICAL_TAG_MIN_COUNT and count / log_count >= CANONICAL_TAG_MIN_SHARE
+    ][:MAX_CANONICAL_TAGS] if log_count > 0 else []
+
+    supabase.from_("canonical_climbs").update({
+        "canonical_tags": canonical_tags,
+        "log_count": log_count,
+        "send_count": send_count,
+        "flash_count": flash_count,
+        "last_logged_at": last_logged_at,
+    }).eq("id", canonical_climb_id).execute()
 
 
 def recompute_canonical_confidence(supabase, canonical_climb_id: str) -> None:

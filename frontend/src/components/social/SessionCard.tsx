@@ -1,7 +1,10 @@
 import { useState } from 'react'
-import { FiUser, FiHeart, FiMessageCircle, FiZap } from 'react-icons/fi'
-import type { SessionCardObject } from '../../lib/api'
-import { addReaction, removeReaction } from '../../lib/api'
+import { Link } from 'react-router-dom'
+import { FiUser, FiHeart, FiMessageCircle, FiZap, FiChevronDown } from 'react-icons/fi'
+import type { SessionCardObject, SessionDetailObject } from '../../lib/api'
+import { addReaction, getSocialSession, removeReaction } from '../../lib/api'
+import type { Climb } from '../../lib/climbs'
+import CompactClimbTileRow from '../logbook/CompactClimbTileRow'
 
 interface SessionCardProps {
   session: SessionCardObject
@@ -39,6 +42,10 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
   const [reacted, setReacted] = useState(session.viewer_has_reacted)
   const [reactionCount, setReactionCount] = useState(session.reaction_count)
   const [loading, setLoading] = useState(false)
+  const [details, setDetails] = useState<SessionDetailObject | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [detailsError, setDetailsError] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const displayName = session.author_display_name || session.author_username || 'Climber'
   const duration = formatDuration(session.started_at, session.ended_at)
@@ -63,6 +70,25 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
       setLoading(false)
     }
   }
+
+  async function toggleDetails() {
+    const nextOpen = !detailsOpen
+    setDetailsOpen(nextOpen)
+    if (!nextOpen || details || detailsLoading) return
+
+    setDetailsLoading(true)
+    setDetailsError(null)
+    try {
+      const nextDetails = await getSocialSession(session.id)
+      setDetails(nextDetails)
+    } catch (e) {
+      setDetailsError(e instanceof Error ? e.message : 'Unable to load climbs')
+    } finally {
+      setDetailsLoading(false)
+    }
+  }
+
+  const climbs = details ? details.climbs.map(mapSessionClimbToClimb) : []
 
   return (
     <article className="rounded-[20px] border border-stone-border bg-stone-surface shadow-[0_4px_16px_rgba(89,68,51,0.06)]">
@@ -117,6 +143,62 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
           </div>
         )}
 
+        {session.total_climbs != null && session.total_climbs > 0 && (
+          <div className="mt-3 rounded-[18px] border border-stone-border/80 bg-stone-bg/70">
+            <button
+              type="button"
+              onClick={toggleDetails}
+              className="flex w-full items-center justify-between gap-3 px-3.5 py-3 text-left"
+              aria-expanded={detailsOpen}
+            >
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-muted">Session info</p>
+                <p className="truncate text-sm font-semibold text-stone-text">
+                  {detailsOpen ? 'Hide climbs' : `View climbs (${session.total_climbs})`}
+                </p>
+              </div>
+              <FiChevronDown
+                className={`h-4 w-4 shrink-0 text-stone-secondary transition-transform ${detailsOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {detailsOpen && (
+              <div className="border-t border-stone-border/70 px-2 pb-2 pt-2">
+                <div className="mb-2 px-1.5">
+                  <p className="text-xs font-medium text-stone-secondary">
+                    {session.gym_name ?? 'Unknown Gym'}
+                    {duration && <span> • {duration}</span>}
+                    {timeAgo && <span> • {timeAgo}</span>}
+                  </p>
+                </div>
+
+                {detailsLoading && (
+                  <div className="px-2 py-4 text-center text-sm text-stone-secondary">Loading climbs…</div>
+                )}
+
+                {!detailsLoading && detailsError && (
+                  <div className="px-2 py-4 text-center text-sm text-stone-secondary">{detailsError}</div>
+                )}
+
+                {!detailsLoading && !detailsError && climbs.length > 0 && (
+                  <div className="max-h-[11rem] space-y-1.5 overflow-y-auto pr-1">
+                    {climbs.map((climb) => (
+                      <Link
+                        key={climb.id}
+                        to={`/climbs/${climb.id}`}
+                        state={{ climb, from: '/social' }}
+                        className="block rounded-[18px] border border-stone-border/75 bg-stone-surface px-3 py-2 shadow-[0_8px_18px_rgba(89,68,51,0.05)] transition-colors duration-150 hover:bg-stone-alt"
+                      >
+                        <CompactClimbTileRow climb={climb} metaText={formatClimbMeta(climb)} />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Hardest grade */}
         {session.hardest_grade && (
           <div className="mt-3 flex items-center gap-1.5">
@@ -167,6 +249,42 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
       </div>
     </article>
   )
+}
+
+function mapSessionClimbToClimb(climb: SessionDetailObject['climbs'][number]): Climb {
+  return {
+    id: climb.id,
+    user_id: climb.user_id,
+    gym_id: climb.gym_id,
+    gym_name: climb.gym_name,
+    gym_grade: climb.gym_grade,
+    gym_grade_value: climb.gym_grade_value,
+    personal_grade: climb.personal_grade,
+    personal_grade_value: climb.personal_grade_value,
+    send_type: climb.send_type,
+    tags: climb.tags,
+    photo_url: climb.photo_url,
+    climbColor: climb.hold_color,
+    notes: climb.notes,
+    canonical_climb_id: climb.canonical_climb_id,
+    canonical_tags: climb.canonical_tags,
+    session_id: climb.session_id,
+    session_started_at: null,
+    created_at: climb.created_at,
+  }
+}
+
+function formatClimbMeta(climb: Climb): string {
+  return [
+    climb.gym_name,
+    new Date(climb.created_at).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }),
+  ]
+    .filter(Boolean)
+    .join(' • ')
 }
 
 function StatChip({ label, value, accent }: { label: string; value: number; accent?: boolean }) {

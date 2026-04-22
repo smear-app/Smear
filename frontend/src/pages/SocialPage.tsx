@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FiUsers, FiCompass, FiUserPlus } from 'react-icons/fi'
 import BottomNav from '../components/BottomNav'
 import SessionCard from '../components/social/SessionCard'
@@ -9,24 +9,31 @@ import { getSocialFeed, getExploreFeed } from '../lib/api'
 import { useGym } from '../context/GymContext'
 
 type Tab = 'friends' | 'explore'
+type FeedState = { feed: SessionCardObject[]; error: string | null; resolvedAt: number }
 
-export default function SocialPage() {
+const FEED_STALE_MS = 60_000
+
+export default function SocialPage({ isActive = true }: { isActive?: boolean }) {
   const [tab, setTab] = useState<Tab>('friends')
-  const [resolvedKey, setResolvedKey] = useState<string | null>(null)
-  const [feedData, setFeedData] = useState<{ feed: SessionCardObject[]; error: string | null }>({ feed: [], error: null })
+  const [feedStateByKey, setFeedStateByKey] = useState<Record<string, FeedState>>({})
   const [showSearch, setShowSearch] = useState(false)
   const [commentSessionId, setCommentSessionId] = useState<string | null>(null)
   const { activeGym, isHydrated } = useGym()
+  const scrollPositionRef = useRef(0)
 
   const currentKey = `${tab}-${activeGym?.id ?? ''}`
-  const loading = resolvedKey !== currentKey || (tab === 'explore' && !isHydrated)
-  const { feed, error } = feedData
+  const currentState = feedStateByKey[currentKey]
+  const loading = isActive && ((tab === 'explore' && !isHydrated) || !currentState)
+  const feed = currentState?.feed ?? []
+  const error = currentState?.error ?? null
 
   useEffect(() => {
     let cancelled = false
     const key = `${tab}-${activeGym?.id ?? ''}`
+    const cachedState = feedStateByKey[key]
+    const isStale = !cachedState || Date.now() - cachedState.resolvedAt > FEED_STALE_MS
 
-    if (tab === 'explore' && !isHydrated) {
+    if (!isActive || (tab === 'explore' && !isHydrated) || !isStale) {
       return () => { cancelled = true }
     }
 
@@ -35,14 +42,50 @@ export default function SocialPage() {
       : getExploreFeed(20, 0, activeGym?.id)
 
     load
-      .then((data) => { if (!cancelled) { setFeedData({ feed: data, error: null }); setResolvedKey(key) } })
-      .catch((e: Error) => { if (!cancelled) { setFeedData({ feed: [], error: e.message }); setResolvedKey(key) } })
+      .then((data) => {
+        if (!cancelled) {
+          setFeedStateByKey((currentStateByKey) => ({
+            ...currentStateByKey,
+            [key]: { feed: data, error: null, resolvedAt: Date.now() },
+          }))
+        }
+      })
+      .catch((e: Error) => {
+        if (!cancelled) {
+          setFeedStateByKey((currentStateByKey) => ({
+            ...currentStateByKey,
+            [key]: { feed: [], error: e.message, resolvedAt: Date.now() },
+          }))
+        }
+      })
 
     return () => { cancelled = true }
-  }, [tab, activeGym?.id, isHydrated])
+  }, [tab, activeGym?.id, feedStateByKey, isActive, isHydrated])
+
+  useEffect(() => {
+    if (!isActive || typeof window === 'undefined') {
+      return
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollPositionRef.current, behavior: 'auto' })
+    })
+  }, [isActive])
+
+  useEffect(() => {
+    if (isActive || typeof window === 'undefined') {
+      return
+    }
+
+    scrollPositionRef.current = window.scrollY
+  }, [isActive])
 
   return (
-    <div className="app-safe-shell min-h-screen bg-stone-bg">
+    <div
+      className="app-safe-shell min-h-screen bg-stone-bg"
+      style={{ display: isActive ? undefined : 'none' }}
+      aria-hidden={!isActive}
+    >
       <main className="app-safe-shell__main mx-auto max-w-[420px] px-4 pb-32 pt-6">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
