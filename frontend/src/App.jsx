@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Analytics } from "@vercel/analytics/react"
 import { Capacitor } from "@capacitor/core"
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { GymProvider, useGym } from "./context/GymContext"
 import { LogClimbActionContext } from "./context/logClimbActionContext"
@@ -20,6 +20,7 @@ import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
 function ProtectedApp() {
   const { session, loading, isAdmin } = useAuth()
   const { activeGym } = useGym()
+  const location = useLocation()
   const [isLogClimbOpen, setIsLogClimbOpen] = useState(false)
   const [isEditClimbOpen, setIsEditClimbOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -131,6 +132,7 @@ function ProtectedApp() {
     onOpen: handleOpenLogClimb,
     disabled: !activeGym,
   }
+  const isSocialRoute = location.pathname === "/social"
 
   return (
     <LogClimbActionContext.Provider value={logClimbAction}>
@@ -162,10 +164,11 @@ function ProtectedApp() {
             }
           />
           <Route path="/stats" element={<StatsPage />} />
-          <Route path="/social" element={<SocialPage />} />
+          <Route path="/social" element={null} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
         </Routes>
+        <SocialPage isActive={isSocialRoute} />
         <LogClimbModal
           isOpen={isLogClimbOpen}
           onClose={() => {
