@@ -24,7 +24,7 @@ describe("stats overview selector", () => {
     expect(view.tiles.archetype.descriptor).toBe("Log more climbs")
     expect(view.tiles.archetype.primaryMetric).toBe("")
     expect(view.tiles.archetype.secondaryText).toBe("last 30 days")
-    expect(view.visuals.progression).toMatchObject({ kind: "trendDots", muted: true })
+    expect(view.visuals.progression).toMatchObject({ kind: "sparkline", muted: true })
     expect(view.visuals.performance).toMatchObject({ kind: "conversionRing", active: false, percent: 0 })
     expect(view.visuals.archetype).toMatchObject({ kind: "radar", state: "empty" })
     expect(view.visuals.sessions).toMatchObject({ kind: "dailyBars" })
@@ -87,12 +87,34 @@ describe("stats overview selector", () => {
       primaryMetric: "+2.0 working grade",
       secondaryText: "last 30 days",
     })
-    expect(view.visuals.progression).toMatchObject({ kind: "trendDots", muted: false })
-    if (view.visuals.progression.kind !== "trendDots") {
-      throw new Error("Expected progression trend dots")
+    expect(view.visuals.progression).toMatchObject({ kind: "sparkline", muted: false })
+    if (view.visuals.progression.kind !== "sparkline") {
+      throw new Error("Expected progression sparkline")
     }
-    expect(view.visuals.progression.points).toHaveLength(3)
-    expect(view.visuals.progression.points[2].yPercent).toBeLessThan(view.visuals.progression.points[0].yPercent)
+    expect(view.visuals.progression.points).toHaveLength(6)
+    expect(view.visuals.progression.points[5].yPercent).toBeLessThan(view.visuals.progression.points[0].yPercent)
+  })
+
+  it("keeps progression preview direction aligned with the displayed delta", () => {
+    const view = selectStatsOverviewViewModel(
+      [
+        climb({ id: "previous-slightly-higher", outcome: "send", gradeIndex: 4.3, loggedAt: daysAgo(20) }),
+        climb({ id: "recent-slightly-lower", outcome: "send", gradeIndex: 4, loggedAt: daysAgo(4) }),
+      ],
+      { now: NOW },
+    )
+
+    expect(view.tiles.progression).toMatchObject({
+      descriptor: "Holding steady",
+      primaryMetric: "-0.3 working grade",
+      secondaryText: "last 30 days",
+    })
+    expect(view.visuals.progression).toMatchObject({ kind: "sparkline", muted: false })
+    if (view.visuals.progression.kind !== "sparkline") {
+      throw new Error("Expected progression sparkline")
+    }
+    expect(view.visuals.progression.points).toHaveLength(6)
+    expect(view.visuals.progression.points[5].yPercent).toBeGreaterThan(view.visuals.progression.points[0].yPercent)
   })
 
   it("falls back for balanced archetype profiles", () => {

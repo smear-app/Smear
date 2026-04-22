@@ -13,6 +13,7 @@ const PERFORMANCE_MIN_CLIMBS = 8
 const ARCHETYPE_MIN_TAGGED_CLIMBS = 6
 const ARCHETYPE_SEPARATION_MARGIN = 8
 const PERFORMANCE_VALUE_OFFSET = 1
+const PROGRESSION_SPARKLINE_POINT_COUNT = 6
 const THIRTY_DAY_LABEL = "last 30 days"
 
 type OverviewTile = StatsAreaPlaceholder
@@ -53,6 +54,12 @@ type SessionsTileResult = {
 type ProgressionTileResult = {
   tile: OverviewTile
   visual: StatsPreviewVisualModel
+}
+
+type ProgressionTrendSummary = {
+  previousAverage: number | null
+  recentAverage: number | null
+  workingGradeDelta: number | null
 }
 
 const GROUP_LABELS: Record<ArchetypeGroupKey, string> = {
@@ -202,22 +209,7 @@ function selectSessionsOverview(climbs: readonly EnrichedClimb[], now: Date): Se
   }
 }
 
-function getProgressionGradeBins(climbs: readonly EnrichedClimb[], now: Date) {
-  const windowStart = now.getTime() - DEFAULT_WINDOW_DAYS * DAY_MS
-  const bucketDays = 10
-
-  return Array.from({ length: 3 }, (_, index) => {
-    const start = new Date(windowStart + index * bucketDays * DAY_MS)
-    const end = index === 2 ? now : new Date(windowStart + (index + 1) * bucketDays * DAY_MS)
-    const workingGrades = calculateProgressionMetrics(filterClimbsInWindow(climbs, { start, end })).weekly.flatMap((bucket) =>
-      bucket.workingGrade === null ? [] : [bucket.workingGrade],
-    )
-
-    return average(workingGrades)
-  })
-}
-
-function selectProgressionTile(climbs: readonly EnrichedClimb[], now: Date): OverviewTile {
+function selectProgressionTrendSummary(climbs: readonly EnrichedClimb[], now: Date): ProgressionTrendSummary {
   const previousBounds = {
     start: new Date(now.getTime() - DEFAULT_WINDOW_DAYS * DAY_MS),
     end: new Date(now.getTime() - PROGRESSION_HALF_DAYS * DAY_MS),
@@ -235,50 +227,108 @@ function selectProgressionTile(climbs: readonly EnrichedClimb[], now: Date): Ove
   const previousAverage = average(previousWorkingGrade)
   const recentAverage = average(recentWorkingGrade)
   const workingGradeDelta = previousAverage === null || recentAverage === null ? null : recentAverage - previousAverage
+
+  return {
+    previousAverage,
+    recentAverage,
+    workingGradeDelta,
+  }
+}
+
+function selectProgressionTile(summary: ProgressionTrendSummary): OverviewTile {
   const descriptor =
-    workingGradeDelta === null
+    summary.workingGradeDelta === null
       ? "Building baseline"
-      : workingGradeDelta >= MEANINGFUL_GRADE_DELTA
+      : summary.workingGradeDelta >= MEANINGFUL_GRADE_DELTA
         ? "Trending up"
-        : workingGradeDelta <= -MEANINGFUL_GRADE_DELTA
+        : summary.workingGradeDelta <= -MEANINGFUL_GRADE_DELTA
           ? "Slight dip"
           : "Holding steady"
 
   return {
     descriptor,
-    primaryMetric: formatSignedGradeDelta(workingGradeDelta),
+    primaryMetric: formatSignedGradeDelta(summary.workingGradeDelta),
     secondaryText: THIRTY_DAY_LABEL,
   }
 }
 
-function selectProgressionPreviewVisual(climbs: readonly EnrichedClimb[], now: Date, hasValidTrend: boolean): StatsPreviewVisualModel {
-  const workingGradeBins = getProgressionGradeBins(climbs, now)
-  const validGrades = workingGradeBins.flatMap((grade) => (grade === null ? [] : [grade]))
-  const averageGrade = average(validGrades)
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function getProgressionSparklineBins(climbs: readonly EnrichedClimb[], now: Date): Array<number | null> {
+  const windowStart = now.getTime() - DEFAULT_WINDOW_DAYS * DAY_MS
+  const bucketDays = DEFAULT_WINDOW_DAYS / PROGRESSION_SPARKLINE_POINT_COUNT
+
+  return Array.from({ length: PROGRESSION_SPARKLINE_POINT_COUNT }, (_, index) => {
+    const start = new Date(windowStart + index * bucketDays * DAY_MS)
+    const end = index === PROGRESSION_SPARKLINE_POINT_COUNT - 1 ? now : new Date(windowStart + (index + 1) * bucketDays * DAY_MS)
+    const workingGrades = calculateProgressionMetrics(filterClimbsInWindow(climbs, { start, end })).weekly.flatMap((bucket) =>
+      bucket.workingGrade === null ? [] : [bucket.workingGrade],
+    )
+
+    return average(workingGrades)
+  })
+}
+
+function smoothSparklineGrades(values: readonly number[]): number[] {
+  return values.map((value, index) => {
+    const previous = values[index - 1] ?? value
+    const next = values[index + 1] ?? value
+    return (previous + value * 2 + next) / 4
+  })
+}
+
+function selectProgressionPreviewVisual(
+  climbs: readonly EnrichedClimb[],
+  now: Date,
+  summary: ProgressionTrendSummary,
+): StatsPreviewVisualModel {
+  const workingGradeDelta = summary.workingGradeDelta
+  const hasValidTrend = workingGradeDelta !== null
+  const visualDelta = workingGradeDelta === null ? 0 : clamp(workingGradeDelta * 14, -18, 18)
+  const sampledGrades = getProgressionSparklineBins(climbs, now)
+  const baselineGrades = Array.from({ length: PROGRESSION_SPARKLINE_POINT_COUNT }, (_, index) => {
+    const progress = index / (PROGRESSION_SPARKLINE_POINT_COUNT - 1)
+    const previous = summary.previousAverage ?? summary.recentAverage ?? 0
+    const recent = summary.recentAverage ?? summary.previousAverage ?? previous
+
+    return previous + (recent - previous) * progress
+  })
+  const filledGrades = sampledGrades.map((grade, index) => grade ?? baselineGrades[index])
+  const smoothedGrades = smoothSparklineGrades(filledGrades)
+  const yValues = smoothedGrades.map((grade, index) => {
+    if (!hasValidTrend) {
+      return 50
+    }
+
+    const progress = index / (PROGRESSION_SPARKLINE_POINT_COUNT - 1)
+    const baselineY = 50 + visualDelta / 2 - visualDelta * progress
+    const residual = clamp(grade - baselineGrades[index], -0.5, 0.5)
+    const residualY = index === 0 || index === PROGRESSION_SPARKLINE_POINT_COUNT - 1 ? 0 : -residual * 6
+
+    return clamp(baselineY + residualY, 24, 76)
+  })
 
   return {
-    kind: "trendDots",
+    kind: "sparkline",
     muted: !hasValidTrend,
-    points: workingGradeBins.map((grade, index) => {
-      const delta = grade === null || averageGrade === null ? 0 : grade - averageGrade
-      const yPercent = grade === null ? 50 : Math.min(Math.max(50 - delta * 18, 20), 80)
-
-      return {
-        id: `grade-bin-${index}`,
-        xPercent: index === 0 ? 18 : index === 1 ? 50 : 82,
-        yPercent,
-        active: grade !== null && hasValidTrend,
-      }
-    }),
+    points: yValues.map((yPercent, index) => ({
+      id: `grade-sparkline-${index}`,
+      xPercent: 12 + index * (76 / (PROGRESSION_SPARKLINE_POINT_COUNT - 1)),
+      yPercent,
+      active: hasValidTrend,
+    })),
   }
 }
 
 function selectProgressionOverview(climbs: readonly EnrichedClimb[], now: Date): ProgressionTileResult {
-  const tile = selectProgressionTile(climbs, now)
+  const summary = selectProgressionTrendSummary(climbs, now)
+  const tile = selectProgressionTile(summary)
 
   return {
     tile,
-    visual: selectProgressionPreviewVisual(climbs, now, tile.primaryMetric !== "-"),
+    visual: selectProgressionPreviewVisual(climbs, now, summary),
   }
 }
 

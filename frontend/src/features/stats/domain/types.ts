@@ -15,7 +15,7 @@ export type StatsProgressionPreviewPoint = {
 }
 
 export type StatsProgressionPreviewVisual = {
-  kind: "trendDots"
+  kind: "sparkline"
   muted: boolean
   points: StatsProgressionPreviewPoint[]
 }

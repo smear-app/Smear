@@ -42,6 +42,10 @@ const TONE_STYLES: Record<
   },
 }
 
+const PROGRESSION_LINE_COLOR = "color-mix(in srgb, var(--ember) 92%, white 8%)"
+const PROGRESSION_MUTED_LINE_COLOR = "color-mix(in srgb, var(--stone-border) 86%, transparent)"
+const PROGRESSION_MARKER_OUTLINE_COLOR = "var(--stone-surface)"
+
 export default function StatsPreviewCard({ card, visual }: StatsPreviewCardProps) {
   const tone = TONE_STYLES[card.tone]
 
@@ -58,8 +62,8 @@ export default function StatsPreviewCard({ card, visual }: StatsPreviewCardProps
           <p className={`mt-0.5 text-sm font-semibold ${tone.accent}`}>{card.descriptor}</p>
         </div>
 
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-border bg-stone-alt text-stone-secondary transition-colors group-hover:text-ember">
-          <FiChevronRight className="h-4 w-4" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center text-stone-secondary/85 dark:text-stone-muted">
+          <FiChevronRight className="h-4.5 w-4.5" />
         </span>
       </div>
 
@@ -71,7 +75,9 @@ export default function StatsPreviewCard({ card, visual }: StatsPreviewCardProps
           <p className="mt-1.5 text-sm leading-5 text-stone-secondary">{card.secondaryText}</p>
         </div>
 
-        <StatsPreviewVisual visual={visual} tone={card.tone} />
+        <div className="-my-8 -mr-1 flex h-[8.5rem] w-[10.5rem] shrink-0 -translate-y-5 items-center justify-end overflow-visible">
+          <StatsPreviewVisual visual={visual} tone={card.tone} />
+        </div>
       </div>
     </Link>
   )
@@ -84,8 +90,8 @@ function StatsPreviewVisual({
   visual: StatsPreviewVisualModel
   tone: StatsPreviewTone
 }) {
-  if (visual.kind === "trendDots") {
-    return <ProgressionPreviewDots visual={visual} tone={tone} />
+  if (visual.kind === "sparkline") {
+    return <ProgressionPreviewSparkline visual={visual} />
   }
 
   if (visual.kind === "radar") {
@@ -99,25 +105,49 @@ function StatsPreviewVisual({
   return <SessionsPreviewBars visual={visual} tone={tone} />
 }
 
-function ProgressionPreviewDots({
+function buildSmoothSparklinePath(points: Array<{ x: number; y: number }>) {
+  if (points.length === 0) {
+    return ""
+  }
+
+  if (points.length === 1) {
+    return `M ${points[0].x} ${points[0].y}`
+  }
+
+  const [first, ...rest] = points
+  const commands = [`M ${first.x} ${first.y}`]
+
+  rest.slice(0, -1).forEach((point, index) => {
+    const next = rest[index + 1]
+    const midX = (point.x + next.x) / 2
+    const midY = (point.y + next.y) / 2
+    commands.push(`Q ${point.x} ${point.y} ${midX} ${midY}`)
+  })
+
+  const last = points[points.length - 1]
+  commands.push(`T ${last.x} ${last.y}`)
+
+  return commands.join(" ")
+}
+
+function ProgressionPreviewSparkline({
   visual,
-  tone,
 }: {
-  visual: Extract<StatsPreviewVisualModel, { kind: "trendDots" }>
-  tone: StatsPreviewTone
+  visual: Extract<StatsPreviewVisualModel, { kind: "sparkline" }>
 }) {
-  const strokeColor = visual.muted ? "var(--stone-border)" : "var(--ember)"
-  const dotClass = visual.muted ? TONE_STYLES[tone].mutedPreview : TONE_STYLES[tone].activePreview
-  const points = visual.points.map((point) => `${point.xPercent},${point.yPercent}`).join(" ")
+  const strokeColor = visual.muted ? PROGRESSION_MUTED_LINE_COLOR : PROGRESSION_LINE_COLOR
+  const dotFill = visual.muted ? "var(--stone-border)" : PROGRESSION_LINE_COLOR
+  const points = visual.points.map((point) => ({ x: point.xPercent, y: point.yPercent }))
+  const path = buildSmoothSparklinePath(points)
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0 overflow-visible">
-      <polyline
-        points={points}
+    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-full w-full overflow-visible">
+      <path
+        d={path}
         fill="none"
         stroke={strokeColor}
-        strokeOpacity={visual.muted ? 0.35 : 0.62}
-        strokeWidth="2.25"
+        strokeOpacity={visual.muted ? 0.62 : 1}
+        strokeWidth="4.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -126,9 +156,10 @@ function ProgressionPreviewDots({
           key={point.id}
           cx={point.xPercent}
           cy={point.yPercent}
-          r={point.active ? 4.8 : 4.2}
-          className={point.active ? dotClass : TONE_STYLES[tone].mutedPreview}
-          stroke="var(--stone-surface)"
+          r="3.6"
+          fill={dotFill}
+          fillOpacity={point.active ? 1 : 0.62}
+          stroke={PROGRESSION_MARKER_OUTLINE_COLOR}
           strokeWidth="2"
         />
       ))}
@@ -157,7 +188,7 @@ function ArchetypePreviewRadar({ visual }: { visual: Extract<StatsPreviewVisualM
   const balanced = visual.state === "balanced"
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0 overflow-visible">
+    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-full w-full overflow-visible">
       <polygon
         points={toPolygonPoints(gridPoints)}
         fill="none"
@@ -191,33 +222,43 @@ function ArchetypePreviewRadar({ visual }: { visual: Extract<StatsPreviewVisualM
 }
 
 function PerformancePreviewRing({ visual }: { visual: Extract<StatsPreviewVisualModel, { kind: "conversionRing" }> }) {
-  const radius = 25
+  const radius = 54
   const circumference = 2 * Math.PI * radius
   const dashLength = (Math.min(Math.max(visual.percent, 0), 100) / 100) * circumference
 
   return (
-    <svg aria-hidden="true" viewBox="0 0 100 80" className="h-20 w-24 shrink-0">
+    <svg aria-hidden="true" viewBox="0 0 180 144" className="h-full w-full overflow-visible">
       <circle
-        cx="50"
-        cy="40"
+        cx="90"
+        cy="72"
         r={radius}
         fill="none"
         stroke="var(--stone-border)"
         strokeOpacity="0.72"
-        strokeWidth="8"
+        strokeWidth="14"
       />
       <circle
-        cx="50"
-        cy="40"
+        cx="90"
+        cy="72"
         r={radius}
         fill="none"
         stroke={visual.active ? "var(--ember)" : "var(--stone-secondary)"}
         strokeOpacity={visual.active ? 0.92 : 0.28}
-        strokeWidth="8"
+        strokeWidth="14"
         strokeLinecap="round"
         strokeDasharray={`${dashLength} ${circumference}`}
-        transform="rotate(-90 50 40)"
+        transform="rotate(-90 90 72)"
       />
+      <text
+        x="90"
+        y="72"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="var(--stone-secondary)"
+        className="text-[18px] font-medium"
+      >
+        Send %
+      </text>
     </svg>
   )
 }
@@ -230,11 +271,15 @@ function SessionsPreviewBars({
   tone: StatsPreviewTone
 }) {
   return (
-    <div aria-hidden="true" className="grid h-20 w-24 shrink-0 grid-cols-7 items-end gap-1.5">
+    <div aria-hidden="true" className="grid h-full w-full grid-cols-7 items-end gap-2.5 px-1.5 py-3">
       {visual.bars.map((bar) => (
         <span
           key={bar.id}
-          className={`rounded-full ${bar.active ? TONE_STYLES[tone].activePreview : TONE_STYLES[tone].mutedPreview}`}
+          className={`min-h-[7px] rounded-full ${
+            bar.active
+              ? `${TONE_STYLES[tone].activePreview} shadow-[0_0_0_1px_color-mix(in_srgb,var(--stone-text)_8%,transparent)]`
+              : "border border-stone-border bg-stone-alt/85 dark:border-white/15 dark:bg-white/10"
+          }`}
           style={{ height: `${bar.heightPercent}%` }}
         />
       ))}
