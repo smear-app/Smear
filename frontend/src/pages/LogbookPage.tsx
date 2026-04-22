@@ -1,8 +1,8 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { FiArrowUp, FiChevronDown, FiMapPin } from "react-icons/fi"
 import { useLocation, useSearchParams } from "react-router-dom"
-import BackButton from "../components/BackButton"
 import BottomNav from "../components/BottomNav"
+import DetailPageHeader from "../components/DetailPageHeader"
 import AnchoredPopover from "../components/logbook/AnchoredPopover"
 import LogbookCalendarScaffold from "../components/logbook/LogbookCalendarScaffold"
 import LogbookClimbList from "../components/logbook/LogbookClimbList"
@@ -37,6 +37,7 @@ type LogbookRestoreState = {
     visibleMonth: string
     selectedDateKey: string | null
   }
+  focusSessionId?: string
 }
 
 type LogbookPageProps = {
@@ -201,6 +202,7 @@ export default function LogbookPage({
   const locationState = (location.state ?? {}) as LogbookRestoreState & { stackTransition?: string }
   const restoredLogbookState = locationState.restoreLogbookState
   const [searchParams, setSearchParams] = useSearchParams()
+  const focusedSessionId = searchParams.get("sessionId") ?? locationState.focusSessionId ?? null
   const { user } = useAuth()
   const isOpeningFromHome = locationState.stackTransition === "forward"
   const [view, setView] = useState<LogbookView>(() =>
@@ -214,6 +216,7 @@ export default function LogbookPage({
   const [draftFilters, setDraftFilters] = useState<LogbookFilters>(() => buildInitialFilters(searchParams))
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
   const [showScrollToTop, setShowScrollToTop] = useState(false)
+  const focusedSessionScrolledRef = useRef<string | null>(null)
   const [loggedGyms, setLoggedGyms] = useState<LoggedGymOption[]>([])
   const [loggedGrades, setLoggedGrades] = useState<LoggedGradeOption[]>([])
   const [gymLoadError, setGymLoadError] = useState<string | null>(null)
@@ -286,8 +289,12 @@ export default function LogbookPage({
       nextParams.set("grades", filters.grades.join(","))
     }
 
+    if (focusedSessionId) {
+      nextParams.set("sessionId", focusedSessionId)
+    }
+
     setSearchParams(nextParams, { replace: true })
-  }, [filters, setSearchParams, sort, view])
+  }, [filters, focusedSessionId, setSearchParams, sort, view])
 
   useEffect(() => {
     if (!user) {
@@ -331,6 +338,34 @@ export default function LogbookPage({
       window.removeEventListener("scroll", updateScrollToTopVisibility)
     }
   }, [])
+
+  useEffect(() => {
+    if (!focusedSessionId || !isChronological || isLoading || isLoadingMore) {
+      return
+    }
+
+    if (sessions.some((session) => session.id === focusedSessionId) || !canLoadMore) {
+      return
+    }
+
+    loadMore()
+  }, [canLoadMore, focusedSessionId, isChronological, isLoading, isLoadingMore, loadMore, sessions])
+
+  useEffect(() => {
+    if (!focusedSessionId || isLoading || focusedSessionScrolledRef.current === focusedSessionId) {
+      return
+    }
+
+    const focusedElement = document.getElementById(`logbook-session-${focusedSessionId}`)
+    if (!focusedElement) {
+      return
+    }
+
+    focusedSessionScrolledRef.current = focusedSessionId
+    window.requestAnimationFrame(() => {
+      focusedElement.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }, [focusedSessionId, isLoading, sessions])
 
   const hasActiveFilters =
     filters.gymId !== "all" ||
@@ -408,17 +443,14 @@ export default function LogbookPage({
           }
         `}</style>
 
-        <div className="flex items-center gap-3">
-          <BackButton
-            to="/home"
-            state={{ stackTransition: "back" }}
-            label="Back to Home"
-            ariaLabel="Back to Home"
-            size="sm"
-          />
-
+        <DetailPageHeader
+          backTo="/home"
+          backState={{ stackTransition: "back" }}
+          backLabel="Back to Home"
+          backAriaLabel="Back to Home"
+        >
           <h1 className="text-base font-semibold text-stone-text">Logbook</h1>
-        </div>
+        </DetailPageHeader>
 
         <section className="relative mt-2 rounded-[22px] border border-stone-border bg-stone-surface px-2.5 py-2.5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">
           <div className="flex items-center gap-1">
@@ -741,7 +773,15 @@ export default function LogbookPage({
           >
             {isChronological
               ? sessions.map((session) => (
-                  <section key={session.id} className="space-y-2.5">
+                  <section
+                    key={session.id}
+                    id={`logbook-session-${session.id}`}
+                    className={`space-y-2.5 rounded-[24px] transition-colors ${
+                      focusedSessionId === session.id
+                        ? "border border-ember/20 bg-ember-soft/35 p-2"
+                        : "border border-transparent"
+                    }`}
+                  >
                     <div className="flex items-center gap-2 px-1">
                       <p className="shrink-0 text-xs text-stone-secondary">
                         {formatSessionDate(session.climbs[0].created_at)}

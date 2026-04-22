@@ -49,7 +49,9 @@ class ClimbObject(BaseModel):
     hold_color: Optional[str] = None
     notes: Optional[str] = None
     canonical_climb_id: Optional[str] = None
+    canonical_tags: list[str] = []
     session_id: Optional[str] = None
+    session_started_at: Optional[str] = None
     created_at: str
 
 

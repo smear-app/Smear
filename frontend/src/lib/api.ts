@@ -54,7 +54,9 @@ export interface ClimbObject {
   hold_color: string | null
   notes: string | null
   canonical_climb_id: string | null
+  canonical_tags: string[]
   session_id: string | null
+  session_started_at: string | null
   created_at: string
 }
 

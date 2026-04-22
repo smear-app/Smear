@@ -1,5 +1,5 @@
-import AppPlaceholderPage from "../components/AppPlaceholderPage"
+import StatsOverviewPage from "../features/stats/pages/StatsOverviewPage"
 
 export default function StatsPage() {
-  return <AppPlaceholderPage title="Stats" subtitle="Coming soon" />
+  return <StatsOverviewPage />
 }
