@@ -50,6 +50,9 @@ def _row_to_climb_object(row: dict) -> ClimbObject:
         canonical_tags=canonical_tags or [],
         session_id=row.get("session_id"),
         session_started_at=session.get("started_at") if isinstance(session, dict) else None,
+        session_insight_label=session.get("insight_label") if isinstance(session, dict) else None,
+        session_insight_reason=session.get("insight_reason") if isinstance(session, dict) else None,
+        session_insight_classifier_version=session.get("insight_classifier_version") if isinstance(session, dict) else None,
         created_at=row["created_at"],
     )
 
@@ -131,7 +134,11 @@ def get_climbs(
     supabase = get_supabase()
     query = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)", count="exact")
+        .select(
+            "*, canonical_climbs(photo_url, canonical_tags), "
+            "sessions(started_at, insight_label, insight_reason, insight_classifier_version)",
+            count="exact",
+        )
         .eq("user_id", user_id)
     )
 
@@ -209,7 +216,10 @@ def get_recent_climbs(user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
+        .select(
+            "*, canonical_climbs(photo_url, canonical_tags), "
+            "sessions(started_at, insight_label, insight_reason, insight_classifier_version)"
+        )
         .eq("user_id", user_id)
         .order("created_at", desc=True)
         .limit(5)
@@ -223,7 +233,10 @@ def get_climb_by_id(climb_id: str, user_id: str = Depends(get_current_user)):
     supabase = get_supabase()
     result = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags), sessions(started_at)")
+        .select(
+            "*, canonical_climbs(photo_url, canonical_tags), "
+            "sessions(started_at, insight_label, insight_reason, insight_classifier_version)"
+        )
         .eq("user_id", user_id)
         .eq("id", climb_id)
         .maybe_single()
@@ -278,7 +291,10 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
     created_id = result.data[0]["id"]
     created = (
         supabase.from_("climbs")
-        .select("*, canonical_climbs(photo_url, canonical_tags)")
+        .select(
+            "*, canonical_climbs(photo_url, canonical_tags), "
+            "sessions(started_at, insight_label, insight_reason, insight_classifier_version)"
+        )
         .eq("id", created_id)
         .maybe_single()
         .execute()
@@ -322,7 +338,15 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     canonical_climb_id = existing.data.get("canonical_climb_id")
     if canonical_climb_id and ("tags" in updates or "send_type" in updates):
         _refresh_canonical_state(supabase, canonical_climb_id)
-    result = supabase.from_("climbs").select("*, canonical_climbs(photo_url, canonical_tags)").eq("id", climb_id).execute()
+    result = (
+        supabase.from_("climbs")
+        .select(
+            "*, canonical_climbs(photo_url, canonical_tags), "
+            "sessions(started_at, insight_label, insight_reason, insight_classifier_version)"
+        )
+        .eq("id", climb_id)
+        .execute()
+    )
     if not result.data:
         raise HTTPException(status_code=404, detail="Climb not found")
     return _row_to_climb_object(result.data[0])

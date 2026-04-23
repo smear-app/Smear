@@ -14,7 +14,6 @@ import SessionInsight from "../components/sessions/SessionInsight"
 import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
 import type { RawStatsClimb } from "../domain/base"
 import { calculateSessionMetrics } from "../domain/calculators"
-import { sessionsMockData } from "../domain/sessions/mockSessionsData"
 import { selectSessionsViewModel } from "../domain/sessions/selectSessionsViewModel"
 import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { SessionDetail } from "../domain/sessions/types"
@@ -28,7 +27,7 @@ const EMPTY_SELECTED_SESSION: SessionDetail = {
   id: "empty-session",
   selectorLabel: "-",
   selectorMeta: "No sessions yet",
-  identity: { label: "-", reason: "-" },
+  identity: { label: "-", reason: "-", displayMode: "insight" },
   summary: [
     { label: "Total Climbs", value: "-" },
     { label: "Duration", value: "-" },
@@ -103,7 +102,6 @@ export default function SessionsStatsPage({
     ? 0
     : Math.min(selectedSessionIndex, realSessionCount - 1)
   const selectedSession = sessionsView.sessions[selectedRealSessionIndex] ?? EMPTY_SELECTED_SESSION
-  const selectedMockSession = sessionsMockData.sessions[selectedRealSessionIndex] ?? sessionsMockData.sessions[0]
   const logbookSessionsById = useMemo(
     () => new Map(logbookSessions.map((session) => [session.id, session])),
     [logbookSessions],
@@ -165,7 +163,7 @@ export default function SessionsStatsPage({
         </div>
 
         <div className="mt-2 px-1">
-          <SessionIdentityLine identity={selectedMockSession.identity} />
+          <SessionIdentityLine identity={selectedSession.identity} />
         </div>
 
         <div className="mt-2">
@@ -181,7 +179,7 @@ export default function SessionsStatsPage({
         </div>
 
         <div className="mt-4">
-          <SessionInsight insight={selectedMockSession.insight} />
+          <SessionInsight insight={selectedSession.insight} />
         </div>
       </main>
 

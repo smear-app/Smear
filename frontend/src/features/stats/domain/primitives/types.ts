@@ -18,6 +18,9 @@ export type EnrichedClimb = {
   canonicalClimbId: string | null
   sessionId: string | null
   sessionStartedAt: string | null
+  sessionInsightLabel: string | null
+  sessionInsightReason: string | null
+  sessionInsightClassifierVersion: string | null
   loggedAt: string
   completedAt: string | null
   gradeLabel: string | null

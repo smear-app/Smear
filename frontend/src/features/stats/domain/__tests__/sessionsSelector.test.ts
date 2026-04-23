@@ -33,6 +33,10 @@ function makeSession(
         { gradeIndex: 6, count: 1, outcomeCounts: { flash: 1, send: 0, attempt: 0 } },
       ],
       outcomeCounts: overrides.outcomeCounts ?? { flash: 2, send: 4, attempt: 4 },
+      attemptsPerSend: overrides.attemptsPerSend ?? 10 / 6,
+      completionRate: overrides.completionRate ?? 0.6,
+      distinctStyleCount: overrides.distinctStyleCount ?? 3,
+      persistedInsight: overrides.persistedInsight ?? null,
       ...overrides,
     },
     comparisonToAllTimeBaseline: null,
@@ -75,6 +79,54 @@ describe("selectSessionsViewModel", () => {
       { label: "Max Grade", value: "V6" },
       { label: "Working Grade", value: "V5.5" },
     ])
+  })
+
+  it("uses persisted session insight when available", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session", "2026-04-01T10:00:00.000Z", {
+          persistedInsight: {
+            label: "Volume session",
+            reason: "+22% climbs",
+            classifierVersion: "session-insight-v1",
+          },
+        }),
+      ],
+    })
+
+    expect(viewModel.sessions[0].identity).toEqual({
+      label: "Volume session",
+      reason: "+22% climbs",
+      displayMode: "insight",
+    })
+    expect(viewModel.sessions[0].insight).toBe("Volume session · +22% climbs")
+  })
+
+  it("does not use persisted session insight when the selected session is too small", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session", "2026-04-01T10:00:00.000Z", {
+          totalClimbs: 1,
+          totalSentClimbs: 1,
+          totalAttemptClimbs: 0,
+          persistedInsight: {
+            label: "Volume session",
+            reason: "+22% climbs",
+            classifierVersion: "session-insight-v1",
+          },
+        }),
+      ],
+    })
+
+    expect(viewModel.sessions[0].identity).toEqual({
+      label: "Not enough activity",
+      reason: "More climbs needed for insight",
+      displayMode: "system",
+      message: "Not enough climbs",
+    })
+    expect(viewModel.sessions[0].insight).toBe("Not enough climbs")
   })
 
   it("handles empty and null session values safely", () => {

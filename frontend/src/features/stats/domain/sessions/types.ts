@@ -39,6 +39,8 @@ export type SessionSummaryStat = {
 export type SessionIdentity = {
   label: string
   reason: string
+  displayMode: "insight" | "system"
+  message?: string
 }
 
 export type SessionDetail = {

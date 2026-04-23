@@ -1,13 +1,13 @@
 import type { SessionGradeDistributionItem, SessionIdentity, SessionOutcomeItem, SessionsViewModel } from "./types"
 
 const TEMPORARY_SESSION_IDENTITIES: Record<string, SessionIdentity> = {
-  "session-1": { label: "Volume session", reason: "+22% climbs" },
-  "session-2": { label: "Projecting session", reason: "-18% send rate" },
-  "session-3": { label: "Hard session", reason: "+0.6 avg grade" },
+  "session-1": { label: "Volume session", reason: "+22% climbs", displayMode: "insight" },
+  "session-2": { label: "Projecting session", reason: "-18% send rate", displayMode: "insight" },
+  "session-3": { label: "Hard session", reason: "+0.6 avg grade", displayMode: "insight" },
 }
 
 function getTemporarySessionIdentity(sessionId: string): SessionIdentity {
-  return TEMPORARY_SESSION_IDENTITIES[sessionId] ?? { label: "Balanced session", reason: "Near average" }
+  return TEMPORARY_SESSION_IDENTITIES[sessionId] ?? { label: "Balanced session", reason: "Near average", displayMode: "insight" }
 }
 
 function toSessionOutcomeItems(counts: Record<SessionOutcomeItem["tone"], number>): SessionOutcomeItem[] {

@@ -57,6 +57,9 @@ export interface ClimbObject {
   canonical_tags: string[]
   session_id: string | null
   session_started_at: string | null
+  session_insight_label?: string | null
+  session_insight_reason?: string | null
+  session_insight_classifier_version?: string | null
   created_at: string
 }
 
@@ -384,6 +387,9 @@ export interface SessionCardObject {
   hardest_grade_value: number | null
   hardest_flash: string | null
   hardest_flash_value: number | null
+  insight_label?: string | null
+  insight_reason?: string | null
+  insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
   created_at: string
@@ -416,6 +422,9 @@ export interface SessionObject {
   hardest_grade_value: number | null
   hardest_flash: string | null
   hardest_flash_value: number | null
+  insight_label?: string | null
+  insight_reason?: string | null
+  insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
   created_at: string
