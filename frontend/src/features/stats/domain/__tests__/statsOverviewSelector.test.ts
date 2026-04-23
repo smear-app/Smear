@@ -225,7 +225,22 @@ describe("stats overview selector", () => {
     }
 
     expect(view.visuals.sessions.bars).toHaveLength(7)
+    expect(view.visuals.sessions.bars.map((bar) => bar.label)).toEqual(["T", "F", "S", "S", "M", "T", "W"])
     expect(view.visuals.sessions.bars.some((bar) => bar.active)).toBe(true)
     expect(view.visuals.sessions.bars.some((bar) => !bar.active && bar.heightPercent === 8)).toBe(true)
+  })
+
+  it("assigns session preview climbs to their calendar day labels", () => {
+    const view = selectStatsOverviewViewModel([climb({ id: "monday-evening", loggedAt: "2026-04-20T18:00:00.000Z" })], {
+      now: NOW,
+    })
+
+    if (view.visuals.sessions.kind !== "dailyBars") {
+      throw new Error("Expected session bars")
+    }
+
+    expect(view.visuals.sessions.bars.map((bar) => bar.label)).toEqual(["T", "F", "S", "S", "M", "T", "W"])
+    expect(view.visuals.sessions.bars[4]).toMatchObject({ label: "M", active: true })
+    expect(view.visuals.sessions.bars[5]).toMatchObject({ label: "T", active: false })
   })
 })

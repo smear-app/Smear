@@ -14,6 +14,7 @@ const ARCHETYPE_MIN_TAGGED_CLIMBS = 6
 const ARCHETYPE_SEPARATION_MARGIN = 8
 const PROGRESSION_SPARKLINE_POINT_COUNT = 6
 const THIRTY_DAY_LABEL = "last 30 days"
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const
 
 type OverviewTile = StatsAreaPlaceholder
 
@@ -163,10 +164,25 @@ function selectSessionsTile(climbs: readonly EnrichedClimb[], now: Date): Overvi
 }
 
 function getDailyWindowBounds(now: Date, daysAgoFromEnd: number): WindowBounds {
-  const end = new Date(now.getTime() - daysAgoFromEnd * DAY_MS)
-  const start = new Date(end.getTime() - DAY_MS)
+  const targetDay = new Date(now)
+  targetDay.setDate(now.getDate() - daysAgoFromEnd)
+  targetDay.setHours(0, 0, 0, 0)
+  const start = targetDay
+  const nextDay = new Date(targetDay)
+  nextDay.setDate(targetDay.getDate() + 1)
+  const end = daysAgoFromEnd === 0 ? now : nextDay
 
   return { start, end }
+}
+
+function filterClimbsInDailyWindow(climbs: readonly EnrichedClimb[], bounds: WindowBounds): EnrichedClimb[] {
+  const startTime = bounds.start.getTime()
+  const endTime = bounds.end.getTime()
+
+  return climbs.filter((climb) => {
+    const loggedAt = new Date(climb.loggedAt).getTime()
+    return Number.isFinite(loggedAt) && loggedAt >= startTime && loggedAt < endTime
+  })
 }
 
 function selectSessionsPreviewBars(climbs: readonly EnrichedClimb[], now: Date): StatsPreviewVisualModel {
@@ -174,7 +190,7 @@ function selectSessionsPreviewBars(climbs: readonly EnrichedClimb[], now: Date):
     getDailyWindowBounds(now, SESSIONS_WINDOW_DAYS - index - 1),
   )
   const dayDurations = dayWindows.map((bounds) => {
-    const dayClimbs = filterClimbsInWindow(climbs, bounds)
+    const dayClimbs = filterClimbsInDailyWindow(climbs, bounds)
     const durationMs = calculateSessionMetrics(dayClimbs).sessions.reduce(
       (sum, session) => sum + (session.session.durationMs ?? 0),
       0,
@@ -191,6 +207,7 @@ function selectSessionsPreviewBars(climbs: readonly EnrichedClimb[], now: Date):
     kind: "dailyBars",
     bars: dayDurations.map((day, index) => ({
       id: `day-${index}`,
+      label: DAY_LABELS[dayWindows[index].start.getDay()],
       active: day.active,
       heightPercent: !day.active
         ? 8

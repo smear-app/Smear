@@ -40,6 +40,7 @@ export type StatsPerformancePreviewVisual = {
 
 export type StatsSessionsPreviewBar = {
   id: string
+  label: string
   heightPercent: number
   active: boolean
 }
