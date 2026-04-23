@@ -66,40 +66,44 @@ export function GymProvider({
 
   // Hydrate gym cache and preferences (Supabase preferred, localStorage fallback)
   useEffect(() => {
-    loadAllGymsIntoCache().then(async () => {
-      let restoredFromSupabase = false
+    void loadAllGymsIntoCache()
+      .catch((error) => {
+        console.error("Failed to load gym cache", error)
+      })
+      .then(async () => {
+        let restoredFromSupabase = false
 
-      if (storageUserId) {
-        const prefs = await loadGymPreferences(storageUserId)
-        if (prefs) {
-          setBookmarkedGymIds(prefs.bookmarkedGymIds)
-          setRecentHistoryGymIds(prefs.recentGymIds)
-          lastSyncedPrefsRef.current = serializeSyncedGymPrefs(prefs.bookmarkedGymIds, prefs.recentGymIds)
-          restoredFromSupabase = true
+        if (storageUserId) {
+          const prefs = await loadGymPreferences(storageUserId)
+          if (prefs) {
+            setBookmarkedGymIds(prefs.bookmarkedGymIds)
+            setRecentHistoryGymIds(prefs.recentGymIds)
+            lastSyncedPrefsRef.current = serializeSyncedGymPrefs(prefs.bookmarkedGymIds, prefs.recentGymIds)
+            restoredFromSupabase = true
+          }
         }
-      }
 
-      if (!restoredFromSupabase) {
-        const stored = readStoredGyms(storageUserId)
-        if (stored) {
-          const initial = buildGymState(stored)
-          setActiveGymId(initial.activeGym?.id ?? null)
-          setBookmarkedGymIds(initial.bookmarkedGymIds)
-          setRecentHistoryGymIds(initial.recentHistoryGymIds)
-          setHiddenGymIds(initial.hiddenGymIds)
-          lastSyncedPrefsRef.current = serializeSyncedGymPrefs(initial.bookmarkedGymIds, initial.recentHistoryGymIds)
+        if (!restoredFromSupabase) {
+          const stored = readStoredGyms(storageUserId)
+          if (stored) {
+            const initial = buildGymState(stored)
+            setActiveGymId(initial.activeGym?.id ?? null)
+            setBookmarkedGymIds(initial.bookmarkedGymIds)
+            setRecentHistoryGymIds(initial.recentHistoryGymIds)
+            setHiddenGymIds(initial.hiddenGymIds)
+            lastSyncedPrefsRef.current = serializeSyncedGymPrefs(initial.bookmarkedGymIds, initial.recentHistoryGymIds)
+          }
+        } else {
+          // Still restore activeGymId and hiddenGymIds from localStorage
+          const stored = readStoredGyms(storageUserId)
+          if (stored) {
+            setActiveGymId(stored.activeGymId ?? null)
+            setHiddenGymIds(stored.hiddenGymIds ?? [])
+          }
         }
-      } else {
-        // Still restore activeGymId and hiddenGymIds from localStorage
-        const stored = readStoredGyms(storageUserId)
-        if (stored) {
-          setActiveGymId(stored.activeGymId ?? null)
-          setHiddenGymIds(stored.hiddenGymIds ?? [])
-        }
-      }
 
-      setIsHydrated(true)
-    })
+        setIsHydrated(true)
+      })
   }, [storageUserId])
 
   // Persist to localStorage immediately

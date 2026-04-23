@@ -32,6 +32,16 @@ class PatchGymPrefsRequest(BaseModel):
     recent_gym_ids: list[str]
 
 
+class AccessRequestCreate(BaseModel):
+    email: str
+    source: Optional[str] = "landing_page"
+
+
+class AccessRequestResponse(BaseModel):
+    email: str
+    status: str
+
+
 # ── Climbs ───────────────────────────────────────────────────────────────────
 
 class ClimbObject(BaseModel):
