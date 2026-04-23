@@ -246,10 +246,10 @@ describe("selectProgressionViewModel", () => {
     })
 
     expect(viewModel.metrics.map((metric) => [metric.label, metric.value, metric.description])).toEqual([
-      ["Highest Grade", "-", "highest this period"],
-      ["Working Range", "-", "-"],
-      ["Avg Climbs / Week", "0.0", "visible chart window"],
-      ["Sessions / Week", "0.0", "visible chart window"],
+      ["Highest Grade", "-", ""],
+      ["Working Range", "-", ""],
+      ["Avg Climbs / Week", "0.0", ""],
+      ["Sessions / Week", "0.0", ""],
     ])
   })
 })

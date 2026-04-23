@@ -181,22 +181,22 @@ function toTrendMetrics(trendSessions: readonly SessionsMetrics["sessions"][numb
     {
       label: "Avg Climbs / Session",
       value: formatAverage(averageClimbs),
-      description: "recent session window",
+      description: "",
     },
     {
       label: "Working Grade",
       value: formatGrade(averageWorkingGrade),
-      description: "recent valid sessions",
+      description: "",
     },
     {
       label: "Best Session Volume",
       value: bestSessionVolume === null ? "-" : `${bestSessionVolume} climbs`,
-      description: "highest recent volume",
+      description: "",
     },
     {
       label: "Best Session Grade",
       value: formatGrade(bestSessionGrade),
-      description: "strongest recent session",
+      description: "",
     },
   ]
 }

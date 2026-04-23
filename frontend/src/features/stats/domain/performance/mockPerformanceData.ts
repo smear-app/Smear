@@ -23,10 +23,10 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     ],
     outcomeTotalCount: 34,
     metrics: [
-      { label: "Flash Rate", value: "28%", description: "of logged attempts this period" },
-      { label: "Avg Attempts / Send", value: "2.3", description: "before successful send" },
-      { label: "Hardest Send", value: "V6", description: "highest in last 10 weeks" },
-      { label: "Hardest Flash", value: "V5", description: "best first-go send this period" },
+      { label: "Flash Rate", value: "28%", description: "" },
+      { label: "Avg Attempts / Send", value: "2.3", description: "" },
+      { label: "Hardest Send", value: "V6", description: "" },
+      { label: "Hardest Flash", value: "V5", description: "" },
     ],
     gradeBands: [
       { label: "V3", sendRate: 78, sendRateLabel: "78% send" },
@@ -53,10 +53,10 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     ],
     outcomeTotalCount: 71,
     metrics: [
-      { label: "Flash Rate", value: "25%", description: "of logged attempts this period" },
-      { label: "Avg Attempts / Send", value: "2.6", description: "before successful send" },
-      { label: "Hardest Send", value: "V7", description: "highest in last 6 months" },
-      { label: "Hardest Flash", value: "V5", description: "best first-go send this period" },
+      { label: "Flash Rate", value: "25%", description: "" },
+      { label: "Avg Attempts / Send", value: "2.6", description: "" },
+      { label: "Hardest Send", value: "V7", description: "" },
+      { label: "Hardest Flash", value: "V5", description: "" },
     ],
     gradeBands: [
       { label: "V3", sendRate: 81, sendRateLabel: "81% send" },
@@ -83,10 +83,10 @@ export const performanceMockData: Record<PerformanceRange, PerformanceViewModel>
     ],
     outcomeTotalCount: 161,
     metrics: [
-      { label: "Flash Rate", value: "22%", description: "of logged attempts overall" },
-      { label: "Avg Attempts / Send", value: "2.8", description: "before successful send" },
-      { label: "Hardest Send", value: "V7", description: "highest across full history" },
-      { label: "Hardest Flash", value: "V6", description: "best first-go send overall" },
+      { label: "Flash Rate", value: "22%", description: "" },
+      { label: "Avg Attempts / Send", value: "2.8", description: "" },
+      { label: "Hardest Send", value: "V7", description: "" },
+      { label: "Hardest Flash", value: "V6", description: "" },
     ],
     gradeBands: [
       { label: "V3", sendRate: 84, sendRateLabel: "84% send" },

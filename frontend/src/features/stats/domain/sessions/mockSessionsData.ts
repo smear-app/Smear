@@ -78,10 +78,10 @@ export const sessionsMockData: SessionsViewModel = {
     { sessionId: "session-1", label: "Apr 10", tickLabel: "Apr 10", climbs: 20, avgGrade: 4.9 },
   ],
   trendMetrics: [
-    { label: "Avg Climbs / Session", value: "14", description: "across recent sessions" },
-    { label: "Working Grade", value: "V4.6", description: "working session intensity" },
-    { label: "Best Session Volume", value: "22 climbs", description: "most climbs in one session" },
-    { label: "Best Session Grade", value: "V6 working", description: "strongest session working grade" },
+    { label: "Avg Climbs / Session", value: "14", description: "" },
+    { label: "Working Grade", value: "V4.6", description: "" },
+    { label: "Best Session Volume", value: "22 climbs", description: "" },
+    { label: "Best Session Grade", value: "V6 working", description: "" },
   ],
   sessions: [
     {

@@ -215,10 +215,10 @@ describe("selectSessionsViewModel", () => {
       "session-6",
     ])
     expect(viewModel.trendMetrics).toEqual([
-      { label: "Avg Climbs / Session", value: "6.0", description: "recent session window" },
-      { label: "Working Grade", value: "V5", description: "recent valid sessions" },
-      { label: "Best Session Volume", value: "10 climbs", description: "highest recent volume" },
-      { label: "Best Session Grade", value: "V8", description: "strongest recent session" },
+      { label: "Avg Climbs / Session", value: "6.0", description: "" },
+      { label: "Working Grade", value: "V5", description: "" },
+      { label: "Best Session Volume", value: "10 climbs", description: "" },
+      { label: "Best Session Grade", value: "V8", description: "" },
     ])
   })
 
@@ -232,10 +232,10 @@ describe("selectSessionsViewModel", () => {
     })
 
     expect(emptyViewModel.trendMetrics).toEqual([
-      { label: "Avg Climbs / Session", value: "-", description: "recent session window" },
-      { label: "Working Grade", value: "None", description: "recent valid sessions" },
-      { label: "Best Session Volume", value: "-", description: "highest recent volume" },
-      { label: "Best Session Grade", value: "None", description: "strongest recent session" },
+      { label: "Avg Climbs / Session", value: "-", description: "" },
+      { label: "Working Grade", value: "None", description: "" },
+      { label: "Best Session Volume", value: "-", description: "" },
+      { label: "Best Session Grade", value: "None", description: "" },
     ])
     expect(noGradeViewModel.trendMetrics.find((metric) => metric.label === "Working Grade")?.value).toBe("None")
   })

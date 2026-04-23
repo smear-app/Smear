@@ -55,7 +55,7 @@ function formatAverage(value: number): string {
 
 function formatGradeDelta(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "-"
+    return ""
   }
 
   const sign = value >= 0 ? "+" : ""
@@ -213,7 +213,7 @@ function selectSupportingMetrics(
     {
       label: "Highest Grade",
       value: formatGradeLabel(highestSentGrade),
-      description: "highest this period",
+      description: "",
     },
     {
       label: "Working Range",
@@ -223,12 +223,12 @@ function selectSupportingMetrics(
     {
       label: "Avg Climbs / Week",
       value: formatAverage(safeDivide(totalClimbs, visibleBucketCount)),
-      description: "visible chart window",
+      description: "",
     },
     {
       label: "Sessions / Week",
       value: formatAverage(safeDivide(totalSessions, visibleBucketCount)),
-      description: "visible chart window",
+      description: "",
     },
   ]
 }
