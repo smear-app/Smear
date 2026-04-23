@@ -230,9 +230,19 @@ body.landing-body {
 
   .landing-hero__actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.9rem;
+    flex-wrap: nowrap;
+    gap: 0.75rem;
     min-width: 0;
+    width: 100%;
+    max-width: 36rem;
+  }
+
+  .landing-hero__actions .landing-button {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 0.78rem 1.1rem;
+    font-size: 0.76rem;
+    white-space: nowrap;
   }
 
 .landing-hero__supporting-row {
@@ -968,6 +978,10 @@ body.landing-body {
     .landing-hero__actions,
     .landing-hero__loading {
       width: 100%;
+    }
+
+    .landing-hero__actions {
+      flex-wrap: wrap;
     }
 
     .landing-hero__loading {
