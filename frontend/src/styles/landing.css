@@ -156,16 +156,14 @@ body.landing-body {
   }
 
   .landing-solution-grid {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(20rem, 0.95fr);
+    align-items: start;
     gap: 2.25rem;
   }
 
   .landing-solution-copy {
-    flex: 1 1 0;
     min-width: 0;
-    max-width: 33rem;
   }
 
   .landing-eyebrow {
@@ -555,9 +553,11 @@ body.landing-body {
   }
 
   .landing-analytics-panel {
-    flex: 0 1 30rem;
-    width: min(100%, 30rem);
-    min-width: 18rem;
+    width: 100%;
+    min-width: 0;
+    max-width: 30rem;
+    align-self: end;
+    justify-self: end;
     padding: 1.5rem;
     border-color: rgba(255, 245, 230, 0.1);
     background: rgba(255, 245, 230, 0.02);
@@ -903,6 +903,19 @@ body.landing-body {
   }
 }
 
+@media (max-width: 900px) {
+  .landing-solution-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .landing-analytics-panel {
+    align-self: stretch;
+    max-width: none;
+    justify-self: stretch;
+  }
+}
+
 @media (max-width: 768px) {
   .landing-nav__links {
     gap: 1rem;
@@ -959,19 +972,6 @@ body.landing-body {
 
     .landing-hero__loading {
       max-width: none;
-    }
-
-    .landing-solution-grid {
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .landing-solution-copy,
-    .landing-analytics-panel {
-      flex: none;
-      width: 100%;
-      max-width: none;
-      min-width: 0;
     }
 
     .landing-analytics-panel__chart {

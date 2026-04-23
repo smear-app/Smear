@@ -20,6 +20,7 @@ from app.routers.canonical_climbs import router as canonical_climbs_router
 from app.routers.admin import router as admin_router
 from app.routers.sessions import router as sessions_router
 from app.routers.social import router as social_router
+from app.routers.access_requests import router as access_requests_router
 
 
 def get_allowed_origins() -> list[str]:
@@ -52,6 +53,7 @@ app.include_router(canonical_climbs_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
+app.include_router(access_requests_router, prefix="/api/v1")
 app.include_router(gyms_router, prefix="/api/v1")
 
 

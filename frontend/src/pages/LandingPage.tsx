@@ -1,6 +1,7 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { postAccessRequest } from "../lib/api"
 import "../styles/landing.css"
 
 type RevealDirection = "up" | "left" | "right"
@@ -522,10 +523,10 @@ function AccessSection() {
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
   const { session } = useAuth()
-  const accessInbox = "smear.app@gmail.com"
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!email.includes("@")) {
@@ -533,12 +534,21 @@ function AccessSection() {
       return
     }
 
-    const subject = encodeURIComponent("Smear access request")
-    const body = encodeURIComponent(`Please add this email to the Smear access list:\n\n${email.trim()}`)
-
-    window.location.href = `mailto:${accessInbox}?subject=${subject}&body=${body}`
-    setSubmitted(true)
     setError("")
+    setSubmitting(true)
+
+    try {
+      await postAccessRequest({ email, source: "landing_page" })
+      setSubmitted(true)
+    } catch (requestError) {
+      const message =
+        requestError instanceof Error && requestError.message.includes("400")
+          ? "Enter a valid email."
+          : "Something went wrong. Please try again."
+      setError(message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -571,8 +581,8 @@ function AccessSection() {
                 placeholder="your@email.com"
                 className="landing-access__input"
               />
-              <button type="submit" className="landing-button landing-button--solid">
-                Request access
+              <button type="submit" className="landing-button landing-button--solid" disabled={submitting}>
+                {submitting ? "Submitting..." : "Request access"}
               </button>
             </form>
             {error ? <p className="landing-access__error">{error}</p> : null}
