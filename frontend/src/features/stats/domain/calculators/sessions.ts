@@ -38,7 +38,7 @@ export type SessionMetrics = {
   averageSentGrade: number | null
   medianSentGrade: number | null
   workingGrade: number | null
-  gradeHistogram: Array<Pick<GradeHistogramBucket, "gradeIndex" | "count">>
+  gradeHistogram: Array<Pick<GradeHistogramBucket, "gradeIndex" | "count"> & { outcomeCounts: OutcomeCounts }>
   outcomeCounts: OutcomeCounts
 }
 
@@ -110,7 +110,11 @@ function calculateSingleSessionMetrics(session: EnrichedSession): SessionMetrics
     averageSentGrade: getAverageGrade(sentClimbs),
     medianSentGrade: getMedianGrade(sentClimbs),
     workingGrade: calculateTopFortyPercentMedianWorkingGrade(sentClimbs),
-    gradeHistogram: buildGradeHistogram(climbs).map(({ gradeIndex, count }) => ({ gradeIndex, count })),
+    gradeHistogram: buildGradeHistogram(climbs).map(({ gradeIndex, climbs: bucketClimbs, count }) => ({
+      gradeIndex,
+      count,
+      outcomeCounts: buildOutcomeCounts(bucketClimbs),
+    })),
     outcomeCounts: buildOutcomeCounts(climbs),
   }
 }

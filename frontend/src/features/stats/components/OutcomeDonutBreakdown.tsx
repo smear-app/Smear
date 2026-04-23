@@ -1,4 +1,6 @@
-export type OutcomeDonutTone = "flash" | "send" | "unfinished"
+import { OUTCOME_TONE_STYLES, type OutcomeTone } from "./outcomeToneStyles"
+
+export type OutcomeDonutTone = OutcomeTone
 
 export type OutcomeDonutBreakdownItem = {
   label: string
@@ -13,12 +15,6 @@ type OutcomeDonutBreakdownProps = {
   totalCount: number
   centerLabel: string
   ariaLabel: string
-}
-
-const TONE_STYLES: Record<OutcomeDonutTone, string> = {
-  flash: "var(--ember)",
-  send: "color-mix(in srgb, var(--ember) 76%, white 24%)",
-  unfinished: "color-mix(in srgb, var(--stone-border) 90%, transparent)",
 }
 
 export default function OutcomeDonutBreakdown({ items, totalCount, centerLabel, ariaLabel }: OutcomeDonutBreakdownProps) {
@@ -54,7 +50,7 @@ export default function OutcomeDonutBreakdown({ items, totalCount, centerLabel, 
               cy="56"
               r={radius}
               fill="none"
-              stroke={TONE_STYLES[item.tone]}
+              stroke={OUTCOME_TONE_STYLES[item.tone]}
               strokeWidth="12"
               strokeLinecap="butt"
               strokeDasharray={`${item.dash} ${circumference - item.dash}`}
@@ -76,7 +72,7 @@ export default function OutcomeDonutBreakdown({ items, totalCount, centerLabel, 
               <span
                 aria-hidden="true"
                 className="h-2.5 w-2.5 rounded-[3px]"
-                style={{ backgroundColor: TONE_STYLES[item.tone] }}
+                style={{ backgroundColor: OUTCOME_TONE_STYLES[item.tone] }}
               />
               <span className="truncate text-sm font-medium text-stone-text">{item.label}</span>
             </div>

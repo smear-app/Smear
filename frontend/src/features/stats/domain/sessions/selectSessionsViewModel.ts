@@ -98,11 +98,23 @@ function toGradeDistribution(session: SessionMetrics): SessionGradeDistributionI
 
   return [...session.gradeHistogram]
     .sort((left, right) => right.gradeIndex - left.gradeIndex)
-    .map((bucket) => ({
-      label: formatGrade(bucket.gradeIndex),
-      count: bucket.count,
-      widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
-    }))
+    .map((bucket) => {
+      const outcomeCounts = bucket.outcomeCounts ?? { flash: 0, send: 0, attempt: bucket.count }
+
+      return {
+        label: formatGrade(bucket.gradeIndex),
+        count: bucket.count,
+        widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
+        segments: ([
+          { tone: "flash", count: outcomeCounts.flash },
+          { tone: "send", count: outcomeCounts.send },
+          { tone: "unfinished", count: outcomeCounts.attempt },
+        ] satisfies Array<Pick<SessionGradeDistributionItem["segments"][number], "tone" | "count">>).map((segment) => ({
+          ...segment,
+          percentage: safePercentage(segment.count, bucket.count),
+        })),
+      }
+    })
 }
 
 function toOutcomeItems(session: SessionMetrics): SessionOutcomeItem[] {
