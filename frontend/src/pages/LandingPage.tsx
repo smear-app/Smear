@@ -1,6 +1,7 @@
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import "../styles/landing.css"
 
 type RevealDirection = "up" | "left" | "right"
 
@@ -131,25 +132,21 @@ function ArchetypeRiveSlot() {
   const averageValues = [0.53, 0.51, 0.55, 0.5, 0.52]
   const rings = [0.25, 0.5, 0.75, 1]
 
-  const chart = useMemo(() => {
-    const centerX = 170
-    const centerY = 140
-    const radius = 95
-    const angleOf = (index: number) => -Math.PI / 2 + (index * 2 * Math.PI) / dimensions.length
-    const pointOf = (value: number, index: number) => ({
-      x: centerX + radius * value * Math.cos(angleOf(index)),
-      y: centerY + radius * value * Math.sin(angleOf(index)),
-    })
-    const polygon = (values: number[]) =>
-      values
-        .map((value, index) => {
-          const point = pointOf(value, index)
-          return `${point.x.toFixed(2)},${point.y.toFixed(2)}`
-        })
-        .join(" ")
-
-    return { centerX, centerY, pointOf, polygon }
-  }, [dimensions.length])
+  const centerX = 170
+  const centerY = 140
+  const radius = 95
+  const angleOf = (index: number) => -Math.PI / 2 + (index * 2 * Math.PI) / dimensions.length
+  const pointOf = (value: number, index: number) => ({
+    x: centerX + radius * value * Math.cos(angleOf(index)),
+    y: centerY + radius * value * Math.sin(angleOf(index)),
+  })
+  const polygon = (values: number[]) =>
+    values
+      .map((value, index) => {
+        const point = pointOf(value, index)
+        return `${point.x.toFixed(2)},${point.y.toFixed(2)}`
+      })
+      .join(" ")
 
   return (
     <div
@@ -161,19 +158,19 @@ function ArchetypeRiveSlot() {
         {rings.map((ring) => (
           <polygon
             key={ring}
-            points={chart.polygon(dimensions.map(() => ring))}
+            points={polygon(dimensions.map(() => ring))}
             className="landing-radar-chart__ring"
           />
         ))}
         {dimensions.map((dimension, index) => {
-          const outer = chart.pointOf(1, index)
-          const label = chart.pointOf(1.28, index)
+          const outer = pointOf(1, index)
+          const label = pointOf(1.28, index)
           const labelShift = index === 2 ? 6 : index === 3 ? -6 : 0
           return (
             <g key={dimension}>
               <line
-                x1={chart.centerX}
-                y1={chart.centerY}
+                x1={centerX}
+                y1={centerY}
                 x2={outer.x}
                 y2={outer.y}
                 className="landing-radar-chart__axis"
@@ -189,10 +186,10 @@ function ArchetypeRiveSlot() {
             </g>
           )
         })}
-        <polygon points={chart.polygon(averageValues)} className="landing-radar-chart__average" />
-        <polygon points={chart.polygon(userValues)} className="landing-radar-chart__user" />
+        <polygon points={polygon(averageValues)} className="landing-radar-chart__average" />
+        <polygon points={polygon(userValues)} className="landing-radar-chart__user" />
         {userValues.map((value, index) => {
-          const point = chart.pointOf(value, index)
+          const point = pointOf(value, index)
           return (
             <circle
               key={dimensions[index]}
@@ -255,14 +252,23 @@ function HeroSection() {
   return (
     <section className="landing-hero">
       <div className="landing-shell landing-hero__grid">
+        <div className="landing-hero__lead-in">
+          <Reveal direction="left">
+            <div className="landing-eyebrow">Indoor climbing progression</div>
+          </Reveal>
+          <Reveal direction="left" delay={120} className="landing-hero__signal">
+            <span>5 dimensions</span>
+            <i aria-hidden="true" />
+            <span>1 readable shape</span>
+          </Reveal>
+        </div>
+
         <div className="landing-hero__top-row">
           <div className="landing-hero__copy-column">
-            <Reveal direction="left">
-              <div className="landing-eyebrow">Indoor climbing progression</div>
-            </Reveal>
             <div className="landing-hero__title-wrap">
               <h1 className="landing-hero__title">
-                <span>Know the climber you&apos;re becoming.</span>
+                <span>Know the climber</span>
+              <span className="is-muted">you&apos;re becoming.</span>
               </h1>
             </div>
             <Reveal direction="left" delay={220}>
@@ -280,18 +286,20 @@ function HeroSection() {
           </div>
         </div>
 
-        <Reveal direction="left" delay={340} className="landing-hero__actions">
-          <a href="#access" className="landing-button landing-button--solid">
-            Request early access
-          </a>
-          <a href="#how-it-works" className="landing-button landing-button--ghost">
-            See how it works
-          </a>
-        </Reveal>
+        <div className="landing-hero__supporting-row">
+          <Reveal direction="left" delay={340} className="landing-hero__actions">
+            <a href="#access" className="landing-button landing-button--solid">
+              Request early access
+            </a>
+            <a href="#how-it-works" className="landing-button landing-button--ghost">
+              See how it works
+            </a>
+          </Reveal>
 
-        <Reveal direction="left" delay={460} className="landing-hero__loading">
-          <LoadingRiveSlot />
-        </Reveal>
+          <Reveal direction="left" delay={460} className="landing-hero__loading">
+            <LoadingRiveSlot />
+          </Reveal>
+        </div>
       </div>
     </section>
   )
@@ -321,6 +329,7 @@ function ProblemSection() {
       <div className="landing-shell">
         <Reveal direction="left">
           <div className="landing-eyebrow">The problem</div>
+          <br></br>
         </Reveal>
         <div className="landing-problem-grid">
           {problems.map((problem, index) => (
@@ -351,8 +360,9 @@ function SolutionSection() {
             <div className="landing-eyebrow">The solution</div>
           </Reveal>
           <Reveal direction="left" delay={100}>
-            <h2 className="landing-section-title">
-              You are not one grade.
+            <h2 className="landing-section-title landing-section-title--light">
+              You are not
+              <span>one grade.</span>
             </h2>
           </Reveal>
           <Reveal direction="left" delay={220}>
@@ -435,7 +445,8 @@ function FeaturesSection() {
             <Reveal direction="left">
               <div className="landing-eyebrow">Features</div>
               <h2 className="landing-section-title">
-                Structure over feeling.
+                Structure over
+                <span>feeling.</span>
               </h2>
             </Reveal>
           </div>
@@ -489,6 +500,7 @@ function HowItWorksSection() {
         <Reveal direction="left">
           <div className="landing-eyebrow">How it works</div>
         </Reveal>
+        <div><br></br></div>
         <div className="landing-step-grid">
           <div className="landing-step-grid__line" aria-hidden="true" />
           {steps.map((step, index) => (
@@ -511,6 +523,7 @@ function AccessSection() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
   const { session } = useAuth()
+  const accessInbox = "smear.app@gmail.com"
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -520,6 +533,10 @@ function AccessSection() {
       return
     }
 
+    const subject = encodeURIComponent("Smear access request")
+    const body = encodeURIComponent(`Please add this email to the Smear access list:\n\n${email.trim()}`)
+
+    window.location.href = `mailto:${accessInbox}?subject=${subject}&body=${body}`
     setSubmitted(true)
     setError("")
   }
@@ -536,10 +553,12 @@ function AccessSection() {
             <span>made legible.</span>
           </h2>
         </Reveal>
+        <div><br></br></div>
         <Reveal delay={200}>
           <p className="landing-section-lead landing-section-lead--centered">
             Smear is for indoor climbers who want a sharper picture of progress than a single grade can offer.
           </p>
+          <br></br>
         </Reveal>
 
         {!submitted ? (
