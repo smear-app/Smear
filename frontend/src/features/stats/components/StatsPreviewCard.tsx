@@ -226,18 +226,27 @@ function SessionsPreviewBars({
   visual: Extract<StatsPreviewVisualModel, { kind: "dailyBars" }>
   tone: StatsPreviewTone
 }) {
+  const dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
+
   return (
-    <div aria-hidden="true" className="grid h-full w-full grid-cols-7 items-end gap-2.5 px-1.5 py-3">
-      {visual.bars.map((bar) => (
-        <span
-          key={bar.id}
-          className={`min-h-[7px] rounded-full ${
-            bar.active
-              ? `${TONE_STYLES[tone].activePreview} shadow-[0_0_0_1px_color-mix(in_srgb,var(--stone-text)_8%,transparent)]`
-              : "border border-stone-border bg-stone-alt/85 dark:border-white/15 dark:bg-white/10"
-          }`}
-          style={{ height: `${bar.heightPercent}%` }}
-        />
+    <div aria-hidden="true" className="grid h-full w-full grid-cols-7 gap-2 px-1.5 pb-4 pt-3">
+      {visual.bars.map((bar, index) => (
+        <span key={bar.id} className="flex min-w-0 flex-col items-center justify-end gap-1.5">
+          <span className="relative flex h-full w-full items-end justify-center">
+            <span className="absolute bottom-0 left-0 right-0 h-px bg-stone-border/45 dark:bg-white/10" />
+            <span
+              className={`relative z-10 min-h-[7px] w-full rounded-full ${
+                bar.active
+                  ? `${TONE_STYLES[tone].activePreview} shadow-[0_0_0_1px_color-mix(in_srgb,var(--stone-text)_8%,transparent)]`
+                  : "border border-stone-border bg-stone-alt/85 dark:border-white/15 dark:bg-white/10"
+              }`}
+              style={{ height: `${bar.heightPercent}%` }}
+            />
+          </span>
+          <span className="text-[9px] font-medium leading-none text-stone-secondary/75 dark:text-stone-muted">
+            {dayLabels[index]}
+          </span>
+        </span>
       ))}
     </div>
   )
