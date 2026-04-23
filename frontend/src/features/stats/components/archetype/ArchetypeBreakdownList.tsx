@@ -1,4 +1,5 @@
 import type { ArchetypeCategoryOutcomeBreakdownItem, ArchetypeOutcomeTone } from "../../domain/archetype/types"
+import { OUTCOME_TONE_STYLES } from "../outcomeToneStyles"
 import ProgressionSurface from "../progression/ProgressionSurface"
 
 type ArchetypeBreakdownListProps = {
@@ -6,9 +7,9 @@ type ArchetypeBreakdownListProps = {
 }
 
 const TONE_STYLES: Record<ArchetypeOutcomeTone, string> = {
-  flash: "var(--ember)",
-  send: "color-mix(in srgb, var(--ember) 76%, white 24%)",
-  attempted: "color-mix(in srgb, var(--stone-secondary) 58%, var(--stone-border) 42%)",
+  flash: OUTCOME_TONE_STYLES.flash,
+  send: OUTCOME_TONE_STYLES.send,
+  attempted: OUTCOME_TONE_STYLES.unfinished,
 }
 
 const LEGEND_ITEMS: Array<{ tone: ArchetypeOutcomeTone; label: string }> = [
