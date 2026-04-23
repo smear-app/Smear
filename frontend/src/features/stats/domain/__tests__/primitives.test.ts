@@ -9,6 +9,7 @@ import {
   filterCompletedClimbs,
   filterFlashClimbs,
   filterSentClimbs,
+  formatVGrade,
   getAverageGrade,
   getHighestGrade,
   getMedianGrade,
@@ -17,6 +18,12 @@ import {
 import { climb, richStatsClimbs, tag } from "./fixtures"
 
 describe("stats primitives", () => {
+  it("formats benchmark grades with VB instead of V-1", () => {
+    expect(formatVGrade(-1)).toBe("VB")
+    expect(formatVGrade(-0.5)).toBe("V-0.5")
+    expect(formatVGrade(0)).toBe("V0")
+  })
+
   it("filters sent, flash, attempt, and completed climbs consistently", () => {
     expect(filterSentClimbs(richStatsClimbs).map((item) => item.outcome)).toEqual(["flash", "send", "send", "send"])
     expect(filterFlashClimbs(richStatsClimbs)).toHaveLength(1)

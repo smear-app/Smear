@@ -6,6 +6,10 @@ export function formatVGrade(grade: number | null, nullLabel = "-"): string {
     return nullLabel
   }
 
+  if (grade === -1) {
+    return "VB"
+  }
+
   if (Number.isInteger(grade)) {
     return `V${grade}`
   }
