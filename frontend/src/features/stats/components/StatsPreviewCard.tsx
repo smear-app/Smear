@@ -22,12 +22,6 @@ const TONE_STYLES: Record<
     activePreview: "bg-ember",
     mutedPreview: "bg-ember/15",
   },
-  lichen: {
-    accent: "text-lichen",
-    border: "border-lichen/20",
-    activePreview: "bg-lichen",
-    mutedPreview: "bg-lichen/15",
-  },
   gold: {
     accent: "text-ember",
     border: "border-ember/20",
@@ -154,28 +148,16 @@ function ArchetypePreviewRadar({ visual }: { visual: Extract<StatsPreviewVisualM
         points={toPolygonPoints(gridPoints)}
         fill="none"
         stroke="var(--stone-border)"
-        strokeOpacity="0.78"
-        strokeWidth="1"
+        strokeOpacity="0.58"
+        strokeWidth="1.15"
       />
-      {gridPoints.map((point, index) => (
-        <line
-          key={visual.axes[index].id}
-          x1="50"
-          y1="40"
-          x2={point.x}
-          y2={point.y}
-          stroke="var(--stone-border)"
-          strokeOpacity="0.45"
-          strokeWidth="1"
-        />
-      ))}
       <polygon
         points={toPolygonPoints(valuePoints)}
-        fill={active || balanced ? "var(--lichen)" : "var(--stone-border)"}
-        fillOpacity={active ? 0.24 : balanced ? 0.16 : 0.08}
-        stroke={active || balanced ? "var(--lichen)" : "var(--stone-border)"}
-        strokeOpacity={active ? 0.92 : balanced ? 0.68 : 0.42}
-        strokeWidth={active ? 2.25 : 1.75}
+        fill={active || balanced ? "var(--ember)" : "var(--stone-border)"}
+        fillOpacity={active ? 0.32 : balanced ? 0.22 : 0.08}
+        stroke={active || balanced ? "var(--ember)" : "var(--stone-border)"}
+        strokeOpacity={active ? 0.96 : balanced ? 0.76 : 0.42}
+        strokeWidth={active ? 2.8 : 2.1}
         strokeLinejoin="round"
       />
     </svg>

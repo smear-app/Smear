@@ -1,6 +1,6 @@
 export type StatsAreaId = "progression" | "archetype" | "performance" | "sessions"
 
-export type StatsPreviewTone = "ember" | "lichen" | "slate" | "gold"
+export type StatsPreviewTone = "ember" | "slate" | "gold"
 
 export type StatsPreviewTrendPoint = {
   id: string

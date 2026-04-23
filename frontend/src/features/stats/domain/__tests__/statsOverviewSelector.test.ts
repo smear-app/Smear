@@ -210,6 +210,48 @@ describe("stats overview selector", () => {
     expect(view.visuals.archetype).toMatchObject({ kind: "radar", state: "active" })
   })
 
+  it("renders the archetype preview shape from the same dimension as the selected label", () => {
+    const crimpClimbs = Array.from({ length: 6 }, (_, index) =>
+      climb({
+        id: `crimp-${index}`,
+        outcome: index < 4 ? "send" : "attempt",
+        gradeIndex: 5,
+        loggedAt: daysAgo(index + 1),
+        canonicalTags: canonicalTags({ holdType: [tag("crimp", "holdType")] }),
+      }),
+    )
+    const view = selectStatsOverviewViewModel(
+      [
+        ...crimpClimbs,
+        climb({
+          id: "sloper-one",
+          outcome: "send",
+          gradeIndex: 5,
+          loggedAt: daysAgo(8),
+          canonicalTags: canonicalTags({ holdType: [tag("sloper", "holdType")] }),
+        }),
+      ],
+      { now: NOW },
+    )
+
+    expect(view.tiles.archetype).toMatchObject({
+      descriptor: "Precise / Crimp",
+      secondaryText: "precise finger-driven climbing lately",
+    })
+    if (view.visuals.archetype.kind !== "radar") {
+      throw new Error("Expected archetype radar")
+    }
+    expect(view.visuals.archetype.axes.map((axis) => axis.label)).toEqual([
+      "Crimp",
+      "Sloper",
+      "Pinch",
+      "Pocket",
+      "Jug",
+      "Volume",
+      "Undercling",
+    ])
+  })
+
   it("builds seven session bars from the rolling seven-day window", () => {
     const view = selectStatsOverviewViewModel(
       [

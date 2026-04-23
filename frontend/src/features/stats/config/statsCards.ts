@@ -17,7 +17,7 @@ export const statsCards: StatsCardConfig[] = [
     path: "/stats/archetype",
     meaning: "Climbing style and profile identity",
     detailDescription: "Style identity, preferred terrain, and movement profile breakdowns will live here.",
-    tone: "lichen",
+    tone: "ember",
     ...statsPreviewPlaceholders.archetype,
   },
   {

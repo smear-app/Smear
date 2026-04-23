@@ -1,6 +1,8 @@
 import { calculateArchetypeMetrics, calculatePerformanceMetrics, calculateProgressionMetrics, calculateSessionMetrics } from "../calculators"
 import { scaleArchetypePerformanceRadarValues, scaleArchetypeVolumeRadarValues } from "../archetype/radarScaling"
+import { selectArchetypeViewModel } from "../archetype/selectArchetypeViewModel"
 import type { ArchetypeGroupKey, ArchetypeTagMetric } from "../calculators/archetype"
+import type { ArchetypeSegment } from "../archetype/types"
 import type { EnrichedClimb } from "../primitives"
 import type { StatsAreaId, StatsAreaPlaceholder, StatsPreviewVisualModel } from "../types"
 
@@ -68,6 +70,14 @@ const GROUP_LABELS: Record<ArchetypeGroupKey, string> = {
   terrain: "Wall",
   mechanics: "Mechanic",
 }
+const ARCHETYPE_SEGMENTS_BY_GROUP = {
+  holdType: "holds",
+  movement: "movement",
+  terrain: "terrain",
+  mechanics: "mechanics",
+} satisfies Record<ArchetypeGroupKey, ArchetypeSegment>
+const ARCHETYPE_PREVIEW_BALANCED_GRADE_DELTA = 0.5
+const ARCHETYPE_PREVIEW_BALANCED_RADIUS = 84
 
 const STYLE_DESCRIPTORS: Partial<Record<string, string>> = {
   slab: "Technical",
@@ -407,14 +417,18 @@ function toArchetypeCandidates(metricsByGroup: ReturnType<typeof calculateArchet
 }
 
 function selectArchetypeRadarVisual(
-  candidates: readonly ArchetypeCandidate[],
+  metricsByGroup: ReturnType<typeof calculateArchetypeMetrics>,
+  sourceGroup: ArchetypeGroupKey | null,
   state: "empty" | "balanced" | "active",
 ): StatsPreviewVisualModel {
+  const sourceSegment = sourceGroup ? ARCHETYPE_SEGMENTS_BY_GROUP[sourceGroup] : "terrain"
+  const sourceViewModel = selectArchetypeViewModel(metricsByGroup, sourceSegment)
+
   if (state === "empty") {
     return {
       kind: "radar",
       state,
-      axes: Object.entries(GROUP_LABELS).map(([id, label]) => ({ id, label, value: 0 })),
+      axes: sourceViewModel.radarAxes.map((axis) => ({ id: axis.label, label: axis.label, value: 0 })),
     }
   }
 
@@ -422,21 +436,30 @@ function selectArchetypeRadarVisual(
     return {
       kind: "radar",
       state,
-      axes: Object.entries(GROUP_LABELS).map(([id, label]) => ({ id, label, value: 84 })),
+      axes: sourceViewModel.radarAxes.map((axis) => ({
+        id: axis.label,
+        label: axis.label,
+        value: ARCHETYPE_PREVIEW_BALANCED_RADIUS,
+      })),
     }
   }
+
+  const validPerformanceValues = sourceViewModel.categories.flatMap((category) =>
+    category.workingGradeValue === null ? [] : [category.workingGradeValue],
+  )
+  const performanceGradeDelta = validPerformanceValues.length === 0
+    ? 0
+    : Math.max(...validPerformanceValues) - Math.min(...validPerformanceValues)
+  const shouldSnapBalanced = performanceGradeDelta <= ARCHETYPE_PREVIEW_BALANCED_GRADE_DELTA
 
   return {
     kind: "radar",
     state,
-    axes: Object.entries(GROUP_LABELS).map(([id, label]) => {
-      const groupCandidates = candidates.filter((candidate) => candidate.group === id)
-      const value = groupCandidates.length === 0
-        ? 0
-        : Math.max(...groupCandidates.map((candidate) => candidate.identityScore))
-
-      return { id, label, value }
-    }),
+    axes: sourceViewModel.radarAxes.map((axis) => ({
+      id: axis.label,
+      label: axis.label,
+      value: shouldSnapBalanced ? ARCHETYPE_PREVIEW_BALANCED_RADIUS : axis.performance,
+    })),
   }
 }
 
@@ -455,7 +478,7 @@ function selectArchetypeOverview(climbs: readonly EnrichedClimb[], now: Date): A
         primaryMetric: "",
         secondaryText: THIRTY_DAY_LABEL,
       },
-      visual: selectArchetypeRadarVisual(candidates, "empty"),
+      visual: selectArchetypeRadarVisual(metricsByGroup, candidates[0]?.group ?? null, "empty"),
     }
   }
 
@@ -469,7 +492,7 @@ function selectArchetypeOverview(climbs: readonly EnrichedClimb[], now: Date): A
         primaryMetric: "",
         secondaryText: THIRTY_DAY_LABEL,
       },
-      visual: selectArchetypeRadarVisual(candidates, "balanced"),
+      visual: selectArchetypeRadarVisual(metricsByGroup, top?.group ?? null, "balanced"),
     }
   }
 
@@ -481,7 +504,7 @@ function selectArchetypeOverview(climbs: readonly EnrichedClimb[], now: Date): A
       primaryMetric: "",
       secondaryText: STYLE_SUMMARIES[top.metric.tagKey] ?? `${GROUP_LABELS[top.group].toLowerCase()} tendency lately`,
     },
-    visual: selectArchetypeRadarVisual(candidates, "active"),
+    visual: selectArchetypeRadarVisual(metricsByGroup, top.group, "active"),
   }
 }
 
