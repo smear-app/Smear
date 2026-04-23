@@ -908,11 +908,15 @@ function CTASection() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const accessInbox = 'smear.app@gmail.com';
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!email.includes('@')) { setError('Enter a valid email.'); return; }
     setError('');
+    const subject = encodeURIComponent('Smear access request');
+    const body = encodeURIComponent(`Please add this email to the Smear access list:\n\n${email.trim()}`);
+    window.location.href = `mailto:${accessInbox}?subject=${subject}&body=${body}`;
     setSubmitted(true);
   };
 

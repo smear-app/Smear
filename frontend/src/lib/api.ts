@@ -39,6 +39,16 @@ export interface PatchGymPrefsRequest {
   recent_gym_ids: string[]
 }
 
+export interface AccessRequestCreate {
+  email: string
+  source?: string
+}
+
+export interface AccessRequestResponse {
+  email: string
+  status: string
+}
+
 export interface ClimbObject {
   id: string
   user_id: string
@@ -203,6 +213,22 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return resp.json() as Promise<T>
 }
 
+export async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const resp = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new Error(`API error ${resp.status}: ${text}`)
+  }
+  if (resp.status === 204) return undefined as unknown as T
+  return resp.json() as Promise<T>
+}
+
 // ── Me cache ──────────────────────────────────────────────────────────────────
 
 export function clearMeCache(): void {
@@ -257,6 +283,13 @@ export async function patchGymPreferences(body: PatchGymPrefsRequest): Promise<v
   clearMeCache()
 }
 
+export async function postAccessRequest(body: AccessRequestCreate): Promise<AccessRequestResponse> {
+  return publicApiFetch<AccessRequestResponse>('/access-requests', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 // ── Gyms cache ────────────────────────────────────────────────────────────────
 
 export async function getGymsAll(): Promise<GymsAllResponse> {
@@ -273,7 +306,7 @@ export async function getGymsAll(): Promise<GymsAllResponse> {
       }
     }
   }
-  const data = await apiFetch<GymsAllResponse>('/gyms/all')
+  const data = await publicApiFetch<GymsAllResponse>('/gyms/all')
   localStorage.setItem(GYMS_CACHE_KEY, JSON.stringify(data))
   localStorage.setItem(GYMS_CACHED_AT_KEY, String(Date.now()))
   return data
