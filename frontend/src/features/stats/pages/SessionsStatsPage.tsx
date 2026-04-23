@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
 import type { Climb } from "../../../lib/climbs"
-import { buildImplicitSessions as buildLogbookSessions, type LogbookSession } from "../../../lib/logbook"
 import SessionClimbActions from "../components/sessions/SessionClimbActions"
 import SessionsTrendChart from "../components/sessions/SessionsTrendChart"
 import SessionTrendMetrics from "../components/sessions/SessionTrendMetrics"
@@ -14,6 +13,7 @@ import SessionInsight from "../components/sessions/SessionInsight"
 import SessionIdentityLine from "../components/sessions/SessionIdentityLine"
 import type { RawStatsClimb } from "../domain/base"
 import { calculateSessionMetrics } from "../domain/calculators"
+import { buildSessionClimbsByStatsSessionId } from "../domain/sessions/selectSessionClimbs"
 import { selectSessionsViewModel } from "../domain/sessions/selectSessionsViewModel"
 import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { SessionDetail } from "../domain/sessions/types"
@@ -93,8 +93,8 @@ export default function SessionsStatsPage({
     () => selectSessionsViewModel(calculateSessionMetrics(statsClimbs)),
     [statsClimbs],
   )
-  const logbookSessions = useMemo<LogbookSession[]>(
-    () => (statsBase ? buildLogbookSessions(statsBase.climbs.map(toLogbookClimb)) : []),
+  const sessionClimbsById = useMemo(
+    () => buildSessionClimbsByStatsSessionId(statsBase ? statsBase.climbs.map(toLogbookClimb) : []),
     [statsBase],
   )
   const realSessionCount = sessionsView.sessions.length
@@ -102,12 +102,7 @@ export default function SessionsStatsPage({
     ? 0
     : Math.min(selectedSessionIndex, realSessionCount - 1)
   const selectedSession = sessionsView.sessions[selectedRealSessionIndex] ?? EMPTY_SELECTED_SESSION
-  const logbookSessionsById = useMemo(
-    () => new Map(logbookSessions.map((session) => [session.id, session])),
-    [logbookSessions],
-  )
-  const selectedLogbookSession = logbookSessionsById.get(selectedSession.id) ?? null
-  const selectedSessionClimbs = selectedLogbookSession?.climbs ?? []
+  const selectedSessionClimbs = sessionClimbsById.get(selectedSession.id) ?? []
   const sessionClimbsLoading = statsBaseStatus === "loading" && !statsBase
   const sessionClimbsError = statsBaseError?.message ?? null
   const detailReturnPath = `${location.pathname}${location.search}`
