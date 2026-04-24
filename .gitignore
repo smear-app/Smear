@@ -9,3 +9,10 @@ CLAUDE.md
 
 backend/.env
 frontend/ios/
+
+.venv
+.codex
+/backend/graphify-out
+/frontend/graphify-out
+/graphify-out
+AGENTS.md
