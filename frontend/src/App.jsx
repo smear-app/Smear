@@ -24,6 +24,11 @@ import SessionsStatsPage from "./features/stats/pages/SessionsStatsPage"
 import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
 import { invalidateSharedStatsBase, removeClimbFromSharedStatsBase } from "./features/stats/domain/base"
 
+function getRootRouteElement() {
+  const isNativeIOS = Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios"
+  return isNativeIOS ? <Navigate to="/home" replace /> : <LandingPage />
+}
+
 function ProtectedApp() {
   const { session, loading, isAdmin } = useAuth()
   const { activeGym } = useGym()
@@ -259,7 +264,7 @@ function GymScopedApp() {
     <GymProvider key={user?.id ?? "anon"} storageUserId={user?.id}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={getRootRouteElement()} />
           <Route path="/auth" element={<AuthRoute />} />
           <Route path="/*" element={<ProtectedApp />} />
         </Routes>
