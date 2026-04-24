@@ -39,16 +39,6 @@ export interface PatchGymPrefsRequest {
   recent_gym_ids: string[]
 }
 
-export interface AccessRequestCreate {
-  email: string
-  source?: string
-}
-
-export interface AccessRequestResponse {
-  email: string
-  status: string
-}
-
 export interface ClimbObject {
   id: string
   user_id: string
@@ -67,6 +57,9 @@ export interface ClimbObject {
   canonical_tags: string[]
   session_id: string | null
   session_started_at: string | null
+  session_insight_label?: string | null
+  session_insight_reason?: string | null
+  session_insight_classifier_version?: string | null
   created_at: string
 }
 
@@ -167,6 +160,16 @@ export interface PostCanonicalRequest {
   photo_url?: string | null
 }
 
+export interface PostAccessRequest {
+  email: string
+  source?: string | null
+}
+
+export interface AccessRequestResponse {
+  email: string
+  status: string
+}
+
 export interface CanonicalSummary {
   id: string
   gym_id: string
@@ -195,13 +198,11 @@ async function getToken(): Promise<string> {
   return token
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = await getToken()
+async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const resp = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
       ...(init?.headers ?? {}),
     },
   })
@@ -213,11 +214,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   return resp.json() as Promise<T>
 }
 
-export async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getToken()
   const resp = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
       ...(init?.headers ?? {}),
     },
   })
@@ -283,7 +286,7 @@ export async function patchGymPreferences(body: PatchGymPrefsRequest): Promise<v
   clearMeCache()
 }
 
-export async function postAccessRequest(body: AccessRequestCreate): Promise<AccessRequestResponse> {
+export async function postAccessRequest(body: PostAccessRequest): Promise<AccessRequestResponse> {
   return publicApiFetch<AccessRequestResponse>('/access-requests', {
     method: 'POST',
     body: JSON.stringify(body),
@@ -306,7 +309,7 @@ export async function getGymsAll(): Promise<GymsAllResponse> {
       }
     }
   }
-  const data = await publicApiFetch<GymsAllResponse>('/gyms/all')
+  const data = await apiFetch<GymsAllResponse>('/gyms/all')
   localStorage.setItem(GYMS_CACHE_KEY, JSON.stringify(data))
   localStorage.setItem(GYMS_CACHED_AT_KEY, String(Date.now()))
   return data
@@ -417,6 +420,9 @@ export interface SessionCardObject {
   hardest_grade_value: number | null
   hardest_flash: string | null
   hardest_flash_value: number | null
+  insight_label?: string | null
+  insight_reason?: string | null
+  insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
   created_at: string
@@ -449,6 +455,9 @@ export interface SessionObject {
   hardest_grade_value: number | null
   hardest_flash: string | null
   hardest_flash_value: number | null
+  insight_label?: string | null
+  insight_reason?: string | null
+  insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
   created_at: string

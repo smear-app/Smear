@@ -58,6 +58,7 @@ export type ArchetypeCategoryEntry = {
   label: string
   sentCount: number
   totalLoggedCount: number
+  workingGradeValue: number | null
   workingGradeSourceValues: number[]
   workingGradeDisplayValue: string
   volumeDisplayValue: string

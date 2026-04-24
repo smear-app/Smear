@@ -1,4 +1,5 @@
 import ProgressionSurface from "../progression/ProgressionSurface"
+import { buildWorkingGradeAxis } from "../../domain/charts/workingGradeAxis"
 import type { SessionTrendPoint } from "../../domain/sessions/types"
 
 type SessionsTrendChartProps = {
@@ -42,10 +43,6 @@ function buildLineSegments(points: Array<{ x: number; y: number | null }>) {
   }, []).filter((segment) => segment.length > 0)
 }
 
-function formatGradeLabel(value: number) {
-  return `V${Math.round(value)}`
-}
-
 export default function SessionsTrendChart({ points }: SessionsTrendChartProps) {
   const innerWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right
   const innerHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom
@@ -54,19 +51,14 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
   const gradeValues = points.flatMap((point) =>
     point.avgGrade !== null && Number.isFinite(point.avgGrade) ? [point.avgGrade] : [],
   )
-  const minGrade = gradeValues.length === 0 ? 0 : Math.min(...gradeValues)
-  const maxGrade = gradeValues.length === 0 ? 1 : Math.max(...gradeValues)
-  const gradeFloor = Math.max(0, Math.floor(minGrade))
-  const gradeCeiling = Math.max(gradeFloor + 1, Math.ceil(maxGrade))
-  const gradeRange = gradeCeiling - gradeFloor
-  const gradeTicks = Array.from({ length: gradeCeiling - gradeFloor + 1 }, (_, index) => gradeFloor + index)
-  const minorLines = gradeTicks.slice(0, -1).map((tick) => ({
+  const gradeAxis = buildWorkingGradeAxis(gradeValues)
+  const minorLines = gradeAxis.ticks.slice(0, -1).map((tick) => ({
     key: `${tick}-mid`,
-    y: CHART_PADDING.top + innerHeight - ((tick + 0.5 - gradeFloor) / gradeRange) * innerHeight,
+    y: CHART_PADDING.top + innerHeight - ((tick + 0.5 - gradeAxis.domainMin) / gradeAxis.domainRange) * innerHeight,
   }))
-  const majorLines = gradeTicks.map((tick) => ({
+  const majorLines = gradeAxis.ticks.map((tick) => ({
     tick,
-    y: CHART_PADDING.top + innerHeight - ((tick - gradeFloor) / gradeRange) * innerHeight,
+    y: CHART_PADDING.top + innerHeight - ((tick - gradeAxis.domainMin) / gradeAxis.domainRange) * innerHeight,
   }))
   const climbTicks = [0, climbsMax / 2, climbsMax].map((tick) => ({
     tick,
@@ -79,7 +71,7 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
     const barHeight = (point.climbs / climbsMax) * innerHeight
     const y = point.avgGrade === null
       ? null
-      : CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeFloor) / gradeRange) * innerHeight
+      : CHART_PADDING.top + innerHeight - ((point.avgGrade - gradeAxis.domainMin) / gradeAxis.domainRange) * innerHeight
 
     return {
       ...point,
@@ -154,7 +146,7 @@ export default function SessionsTrendChart({ points }: SessionsTrendChartProps) 
               fill={TICK_COLOR}
               className="text-[11px]"
             >
-              {formatGradeLabel(line.tick)}
+              {gradeAxis.formatTick(line.tick)}
             </text>
           ))}
 

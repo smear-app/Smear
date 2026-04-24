@@ -28,11 +28,15 @@ function makeSession(
       medianSentGrade: overrides.medianSentGrade ?? 5,
       workingGrade: overrides.workingGrade ?? 5.5,
       gradeHistogram: overrides.gradeHistogram ?? [
-        { gradeIndex: 4, count: 2 },
-        { gradeIndex: 5, count: 3 },
-        { gradeIndex: 6, count: 1 },
+        { gradeIndex: 4, count: 2, outcomeCounts: { flash: 0, send: 1, attempt: 1 } },
+        { gradeIndex: 5, count: 3, outcomeCounts: { flash: 1, send: 1, attempt: 1 } },
+        { gradeIndex: 6, count: 1, outcomeCounts: { flash: 1, send: 0, attempt: 0 } },
       ],
       outcomeCounts: overrides.outcomeCounts ?? { flash: 2, send: 4, attempt: 4 },
+      attemptsPerSend: overrides.attemptsPerSend ?? 10 / 6,
+      completionRate: overrides.completionRate ?? 0.6,
+      distinctStyleCount: overrides.distinctStyleCount ?? 3,
+      persistedInsight: overrides.persistedInsight ?? null,
       ...overrides,
     },
     comparisonToAllTimeBaseline: null,
@@ -73,8 +77,56 @@ describe("selectSessionsViewModel", () => {
       { label: "Total Climbs", value: "14" },
       { label: "Duration", value: "1h 45m" },
       { label: "Max Grade", value: "V6" },
-      { label: "Working Grade", value: "V5–V6" },
+      { label: "Working Grade", value: "V5.5" },
     ])
+  })
+
+  it("uses persisted session insight when available", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session", "2026-04-01T10:00:00.000Z", {
+          persistedInsight: {
+            label: "Volume session",
+            reason: "+22% climbs",
+            classifierVersion: "session-insight-v1",
+          },
+        }),
+      ],
+    })
+
+    expect(viewModel.sessions[0].identity).toEqual({
+      label: "Volume session",
+      reason: "+22% climbs",
+      displayMode: "insight",
+    })
+    expect(viewModel.sessions[0].insight).toBe("Volume session · +22% climbs")
+  })
+
+  it("does not use persisted session insight when the selected session is too small", () => {
+    const viewModel = selectSessionsViewModel({
+      allTimeBaseline: null,
+      sessions: [
+        makeSession("session", "2026-04-01T10:00:00.000Z", {
+          totalClimbs: 1,
+          totalSentClimbs: 1,
+          totalAttemptClimbs: 0,
+          persistedInsight: {
+            label: "Volume session",
+            reason: "+22% climbs",
+            classifierVersion: "session-insight-v1",
+          },
+        }),
+      ],
+    })
+
+    expect(viewModel.sessions[0].identity).toEqual({
+      label: "Not enough activity",
+      reason: "More climbs needed for insight",
+      displayMode: "system",
+      message: "Not enough climbs",
+    })
+    expect(viewModel.sessions[0].insight).toBe("Not enough climbs")
   })
 
   it("handles empty and null session values safely", () => {
@@ -110,9 +162,9 @@ describe("selectSessionsViewModel", () => {
         makeSession("session", "2026-04-01T10:00:00.000Z", {
           totalClimbs: 10,
           gradeHistogram: [
-            { gradeIndex: 3, count: 2 },
-            { gradeIndex: 4, count: 5 },
-            { gradeIndex: 6, count: 3 },
+            { gradeIndex: 3, count: 2, outcomeCounts: { flash: 1, send: 1, attempt: 0 } },
+            { gradeIndex: 4, count: 5, outcomeCounts: { flash: 1, send: 2, attempt: 2 } },
+            { gradeIndex: 6, count: 3, outcomeCounts: { flash: 0, send: 2, attempt: 1 } },
           ],
           outcomeCounts: { flash: 2, send: 5, attempt: 3 },
         }),
@@ -120,9 +172,36 @@ describe("selectSessionsViewModel", () => {
     })
 
     expect(viewModel.sessions[0].gradeDistribution).toEqual([
-      { label: "V6", count: 3, widthPercent: 60 },
-      { label: "V4", count: 5, widthPercent: 100 },
-      { label: "V3", count: 2, widthPercent: 40 },
+      {
+        label: "V6",
+        count: 3,
+        widthPercent: 60,
+        segments: [
+          { tone: "flash", count: 0, percentage: 0 },
+          { tone: "send", count: 2, percentage: 66.66666666666666 },
+          { tone: "unfinished", count: 1, percentage: 33.33333333333333 },
+        ],
+      },
+      {
+        label: "V4",
+        count: 5,
+        widthPercent: 100,
+        segments: [
+          { tone: "flash", count: 1, percentage: 20 },
+          { tone: "send", count: 2, percentage: 40 },
+          { tone: "unfinished", count: 2, percentage: 40 },
+        ],
+      },
+      {
+        label: "V3",
+        count: 2,
+        widthPercent: 40,
+        segments: [
+          { tone: "flash", count: 1, percentage: 50 },
+          { tone: "send", count: 1, percentage: 50 },
+          { tone: "unfinished", count: 0, percentage: 0 },
+        ],
+      },
     ])
     expect(viewModel.sessions[0].outcomeTotalCount).toBe(10)
     expect(viewModel.sessions[0].outcomes).toEqual([
@@ -188,10 +267,10 @@ describe("selectSessionsViewModel", () => {
       "session-6",
     ])
     expect(viewModel.trendMetrics).toEqual([
-      { label: "Avg Climbs / Session", value: "6.0", description: "recent session window" },
-      { label: "Working Grade", value: "V5", description: "recent valid sessions" },
-      { label: "Best Session Volume", value: "10 climbs", description: "highest recent volume" },
-      { label: "Best Session Grade", value: "V8", description: "strongest recent session" },
+      { label: "Avg Climbs / Session", value: "6.0", description: "" },
+      { label: "Working Grade", value: "V5", description: "" },
+      { label: "Best Session Volume", value: "10 climbs", description: "" },
+      { label: "Best Session Grade", value: "V8", description: "" },
     ])
   })
 
@@ -205,10 +284,10 @@ describe("selectSessionsViewModel", () => {
     })
 
     expect(emptyViewModel.trendMetrics).toEqual([
-      { label: "Avg Climbs / Session", value: "-", description: "recent session window" },
-      { label: "Working Grade", value: "None", description: "recent valid sessions" },
-      { label: "Best Session Volume", value: "-", description: "highest recent volume" },
-      { label: "Best Session Grade", value: "None", description: "strongest recent session" },
+      { label: "Avg Climbs / Session", value: "-", description: "" },
+      { label: "Working Grade", value: "None", description: "" },
+      { label: "Best Session Volume", value: "-", description: "" },
+      { label: "Best Session Grade", value: "None", description: "" },
     ])
     expect(noGradeViewModel.trendMetrics.find((metric) => metric.label === "Working Grade")?.value).toBe("None")
   })

@@ -6,6 +6,18 @@ type SessionIdentityLineProps = {
 }
 
 export default function SessionIdentityLine({ identity, align = "center" }: SessionIdentityLineProps) {
+  if (identity.displayMode === "system") {
+    return (
+      <p
+        className={`max-w-full min-w-0 truncate text-sm leading-5 text-stone-secondary ${
+          align === "center" ? "mx-auto text-center" : "text-left"
+        }`}
+      >
+        {identity.message ?? identity.reason}
+      </p>
+    )
+  }
+
   return (
     <p
       className={`flex max-w-full min-w-0 items-center gap-1.5 truncate text-sm leading-5 ${

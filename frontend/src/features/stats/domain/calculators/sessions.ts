@@ -38,8 +38,16 @@ export type SessionMetrics = {
   averageSentGrade: number | null
   medianSentGrade: number | null
   workingGrade: number | null
-  gradeHistogram: Array<Pick<GradeHistogramBucket, "gradeIndex" | "count">>
+  gradeHistogram: Array<Pick<GradeHistogramBucket, "gradeIndex" | "count"> & { outcomeCounts: OutcomeCounts }>
   outcomeCounts: OutcomeCounts
+  attemptsPerSend: number
+  completionRate: number
+  distinctStyleCount: number
+  persistedInsight: {
+    label: string
+    reason: string
+    classifierVersion: string | null
+  } | null
 }
 
 export type SessionBaselineMetrics = {
@@ -87,6 +95,81 @@ function subtractNullable(value: number | null, baseline: number | null): number
   return value === null || baseline === null ? null : value - baseline
 }
 
+function getTimestamp(value: string): number {
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY
+}
+
+function getSessionStartAt(climbs: readonly EnrichedClimb[]): string {
+  const sessionStartedAt = climbs.find((climb) => climb.sessionStartedAt)?.sessionStartedAt
+
+  return sessionStartedAt ?? climbs[0]?.loggedAt ?? ""
+}
+
+function getSessionPersistedInsight(climbs: readonly EnrichedClimb[]): SessionMetrics["persistedInsight"] {
+  const source = climbs.find((climb) => climb.sessionInsightLabel && climb.sessionInsightReason)
+
+  if (!source?.sessionInsightLabel || !source.sessionInsightReason) {
+    return null
+  }
+
+  return {
+    label: source.sessionInsightLabel,
+    reason: source.sessionInsightReason,
+    classifierVersion: source.sessionInsightClassifierVersion,
+  }
+}
+
+function buildExplicitSession(sessionId: string, climbs: readonly EnrichedClimb[]): EnrichedSession {
+  const sortedClimbs = [...climbs].sort((left, right) => getTimestamp(left.loggedAt) - getTimestamp(right.loggedAt))
+
+  return {
+    id: sessionId,
+    gymId: sortedClimbs[0]?.gymId ?? null,
+    gymName: sortedClimbs[0]?.gymName ?? null,
+    startAt: getSessionStartAt(sortedClimbs),
+    endAt: sortedClimbs.at(-1)?.loggedAt ?? getSessionStartAt(sortedClimbs),
+    climbIds: sortedClimbs.map((climb) => climb.id),
+    climbs: sortedClimbs,
+  }
+}
+
+function buildSessions(climbs: readonly EnrichedClimb[], thresholdMs?: number): EnrichedSession[] {
+  const explicitClimbsBySessionId = new Map<string, EnrichedClimb[]>()
+  const implicitClimbs: EnrichedClimb[] = []
+
+  for (const climb of climbs) {
+    if (climb.sessionId) {
+      explicitClimbsBySessionId.set(climb.sessionId, [...(explicitClimbsBySessionId.get(climb.sessionId) ?? []), climb])
+    } else {
+      implicitClimbs.push(climb)
+    }
+  }
+
+  return [
+    ...[...explicitClimbsBySessionId.entries()].map(([sessionId, sessionClimbs]) => buildExplicitSession(sessionId, sessionClimbs)),
+    ...buildImplicitSessions(implicitClimbs, thresholdMs),
+  ].sort((left, right) => getTimestamp(left.startAt) - getTimestamp(right.startAt))
+}
+
+function getDistinctStyleCount(climbs: readonly EnrichedClimb[]): number {
+  const styleIds = new Set<string>()
+
+  for (const climb of climbs) {
+    for (const tag of climb.tags) {
+      styleIds.add(tag.id)
+    }
+
+    for (const tags of Object.values(climb.canonicalTags)) {
+      for (const tag of tags) {
+        styleIds.add(tag.id)
+      }
+    }
+  }
+
+  return styleIds.size
+}
+
 function calculateSingleSessionMetrics(session: EnrichedSession): SessionMetrics {
   const climbs = session.climbs
   const sentClimbs = filterSentClimbs(climbs)
@@ -110,8 +193,16 @@ function calculateSingleSessionMetrics(session: EnrichedSession): SessionMetrics
     averageSentGrade: getAverageGrade(sentClimbs),
     medianSentGrade: getMedianGrade(sentClimbs),
     workingGrade: calculateTopFortyPercentMedianWorkingGrade(sentClimbs),
-    gradeHistogram: buildGradeHistogram(climbs).map(({ gradeIndex, count }) => ({ gradeIndex, count })),
+    gradeHistogram: buildGradeHistogram(climbs).map(({ gradeIndex, climbs: bucketClimbs, count }) => ({
+      gradeIndex,
+      count,
+      outcomeCounts: buildOutcomeCounts(bucketClimbs),
+    })),
     outcomeCounts: buildOutcomeCounts(climbs),
+    attemptsPerSend: safeDivide(climbs.length, sentClimbs.length),
+    completionRate: safeDivide(sentClimbs.length, climbs.length),
+    distinctStyleCount: getDistinctStyleCount(climbs),
+    persistedInsight: getSessionPersistedInsight(climbs),
   }
 }
 
@@ -167,7 +258,7 @@ export function calculateSessionMetrics(
   climbs: readonly EnrichedClimb[],
   options: CalculateSessionMetricsOptions = {},
 ): SessionsMetrics {
-  const sessionMetrics = buildImplicitSessions(climbs, options.thresholdMs).map(calculateSingleSessionMetrics)
+  const sessionMetrics = buildSessions(climbs, options.thresholdMs).map(calculateSingleSessionMetrics)
   const allTimeBaseline = calculateAllTimeBaseline(sessionMetrics)
 
   return {

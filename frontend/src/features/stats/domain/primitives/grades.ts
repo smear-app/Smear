@@ -1,6 +1,22 @@
 import { filterSentClimbs } from "./filters"
 import type { EnrichedClimb } from "./types"
 
+export function formatVGrade(grade: number | null, nullLabel = "-"): string {
+  if (grade === null || !Number.isFinite(grade)) {
+    return nullLabel
+  }
+
+  if (grade === -1) {
+    return "VB"
+  }
+
+  if (Number.isInteger(grade)) {
+    return `V${grade}`
+  }
+
+  return `V${grade.toFixed(1)}`
+}
+
 function getValidGradeIndex(climb: EnrichedClimb): number | null {
   return typeof climb.gradeIndex === "number" && Number.isFinite(climb.gradeIndex) ? climb.gradeIndex : null
 }

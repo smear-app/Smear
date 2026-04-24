@@ -403,6 +403,7 @@ export function buildArchetypeViewModel(segment: ArchetypeSegment): ArchetypeVie
       label: axis.label,
       sentCount: 0,
       totalLoggedCount: volumeCountByLabel.get(axis.label) ?? 0,
+      workingGradeValue: null,
       workingGradeSourceValues: [],
       workingGradeDisplayValue: axis.display.performanceLabel,
       volumeDisplayValue: axis.display.volumeLabel,

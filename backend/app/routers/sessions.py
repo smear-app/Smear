@@ -7,6 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.deps import get_current_user
 from app.gyms import get_supabase
 from app.models import EndSessionRequest, SessionObject
+from app.session_insights import (
+    classify_session_insight,
+    compute_session_metric_snapshot,
+    get_prior_session_metric_snapshots,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -16,6 +21,15 @@ SESSION_THRESHOLD_HOURS = 3
 
 def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibility: Optional[str] = None) -> None:
     """Aggregate climb stats for a session and mark it published."""
+    session_result = (
+        supabase.from_("sessions")
+        .select("id, started_at, created_at, insight_label, insight_reason")
+        .eq("id", session_id)
+        .maybe_single()
+        .execute()
+    )
+    session = session_result.data or {"id": session_id}
+
     # Resolve visibility from profile default if not overridden
     if visibility is None:
         profile = (
@@ -26,14 +40,6 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
             .execute()
         )
         visibility = (profile.data or {}).get("default_visibility", "followers")
-
-    if visibility == "private":
-        # Mark published but private — stays in logbook only
-        supabase.from_("sessions").update({
-            "is_published": True,
-            "visibility": "private",
-        }).eq("id", session_id).execute()
-        return
 
     # Fetch all climbs in this session
     climbs_result = (
@@ -72,6 +78,20 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
 
     # Cover photo: first climb with a photo
     cover_photo_url = next((c["photo_url"] for c in climbs if c.get("photo_url")), None)
+    insight_payload = {}
+    if total_climbs >= 3 and not (session.get("insight_label") and session.get("insight_reason")):
+        session_start_at = session.get("started_at") or session.get("created_at") or datetime.now(timezone.utc).isoformat()
+        current_metrics = compute_session_metric_snapshot(
+            {"id": session_id, "started_at": session_start_at},
+            climbs,
+        )
+        prior_metrics = get_prior_session_metric_snapshots(supabase, user_id, session_start_at)
+        insight = classify_session_insight(current_metrics, prior_metrics)
+        insight_payload = {
+            "insight_label": insight["label"],
+            "insight_reason": insight["reason"],
+            "insight_classifier_version": insight["classifier_version"],
+        }
 
     supabase.from_("sessions").update({
         "is_published": True,
@@ -86,6 +106,7 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
         "hardest_flash_value": hardest_flash_value,
         "top_tags": top_tags,
         "cover_photo_url": cover_photo_url,
+        **insight_payload,
     }).eq("id", session_id).execute()
 
 
@@ -147,6 +168,9 @@ def get_active_session(user_id: str = Depends(get_current_user)):
         hardest_grade_value=row.get("hardest_grade_value"),
         hardest_flash=row.get("hardest_flash"),
         hardest_flash_value=row.get("hardest_flash_value"),
+        insight_label=row.get("insight_label"),
+        insight_reason=row.get("insight_reason"),
+        insight_classifier_version=row.get("insight_classifier_version"),
         top_tags=row.get("top_tags") or [],
         cover_photo_url=row.get("cover_photo_url"),
         created_at=row.get("started_at"),
@@ -209,6 +233,9 @@ def end_session(
         hardest_grade_value=row.get("hardest_grade_value"),
         hardest_flash=row.get("hardest_flash"),
         hardest_flash_value=row.get("hardest_flash_value"),
+        insight_label=row.get("insight_label"),
+        insight_reason=row.get("insight_reason"),
+        insight_classifier_version=row.get("insight_classifier_version"),
         top_tags=row.get("top_tags") or [],
         cover_photo_url=row.get("cover_photo_url"),
         created_at=row.get("started_at"),

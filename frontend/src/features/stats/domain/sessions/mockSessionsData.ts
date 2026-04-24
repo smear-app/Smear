@@ -1,13 +1,13 @@
-import type { SessionIdentity, SessionOutcomeItem, SessionsViewModel } from "./types"
+import type { SessionGradeDistributionItem, SessionIdentity, SessionOutcomeItem, SessionsViewModel } from "./types"
 
 const TEMPORARY_SESSION_IDENTITIES: Record<string, SessionIdentity> = {
-  "session-1": { label: "Volume session", reason: "+22% climbs" },
-  "session-2": { label: "Projecting session", reason: "-18% send rate" },
-  "session-3": { label: "Hard session", reason: "+0.6 avg grade" },
+  "session-1": { label: "Volume session", reason: "+22% climbs", displayMode: "insight" },
+  "session-2": { label: "Projecting session", reason: "-18% send rate", displayMode: "insight" },
+  "session-3": { label: "Hard session", reason: "+0.6 avg grade", displayMode: "insight" },
 }
 
 function getTemporarySessionIdentity(sessionId: string): SessionIdentity {
-  return TEMPORARY_SESSION_IDENTITIES[sessionId] ?? { label: "Balanced session", reason: "Near average" }
+  return TEMPORARY_SESSION_IDENTITIES[sessionId] ?? { label: "Balanced session", reason: "Near average", displayMode: "insight" }
 }
 
 function toSessionOutcomeItems(counts: Record<SessionOutcomeItem["tone"], number>): SessionOutcomeItem[] {
@@ -48,6 +48,27 @@ function toSessionOutcomeItems(counts: Record<SessionOutcomeItem["tone"], number
   }))
 }
 
+function toGradeDistributionItem(
+  label: string,
+  count: number,
+  widthPercent: number,
+  counts: Record<SessionOutcomeItem["tone"], number>,
+): SessionGradeDistributionItem {
+  return {
+    label,
+    count,
+    widthPercent,
+    segments: ([
+      { tone: "flash", count: counts.flash },
+      { tone: "send", count: counts.send },
+      { tone: "unfinished", count: counts.unfinished },
+    ] satisfies Array<Pick<SessionGradeDistributionItem["segments"][number], "tone" | "count">>).map((segment) => ({
+      ...segment,
+      percentage: count <= 0 ? 0 : (segment.count / count) * 100,
+    })),
+  }
+}
+
 export const sessionsMockData: SessionsViewModel = {
   trendPoints: [
     { sessionId: "session-5", label: "Mar 02", tickLabel: "Mar 2", climbs: 11, avgGrade: 4.2 },
@@ -57,10 +78,10 @@ export const sessionsMockData: SessionsViewModel = {
     { sessionId: "session-1", label: "Apr 10", tickLabel: "Apr 10", climbs: 20, avgGrade: 4.9 },
   ],
   trendMetrics: [
-    { label: "Avg Climbs / Session", value: "14", description: "across recent sessions" },
-    { label: "Working Grade", value: "V4.6", description: "working session intensity" },
-    { label: "Best Session Volume", value: "22 climbs", description: "most climbs in one session" },
-    { label: "Best Session Grade", value: "V6 working", description: "strongest session working grade" },
+    { label: "Avg Climbs / Session", value: "14", description: "" },
+    { label: "Working Grade", value: "V4.6", description: "" },
+    { label: "Best Session Volume", value: "22 climbs", description: "" },
+    { label: "Best Session Grade", value: "V6 working", description: "" },
   ],
   sessions: [
     {
@@ -77,10 +98,10 @@ export const sessionsMockData: SessionsViewModel = {
       outcomes: toSessionOutcomeItems({ flash: 4, send: 8, unfinished: 6 }),
       outcomeTotalCount: 18,
       gradeDistribution: [
-        { label: "V3", count: 4, widthPercent: (4 / 7) * 100 },
-        { label: "V4", count: 7, widthPercent: 100 },
-        { label: "V5", count: 5, widthPercent: (5 / 7) * 100 },
-        { label: "V6", count: 2, widthPercent: (2 / 7) * 100 },
+        toGradeDistributionItem("V3", 4, (4 / 7) * 100, { flash: 1, send: 2, unfinished: 1 }),
+        toGradeDistributionItem("V4", 7, 100, { flash: 2, send: 3, unfinished: 2 }),
+        toGradeDistributionItem("V5", 5, (5 / 7) * 100, { flash: 1, send: 2, unfinished: 2 }),
+        toGradeDistributionItem("V6", 2, (2 / 7) * 100, { flash: 0, send: 1, unfinished: 1 }),
       ],
       insight: "Balanced session with strong conversion in your working range and a couple of successful V6 attempts.",
     },
@@ -98,10 +119,10 @@ export const sessionsMockData: SessionsViewModel = {
       outcomes: toSessionOutcomeItems({ flash: 3, send: 5, unfinished: 6 }),
       outcomeTotalCount: 14,
       gradeDistribution: [
-        { label: "V3", count: 3, widthPercent: (3 / 5) * 100 },
-        { label: "V4", count: 5, widthPercent: 100 },
-        { label: "V5", count: 4, widthPercent: (4 / 5) * 100 },
-        { label: "V6", count: 2, widthPercent: (2 / 5) * 100 },
+        toGradeDistributionItem("V3", 3, (3 / 5) * 100, { flash: 1, send: 1, unfinished: 1 }),
+        toGradeDistributionItem("V4", 5, 100, { flash: 1, send: 2, unfinished: 2 }),
+        toGradeDistributionItem("V5", 4, (4 / 5) * 100, { flash: 1, send: 1, unfinished: 2 }),
+        toGradeDistributionItem("V6", 2, (2 / 5) * 100, { flash: 0, send: 1, unfinished: 1 }),
       ],
       insight: "Focused heavily on V5 projecting with fewer easy warmup climbs than usual.",
     },
@@ -119,10 +140,10 @@ export const sessionsMockData: SessionsViewModel = {
       outcomes: toSessionOutcomeItems({ flash: 5, send: 7, unfinished: 6 }),
       outcomeTotalCount: 18,
       gradeDistribution: [
-        { label: "V3", count: 4, widthPercent: (4 / 6) * 100 },
-        { label: "V4", count: 6, widthPercent: 100 },
-        { label: "V5", count: 6, widthPercent: 100 },
-        { label: "V6", count: 2, widthPercent: (2 / 6) * 100 },
+        toGradeDistributionItem("V3", 4, (4 / 6) * 100, { flash: 1, send: 2, unfinished: 1 }),
+        toGradeDistributionItem("V4", 6, 100, { flash: 2, send: 2, unfinished: 2 }),
+        toGradeDistributionItem("V5", 6, 100, { flash: 2, send: 2, unfinished: 2 }),
+        toGradeDistributionItem("V6", 2, (2 / 6) * 100, { flash: 0, send: 1, unfinished: 1 }),
       ],
       insight: "High-volume session with a lower working grade than usual early, then stronger conversion once you settled into V5s.",
     },

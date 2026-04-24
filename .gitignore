@@ -11,5 +11,10 @@ AGENTS.md
 
 backend/.env
 frontend/ios/
+
 .venv
-graphify-out
+.codex
+/backend/graphify-out
+/frontend/graphify-out
+/graphify-out
+AGENTS.md

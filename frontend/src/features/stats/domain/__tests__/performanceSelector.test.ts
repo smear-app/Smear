@@ -49,7 +49,7 @@ describe("selectPerformanceViewModel", () => {
 
     expect(metricValue(viewModel.metrics, "Hardest Send")).toBe("V6")
     expect(metricValue(viewModel.metrics, "Hardest Flash")).toBe("None")
-    expect(viewModel.pyramid.map((band) => band.label)).toContain("V6–V7")
+    expect(viewModel.pyramid.map((band) => band.label)).toContain("V6.5")
   })
 
   it("formats percentages consistently", () => {

@@ -1,6 +1,6 @@
 import type { ProgressionMetrics } from "../calculators/progression"
 import { safeDivide } from "../calculators/shared"
-import { getLocalWeekStart, toLocalDateKey } from "../primitives"
+import { formatVGrade, getLocalWeekStart, toLocalDateKey } from "../primitives"
 import type { ProgressionChartPoint, ProgressionRange, ProgressionViewModel } from "./types"
 
 export type ProgressionViewModelOptions = {
@@ -41,15 +41,7 @@ function formatTickLabel(startAt: string, previousStartAt: string | null): strin
 }
 
 function formatGradeLabel(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "-"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "-")
 }
 
 function formatChartGradeLabel(grade: number | null): string {
@@ -63,7 +55,7 @@ function formatAverage(value: number): string {
 
 function formatGradeDelta(value: number | null): string {
   if (value === null || !Number.isFinite(value)) {
-    return "-"
+    return ""
   }
 
   const sign = value >= 0 ? "+" : ""
@@ -221,7 +213,7 @@ function selectSupportingMetrics(
     {
       label: "Highest Grade",
       value: formatGradeLabel(highestSentGrade),
-      description: "highest this period",
+      description: "",
     },
     {
       label: "Working Range",
@@ -231,12 +223,12 @@ function selectSupportingMetrics(
     {
       label: "Avg Climbs / Week",
       value: formatAverage(safeDivide(totalClimbs, visibleBucketCount)),
-      description: "visible chart window",
+      description: "",
     },
     {
       label: "Sessions / Week",
       value: formatAverage(safeDivide(totalSessions, visibleBucketCount)),
-      description: "visible chart window",
+      description: "",
     },
   ]
 }
