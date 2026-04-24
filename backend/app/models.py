@@ -42,6 +42,19 @@ class AccessRequestResponse(BaseModel):
     email: str
     status: str
 
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+    username: str
+    display_name: str
+    referral_code: Optional[str] = None
+
+
+class RegisterResponse(BaseModel):
+    email: str
+    user_id: str
+
 # ── Climbs ───────────────────────────────────────────────────────────────────
 
 class ClimbObject(BaseModel):

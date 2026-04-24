@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { signIn, signUp } from '../lib/auth'
+import { AccessRequiredError, signIn, signUp } from '../lib/auth'
 
 type Tab = 'login' | 'register'
 
@@ -47,6 +47,16 @@ export default function AuthPage() {
     try {
       await signUp(regEmail, regPassword, regUsername, regDisplayName, regReferral || undefined)
     } catch (err) {
+      if (err instanceof AccessRequiredError) {
+        navigate('/#access', {
+          replace: true,
+          state: {
+            accessRequestEmail: err.email,
+            accessRequestMessage: 'You need to request access before creating an account.',
+          },
+        })
+        return
+      }
       setError(err instanceof Error ? err.message : 'Registration failed')
     } finally {
       setLoading(false)

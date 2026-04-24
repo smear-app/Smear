@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { postAccessRequest } from "../lib/api"
 import "../styles/landing.css"
@@ -520,11 +520,33 @@ function HowItWorksSection() {
 }
 
 function AccessSection() {
+  const location = useLocation()
   const [email, setEmail] = useState("")
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const { session } = useAuth()
+  const redirectedEmail =
+    typeof location.state === "object" && location.state && "accessRequestEmail" in location.state
+      ? String(location.state.accessRequestEmail ?? "")
+      : ""
+  const redirectedMessage =
+    typeof location.state === "object" && location.state && "accessRequestMessage" in location.state
+      ? String(location.state.accessRequestMessage ?? "")
+      : ""
+
+  useEffect(() => {
+    if (!redirectedEmail && !redirectedMessage) {
+      return
+    }
+
+    if (redirectedEmail) {
+      setEmail((current) => current || redirectedEmail)
+    }
+
+    const accessSection = document.getElementById("access")
+    accessSection?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }, [redirectedEmail, redirectedMessage])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -573,6 +595,12 @@ function AccessSection() {
 
         {!submitted ? (
           <Reveal delay={320}>
+            {redirectedMessage ? (
+              <div className="landing-access__callout" role="status" aria-live="polite">
+                <strong>Invite required</strong>
+                <span>{redirectedMessage} Request access below and we&apos;ll reach out when your invite is ready.</span>
+              </div>
+            ) : null}
             <form onSubmit={handleSubmit} className="landing-access__form">
               <input
                 type="email"

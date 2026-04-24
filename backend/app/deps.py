@@ -3,6 +3,7 @@ from fastapi import Header, HTTPException
 from app.gyms import get_supabase
 
 logger = logging.getLogger(__name__)
+# trying to cause merge coinflict
 
 
 async def get_current_user(authorization: str = Header(...)) -> str:
