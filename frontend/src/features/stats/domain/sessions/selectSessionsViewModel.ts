@@ -1,4 +1,5 @@
 import type { SessionMetrics, SessionsMetrics } from "../calculators/sessions"
+import { average } from "../calculators/shared"
 import {
   classifySessionInsight,
   INVALID_SESSION_INSIGHT,
@@ -91,14 +92,6 @@ function formatPercent(value: number): string {
 
 function safePercentage(count: number, total: number): number {
   return total <= 0 ? 0 : (count / total) * 100
-}
-
-function average(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function toPersistedIdentity(session: SessionMetrics): SessionInsightResult | null {

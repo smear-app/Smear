@@ -1,9 +1,6 @@
 import { useLayoutEffect } from "react"
 import { useLocation } from "react-router-dom"
-
-type StatsNavigationState = {
-  fromStatsOverview?: boolean
-}
+import type { StatsNavigationState } from "../../../lib/navigation"
 
 export default function StatsDetailScrollReset() {
   const location = useLocation()

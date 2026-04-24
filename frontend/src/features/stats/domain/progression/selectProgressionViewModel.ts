@@ -1,5 +1,5 @@
 import type { ProgressionMetrics } from "../calculators/progression"
-import { safeDivide } from "../calculators/shared"
+import { average, safeDivide } from "../calculators/shared"
 import { formatVGrade, getLocalWeekStart, toLocalDateKey } from "../primitives"
 import type { ProgressionChartPoint, ProgressionRange, ProgressionViewModel } from "./types"
 
@@ -60,14 +60,6 @@ function formatGradeDelta(value: number | null): string {
 
   const sign = value >= 0 ? "+" : ""
   return `${sign}${value.toFixed(1)} V`
-}
-
-function averageValues(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function getOptionalLocalWeekStart(value: Date | string | null | undefined): Date | null {
@@ -179,8 +171,8 @@ function selectWorkingGradeDelta(metrics: ProgressionMetrics, options: Progressi
 
   const recent = validWorkingGrades.slice(-comparisonWeekCount)
   const previous = validWorkingGrades.slice(-(comparisonWeekCount * 2), -comparisonWeekCount)
-  const recentAverage = averageValues(recent)
-  const previousAverage = averageValues(previous)
+  const recentAverage = average(recent)
+  const previousAverage = average(previous)
 
   if (recentAverage === null || previousAverage === null) {
     return null

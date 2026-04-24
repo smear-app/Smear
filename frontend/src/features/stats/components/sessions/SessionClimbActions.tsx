@@ -1,6 +1,7 @@
 import { FiChevronDown, FiList } from "react-icons/fi"
 import LogbookClimbList from "../../../../components/logbook/LogbookClimbList"
 import type { Climb } from "../../../../lib/climbs"
+import type { ClimbDetailReturnState } from "../../../../lib/navigation"
 
 type SessionClimbActionsProps = {
   climbs: Climb[]
@@ -8,7 +9,7 @@ type SessionClimbActionsProps = {
   isLoading: boolean
   error: string | null
   detailReturnPath: string
-  detailReturnState?: Record<string, unknown>
+  detailReturnState?: ClimbDetailReturnState
   onToggleExpanded: () => void
   onDeleteClimb: (climbId: string) => Promise<void> | void
   onEditClimb: (climb: Climb) => void

@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import BottomNav from "../../../components/BottomNav"
 import DetailPageHeader from "../../../components/DetailPageHeader"
 import type { Climb } from "../../../lib/climbs"
+import type { SessionsStatsLocationState } from "../../../lib/navigation"
 import SessionClimbActions from "../components/sessions/SessionClimbActions"
 import SessionsTrendChart from "../components/sessions/SessionsTrendChart"
 import SessionTrendMetrics from "../components/sessions/SessionTrendMetrics"
@@ -17,11 +18,6 @@ import { buildSessionClimbsByStatsSessionId } from "../domain/sessions/selectSes
 import { selectSessionsViewModel } from "../domain/sessions/selectSessionsViewModel"
 import { useSharedStatsBase } from "../hooks/useSharedStatsBase"
 import type { SessionDetail } from "../domain/sessions/types"
-
-type SessionsStatsLocationState = {
-  selectedSessionIndex?: number
-  climbsExpanded?: boolean
-}
 
 const EMPTY_SELECTED_SESSION: SessionDetail = {
   id: "empty-session",
