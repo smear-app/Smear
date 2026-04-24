@@ -17,24 +17,23 @@ class FakeQuery:
         self.supabase = supabase
         self.table = table
         self.filters: list[tuple[str, object]] = []
-        self._selected = False
-        self._maybe_single = False
+        self._limit = None
         self._update_payload = None
 
     def select(self, _fields):
-        self._selected = True
         return self
 
     def eq(self, field, value):
         self.filters.append((field, value))
         return self
 
-    def maybe_single(self):
-        self._maybe_single = True
+    def limit(self, value):
+        self._limit = value
         return self
 
-    def update(self, payload):
+    def update(self, payload, returning=None):
         self._update_payload = dict(payload)
+        self.returning = returning
         return self
 
     def execute(self):
@@ -45,15 +44,15 @@ class FakeQuery:
         ]
 
         if self._update_payload is not None:
-            if not self._selected:
+            if self.returning != "representation":
                 raise RuntimeError("Missing response")
             for row in matches:
                 row.update(self._update_payload)
             return FakeResult([{"id": row["id"]} for row in matches])
 
         data = [dict(row) for row in matches]
-        if self._maybe_single:
-            return FakeResult(data[0] if data else None)
+        if self._limit is not None:
+            data = data[:self._limit]
         return FakeResult(data)
 
 

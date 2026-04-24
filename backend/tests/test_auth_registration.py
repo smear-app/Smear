@@ -132,6 +132,7 @@ class AuthRegistrationTests(unittest.TestCase):
             {
                 "id": "user-123",
                 "username": "person",
+                "referral_code": "PERSON",
                 "avatar_url": None,
                 "display_name": "Person",
                 "referred_by": "ref-1",

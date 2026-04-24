@@ -19,16 +19,23 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 SESSION_THRESHOLD_HOURS = 3
 
 
+def _first_row(result):
+    data = getattr(result, "data", None)
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data
+
+
 def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibility: Optional[str] = None) -> None:
     """Aggregate climb stats for a session and mark it published."""
     session_result = (
         supabase.from_("sessions")
         .select("id, started_at, created_at, insight_label, insight_reason")
         .eq("id", session_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    session = session_result.data or {"id": session_id}
+    session = _first_row(session_result) or {"id": session_id}
 
     # Resolve visibility from profile default if not overridden
     if visibility is None:
@@ -36,10 +43,10 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
             supabase.from_("profiles")
             .select("default_visibility")
             .eq("id", user_id)
-            .maybe_single()
+            .limit(1)
             .execute()
         )
-        visibility = (profile.data or {}).get("default_visibility", "followers")
+        visibility = (_first_row(profile) or {}).get("default_visibility", "followers")
 
     # Fetch all climbs in this session
     climbs_result = (
@@ -93,21 +100,24 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
             "insight_classifier_version": insight["classifier_version"],
         }
 
-    supabase.from_("sessions").update({
-        "is_published": True,
-        "visibility": visibility,
-        "total_climbs": total_climbs,
-        "sends": sends,
-        "flashes": flashes,
-        "attempts": attempts,
-        "hardest_grade": hardest_grade,
-        "hardest_grade_value": hardest_grade_value,
-        "hardest_flash": hardest_flash,
-        "hardest_flash_value": hardest_flash_value,
-        "top_tags": top_tags,
-        "cover_photo_url": cover_photo_url,
-        **insight_payload,
-    }).eq("id", session_id).select("id").execute()
+    supabase.from_("sessions").update(
+        {
+            "is_published": True,
+            "visibility": visibility,
+            "total_climbs": total_climbs,
+            "sends": sends,
+            "flashes": flashes,
+            "attempts": attempts,
+            "hardest_grade": hardest_grade,
+            "hardest_grade_value": hardest_grade_value,
+            "hardest_flash": hardest_flash,
+            "hardest_flash_value": hardest_flash_value,
+            "top_tags": top_tags,
+            "cover_photo_url": cover_photo_url,
+            **insight_payload,
+        },
+        returning="representation",
+    ).eq("id", session_id).execute()
 
 
 def publish_stale_sessions(supabase, user_id: str) -> None:
@@ -145,10 +155,9 @@ def get_active_session(user_id: str = Depends(get_current_user)):
         .gt("ended_at", threshold)
         .order("ended_at", desc=True)
         .limit(1)
-        .maybe_single()
         .execute()
     )
-    row = _response_data(result)
+    row = _first_row(result)
     if not row:
         return None
     return SessionObject(
@@ -191,10 +200,10 @@ def end_session(
         .select("*")
         .eq("id", session_id)
         .eq("user_id", user_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    session = _response_data(result)
+    session = _first_row(result)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -203,8 +212,9 @@ def end_session(
 
     # Touch ended_at to now if not set
     supabase.from_("sessions").update(
-        {"ended_at": datetime.now(timezone.utc).isoformat()}
-    ).eq("id", session_id).select("id").execute()
+        {"ended_at": datetime.now(timezone.utc).isoformat()},
+        returning="representation",
+    ).eq("id", session_id).execute()
 
     _compute_and_publish_session(supabase, session_id, user_id, body.visibility)
 
@@ -212,10 +222,10 @@ def end_session(
         supabase.from_("sessions")
         .select("*")
         .eq("id", session_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    row = _response_data(updated) or {}
+    row = _first_row(updated) or {}
     return SessionObject(
         id=row["id"],
         user_id=row["user_id"],
