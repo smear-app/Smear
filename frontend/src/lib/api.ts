@@ -160,6 +160,16 @@ export interface PostCanonicalRequest {
   photo_url?: string | null
 }
 
+export interface PostAccessRequest {
+  email: string
+  source?: string | null
+}
+
+export interface AccessRequestResponse {
+  email: string
+  status: string
+}
+
 export interface CanonicalSummary {
   id: string
   gym_id: string
@@ -186,6 +196,22 @@ async function getToken(): Promise<string> {
   const token = data.session?.access_token
   if (!token) throw new Error('Not authenticated')
   return token
+}
+
+async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const resp = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new Error(`API error ${resp.status}: ${text}`)
+  }
+  if (resp.status === 204) return undefined as unknown as T
+  return resp.json() as Promise<T>
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -258,6 +284,13 @@ export async function patchGymPreferences(body: PatchGymPrefsRequest): Promise<v
     body: JSON.stringify(body),
   })
   clearMeCache()
+}
+
+export async function postAccessRequest(body: PostAccessRequest): Promise<AccessRequestResponse> {
+  return publicApiFetch<AccessRequestResponse>('/access-requests', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
 }
 
 // ── Gyms cache ────────────────────────────────────────────────────────────────
