@@ -1,5 +1,6 @@
 import { FiUser } from "react-icons/fi"
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { fetchUserProfile } from "../lib/profile"
 import type { UserProfile } from "../lib/profile"
@@ -23,20 +24,26 @@ const WelcomeCard = () => {
             {displayName ?? "Climber"}
           </p>
         </div>
-        {profile?.avatar_url ? (
-          <img
-            src={profile.avatar_url}
-            alt="User avatar"
-            className="h-12 w-12 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <div
-            aria-label="Default user avatar"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface"
-          >
-            <FiUser className="h-6 w-6" />
-          </div>
-        )}
+        <Link
+          to="/profile"
+          aria-label="Open profile"
+          className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember/40 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-surface"
+        >
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt="User avatar"
+              className="h-12 w-12 shrink-0 rounded-full object-cover"
+            />
+          ) : (
+            <div
+              aria-label="Default user avatar"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ember text-stone-surface"
+            >
+              <FiUser className="h-6 w-6" />
+            </div>
+          )}
+        </Link>
       </div>
 
       <div className="mt-3.5">
