@@ -208,7 +208,7 @@ def get_prior_session_metric_snapshots(supabase, user_id: str, session_start_at:
     lookback_start = (session_start - timedelta(days=BASELINE_LOOKBACK_DAYS)).isoformat()
     sessions_result = (
         supabase.from_("sessions")
-        .select("id, started_at, created_at, total_climbs")
+        .select("id, started_at, total_climbs")
         .eq("user_id", user_id)
         .lt("started_at", session_start.isoformat())
         .gte("started_at", lookback_start)

@@ -30,7 +30,7 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
     """Aggregate climb stats for a session and mark it published."""
     session_result = (
         supabase.from_("sessions")
-        .select("id, started_at, created_at, insight_label, insight_reason")
+        .select("id, started_at, insight_label, insight_reason")
         .eq("id", session_id)
         .limit(1)
         .execute()
@@ -87,7 +87,7 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
     cover_photo_url = next((c["photo_url"] for c in climbs if c.get("photo_url")), None)
     insight_payload = {}
     if total_climbs >= 3 and not (session.get("insight_label") and session.get("insight_reason")):
-        session_start_at = session.get("started_at") or session.get("created_at") or datetime.now(timezone.utc).isoformat()
+        session_start_at = session.get("started_at") or datetime.now(timezone.utc).isoformat()
         current_metrics = compute_session_metric_snapshot(
             {"id": session_id, "started_at": session_start_at},
             climbs,
