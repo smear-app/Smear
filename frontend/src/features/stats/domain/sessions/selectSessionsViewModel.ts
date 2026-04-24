@@ -1,4 +1,13 @@
 import type { SessionMetrics, SessionsMetrics } from "../calculators/sessions"
+import {
+  classifySessionInsight,
+  INVALID_SESSION_INSIGHT,
+  isValidInsightSession,
+  selectSessionInsightBaseline,
+  type SessionInsightLabel,
+  type SessionInsightResult,
+} from "./sessionInsightClassifier"
+import { formatVGrade } from "../primitives"
 import type {
   SessionDetail,
   SessionGradeDistributionItem,
@@ -10,6 +19,15 @@ import type {
 } from "./types"
 
 const MAX_TREND_SESSIONS = 5
+const SESSION_INSIGHT_LABELS = new Set<SessionInsightLabel>([
+  "Building baseline",
+  "Performance session",
+  "Volume session",
+  "Projecting session",
+  "Efficiency session",
+  "Exploration session",
+  "Consistent session",
+])
 
 function formatDate(value: string): string {
   const date = new Date(value)
@@ -56,15 +74,7 @@ function formatDuration(durationMs: number | null): string {
 }
 
 function formatGrade(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "None"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "None")
 }
 
 function formatAverage(value: number | null): string {
@@ -91,6 +101,48 @@ function average(values: readonly number[]): number | null {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+function toPersistedIdentity(session: SessionMetrics): SessionInsightResult | null {
+  const persistedInsight = session.persistedInsight
+
+  if (!persistedInsight || !SESSION_INSIGHT_LABELS.has(persistedInsight.label as SessionInsightLabel)) {
+    return null
+  }
+
+  return {
+    label: persistedInsight.label as SessionInsightLabel,
+    reason: persistedInsight.reason,
+  }
+}
+
+function toDisplayIdentity(identity: SessionInsightResult) {
+  if (identity.label === INVALID_SESSION_INSIGHT.label) {
+    return {
+      ...identity,
+      displayMode: "system" as const,
+      message: "Not enough climbs",
+    }
+  }
+
+  return {
+    ...identity,
+    displayMode: "insight" as const,
+  }
+}
+
+function selectSessionIdentity(session: SessionMetrics, sessions: readonly SessionMetrics[]): SessionInsightResult {
+  if (!isValidInsightSession(session)) {
+    return INVALID_SESSION_INSIGHT
+  }
+
+  const persistedIdentity = toPersistedIdentity(session)
+
+  if (persistedIdentity) {
+    return persistedIdentity
+  }
+
+  return classifySessionInsight(session, selectSessionInsightBaseline(session, sessions))
+}
+
 function toSummaryStats(session: SessionMetrics): SessionSummaryStat[] {
   return [
     { label: "Total Climbs", value: String(session.totalClimbs) },
@@ -105,11 +157,23 @@ function toGradeDistribution(session: SessionMetrics): SessionGradeDistributionI
 
   return [...session.gradeHistogram]
     .sort((left, right) => right.gradeIndex - left.gradeIndex)
-    .map((bucket) => ({
-      label: formatGrade(bucket.gradeIndex),
-      count: bucket.count,
-      widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
-    }))
+    .map((bucket) => {
+      const outcomeCounts = bucket.outcomeCounts ?? { flash: 0, send: 0, attempt: bucket.count }
+
+      return {
+        label: formatGrade(bucket.gradeIndex),
+        count: bucket.count,
+        widthPercent: maxCount === 0 ? 0 : (bucket.count / maxCount) * 100,
+        segments: ([
+          { tone: "flash", count: outcomeCounts.flash },
+          { tone: "send", count: outcomeCounts.send },
+          { tone: "unfinished", count: outcomeCounts.attempt },
+        ] satisfies Array<Pick<SessionGradeDistributionItem["segments"][number], "tone" | "count">>).map((segment) => ({
+          ...segment,
+          percentage: safePercentage(segment.count, bucket.count),
+        })),
+      }
+    })
 }
 
 function toOutcomeItems(session: SessionMetrics): SessionOutcomeItem[] {
@@ -134,6 +198,7 @@ function toOutcomeItems(session: SessionMetrics): SessionOutcomeItem[] {
 function toSessionDetail(
   sessionWithComparison: SessionsMetrics["sessions"][number],
   index: number,
+  identity: SessionInsightResult,
 ): SessionDetail {
   const session = sessionWithComparison.session
 
@@ -141,12 +206,12 @@ function toSessionDetail(
     id: session.sessionId,
     selectorLabel: `${formatDate(session.startAt)} · ${formatGymName(session.gymName)}`,
     selectorMeta: index === 0 ? "Latest session" : "Previous session",
-    identity: { label: "-", reason: "-" },
+    identity: toDisplayIdentity(identity),
     summary: toSummaryStats(session),
     outcomes: toOutcomeItems(session),
     outcomeTotalCount: session.totalClimbs,
     gradeDistribution: toGradeDistribution(session),
-    insight: "",
+    insight: identity.label === INVALID_SESSION_INSIGHT.label ? "Not enough climbs" : `${identity.label} · ${identity.reason}`,
   }
 }
 
@@ -176,34 +241,45 @@ function toTrendMetrics(trendSessions: readonly SessionsMetrics["sessions"][numb
     {
       label: "Avg Climbs / Session",
       value: formatAverage(averageClimbs),
-      description: "recent session window",
+      description: "",
     },
     {
       label: "Working Grade",
       value: formatGrade(averageWorkingGrade),
-      description: "recent valid sessions",
+      description: "",
     },
     {
       label: "Best Session Volume",
       value: bestSessionVolume === null ? "-" : `${bestSessionVolume} climbs`,
-      description: "highest recent volume",
+      description: "",
     },
     {
       label: "Best Session Grade",
       value: formatGrade(bestSessionGrade),
-      description: "strongest recent session",
+      description: "",
     },
   ]
 }
 
 export function selectSessionsViewModel(metrics: SessionsMetrics): SessionsViewModel {
-  const sessionsNewestFirst = [...metrics.sessions]
+  const sessionsChronological = [...metrics.sessions].sort(
+    (left, right) => new Date(left.session.startAt).getTime() - new Date(right.session.startAt).getTime(),
+  )
+  const sessionMetricsChronological = sessionsChronological.map((entry) => entry.session)
+  const identitiesBySessionId = new Map(
+    sessionsChronological.map((entry) => {
+      return [entry.session.sessionId, selectSessionIdentity(entry.session, sessionMetricsChronological)] as const
+    }),
+  )
+  const sessionsNewestFirst = [...sessionsChronological]
     .sort((left, right) => new Date(right.session.startAt).getTime() - new Date(left.session.startAt).getTime())
   const trendSessions = sessionsNewestFirst.slice(0, MAX_TREND_SESSIONS).reverse()
 
   return {
     trendPoints: trendSessions.map(toTrendPoint),
     trendMetrics: toTrendMetrics(trendSessions),
-    sessions: sessionsNewestFirst.map(toSessionDetail),
+    sessions: sessionsNewestFirst.map((entry, index) =>
+      toSessionDetail(entry, index, identitiesBySessionId.get(entry.session.sessionId) ?? { label: "Building baseline", reason: "More sessions needed" }),
+    ),
   }
 }

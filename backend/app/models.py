@@ -32,16 +32,6 @@ class PatchGymPrefsRequest(BaseModel):
     recent_gym_ids: list[str]
 
 
-class AccessRequestCreate(BaseModel):
-    email: str
-    source: Optional[str] = "landing_page"
-
-
-class AccessRequestResponse(BaseModel):
-    email: str
-    status: str
-
-
 # ── Climbs ───────────────────────────────────────────────────────────────────
 
 class ClimbObject(BaseModel):
@@ -62,6 +52,9 @@ class ClimbObject(BaseModel):
     canonical_tags: list[str] = []
     session_id: Optional[str] = None
     session_started_at: Optional[str] = None
+    session_insight_label: Optional[str] = None
+    session_insight_reason: Optional[str] = None
+    session_insight_classifier_version: Optional[str] = None
     created_at: str
 
 
@@ -190,6 +183,9 @@ class SessionObject(BaseModel):
     hardest_grade_value: Optional[int] = None
     hardest_flash: Optional[str] = None
     hardest_flash_value: Optional[int] = None
+    insight_label: Optional[str] = None
+    insight_reason: Optional[str] = None
+    insight_classifier_version: Optional[str] = None
     top_tags: list[str] = []
     cover_photo_url: Optional[str] = None
     created_at: Optional[str] = None
@@ -212,6 +208,9 @@ class SessionCardObject(BaseModel):
     hardest_grade_value: Optional[int] = None
     hardest_flash: Optional[str] = None
     hardest_flash_value: Optional[int] = None
+    insight_label: Optional[str] = None
+    insight_reason: Optional[str] = None
+    insight_classifier_version: Optional[str] = None
     top_tags: list[str] = []
     cover_photo_url: Optional[str] = None
     created_at: Optional[str] = None

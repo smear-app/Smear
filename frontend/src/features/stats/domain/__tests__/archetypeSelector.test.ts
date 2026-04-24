@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { calculateArchetypeMetrics } from "../calculators"
-import { normalizeSoftRadarValues, selectArchetypeViewModel } from "../archetype/selectArchetypeViewModel"
+import { scaleArchetypePerformanceRadarValues, scaleArchetypeVolumeRadarValues } from "../archetype/radarScaling"
+import { selectArchetypeViewModel } from "../archetype/selectArchetypeViewModel"
 import { canonicalTags, climb, tag } from "./fixtures"
 
 describe("archetype selector", () => {
@@ -31,6 +32,7 @@ describe("archetype selector", () => {
     expect(slab).toMatchObject({
       sentCount: 0,
       totalLoggedCount: 1,
+      workingGradeValue: null,
       workingGradeSourceValues: [],
       workingGradeDisplayValue: "-",
       volumeDisplayValue: "1",
@@ -72,15 +74,29 @@ describe("archetype selector", () => {
       "terrain",
     )
 
-    expect(viewModel.categories.every((category) => category.normalizedPerformanceRadarValue === 100)).toBe(true)
-    expect(viewModel.categories.every((category) => category.normalizedVolumeRadarValue === 100)).toBe(true)
+    expect(viewModel.categories.every((category) => category.normalizedPerformanceRadarValue === 88)).toBe(true)
+    expect(viewModel.categories.every((category) => category.normalizedVolumeRadarValue === 90)).toBe(true)
   })
 
-  it("compresses tiny differences while preserving clear dominance", () => {
-    const tinyDifference = normalizeSoftRadarValues([3, 3, 3, 4], { valueOffset: 1 })
-    const dominantDifference = normalizeSoftRadarValues([3, 3, 3, 8], { valueOffset: 1 })
+  it("uses a compressed performance range for nearly balanced grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([5, 5.25, 5.5])).toEqual([62, 75, 88])
+  })
 
-    expect(Math.max(...tinyDifference) - Math.min(...tinyDifference)).toBeLessThanOrEqual(10)
-    expect(Math.max(...dominantDifference) - Math.min(...dominantDifference)).toBeGreaterThan(15)
+  it("smoothly opens the performance range for moderate grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([4, 4.75, 5.5])).toEqual([52, 72, 91])
+  })
+
+  it("uses the full aggressive performance range for large grade spreads", () => {
+    expect(scaleArchetypePerformanceRadarValues([3, 4.5, 6])).toEqual([38, 67, 95])
+  })
+
+  it("scales volume with sqrt transform before normalization", () => {
+    const scaled = scaleArchetypeVolumeRadarValues([3, 52])
+
+    expect(scaled).toEqual([18, 90])
+  })
+
+  it("keeps zero volume centered while preserving a visible floor for logged categories", () => {
+    expect(scaleArchetypeVolumeRadarValues([0, 3, 52])).toEqual([0, 18, 90])
   })
 })

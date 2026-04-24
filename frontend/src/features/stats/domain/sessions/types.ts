@@ -24,6 +24,11 @@ export type SessionGradeDistributionItem = {
   label: string
   count: number
   widthPercent: number
+  segments: Array<{
+    tone: SessionOutcomeItem["tone"]
+    count: number
+    percentage: number
+  }>
 }
 
 export type SessionSummaryStat = {
@@ -34,6 +39,8 @@ export type SessionSummaryStat = {
 export type SessionIdentity = {
   label: string
   reason: string
+  displayMode: "insight" | "system"
+  message?: string
 }
 
 export type SessionDetail = {

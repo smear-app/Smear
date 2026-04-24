@@ -1,4 +1,6 @@
 import type { ArchetypeGroupKey, ArchetypeMetrics, ArchetypeTagMetric } from "../calculators/archetype"
+import { formatVGrade } from "../primitives"
+import { scaleArchetypePerformanceRadarValues, scaleArchetypeVolumeRadarValues } from "./radarScaling"
 import type {
   ArchetypeCategoryEntry,
   ArchetypeCategoryOutcomeBreakdownItem,
@@ -20,10 +22,6 @@ const OUTCOME_LABELS: Record<ArchetypeOutcomeTone, string> = {
 
 const OUTCOME_ORDER: ArchetypeOutcomeTone[] = ["flash", "send", "attempted"]
 const RADAR_METADATA_SEPARATOR = "•"
-// Ratio compression keeps balanced profiles full while muting tiny category differences.
-const RADAR_NONZERO_FLOOR = 32
-const RADAR_COMPRESSION_EXPONENT = 0.45
-const PERFORMANCE_VALUE_OFFSET = 1
 
 const SEGMENT_GROUPS = {
   terrain: "terrain",
@@ -33,15 +31,7 @@ const SEGMENT_GROUPS = {
 } satisfies Record<ArchetypeSegment, ArchetypeGroupKey>
 
 function formatGrade(grade: number | null): string {
-  if (grade === null || !Number.isFinite(grade)) {
-    return "-"
-  }
-
-  if (Number.isInteger(grade)) {
-    return `V${grade}`
-  }
-
-  return `V${Math.floor(grade)}–V${Math.ceil(grade)}`
+  return formatVGrade(grade, "-")
 }
 
 function formatVolume(value: number): string {
@@ -99,36 +89,6 @@ function toRadarAxisDisplay(entry: ArchetypeCategoryEntry): ArchetypeRadarAxisDi
   }
 }
 
-export function normalizeSoftRadarValues(
-  values: readonly (number | null)[],
-  options: { valueOffset?: number } = {},
-): number[] {
-  const valueOffset = options.valueOffset ?? 0
-  const transformedValues = values.map((value) =>
-    value === null || !Number.isFinite(value) ? null : Math.max(value + valueOffset, 0),
-  )
-  const presentValues = transformedValues.flatMap((value) => (value === null ? [] : [value]))
-
-  if (presentValues.length === 0) {
-    return values.map(() => 0)
-  }
-
-  const maximum = Math.max(...presentValues)
-
-  if (maximum <= 0) {
-    return transformedValues.map((value) => (value === null ? 0 : 100))
-  }
-
-  return transformedValues.map((value) => {
-    if (value === null) {
-      return 0
-    }
-
-    const compressedRatio = Math.pow(value / maximum, RADAR_COMPRESSION_EXPONENT)
-    return Math.round(RADAR_NONZERO_FLOOR + (100 - RADAR_NONZERO_FLOOR) * compressedRatio)
-  })
-}
-
 function getMetricsForSegment(metrics: ArchetypeMetrics, segment: ArchetypeSegment): ArchetypeTagMetric[] {
   const group = SEGMENT_GROUPS[segment]
   const metricsByKey = new Map(metrics[group].map((metric) => [metric.tagLabel, metric]))
@@ -145,19 +105,17 @@ function getMetricsForSegment(metrics: ArchetypeMetrics, segment: ArchetypeSegme
 }
 
 function selectCategories(metrics: ArchetypeTagMetric[]): ArchetypeCategoryEntry[] {
-  const performanceRadarValues = normalizeSoftRadarValues(
+  const performanceRadarValues = scaleArchetypePerformanceRadarValues(
     metrics.map((metric) => (metric.workingGrade === null ? null : metric.workingGrade)),
-    { valueOffset: PERFORMANCE_VALUE_OFFSET },
   )
-  const volumeRadarValues = normalizeSoftRadarValues(
-    metrics.map((metric) => (metric.climbCount === 0 ? null : metric.climbCount)),
-  )
+  const volumeRadarValues = scaleArchetypeVolumeRadarValues(metrics.map((metric) => metric.climbCount))
 
   return metrics.map((metric, index) => ({
     categoryKey: metric.tagKey,
     label: metric.tagLabel,
     sentCount: metric.sentCount,
     totalLoggedCount: metric.climbCount,
+    workingGradeValue: metric.workingGrade,
     workingGradeSourceValues: metric.workingGradeSourceValues,
     workingGradeDisplayValue: formatGrade(metric.workingGrade),
     volumeDisplayValue: formatVolume(metric.climbCount),

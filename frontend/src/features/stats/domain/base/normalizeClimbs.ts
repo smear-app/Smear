@@ -32,6 +32,10 @@ export function normalizeClimb(climb: NormalizableClimb, gymsById: ReadonlyMap<s
     canonicalClimbId: climb.canonical_climb_id,
     sessionId: climb.session_id,
     sessionStartedAt: climb.session_started_at,
+    sessionInsightLabel: "session_insight_label" in climb ? (climb.session_insight_label ?? null) : null,
+    sessionInsightReason: "session_insight_reason" in climb ? (climb.session_insight_reason ?? null) : null,
+    sessionInsightClassifierVersion:
+      "session_insight_classifier_version" in climb ? (climb.session_insight_classifier_version ?? null) : null,
     loggedAt: climb.created_at,
     completedAt: outcome.isCompleted ? climb.created_at : null,
     gradeLabel: grade.gradeLabel,
