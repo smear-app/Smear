@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom"
-import { FiBarChart2, FiHome, FiPlus, FiUsers } from "react-icons/fi"
+import { FiBarChart2, FiHome, FiList, FiPlus, FiUsers } from "react-icons/fi"
 import { useLogClimbAction } from "../hooks/useLogClimbAction"
 
 const navItems = [
   { label: "Home", icon: FiHome, to: "/home" },
   { label: "Stats", icon: FiBarChart2, to: "/stats" },
   { label: "Social", icon: FiUsers, to: "/social" },
+  { label: "Log", icon: FiList, to: "/home/logbook" },
 ]
 
 const tabClassName = ({ isActive }: { isActive: boolean }) =>
@@ -32,11 +33,11 @@ const BottomNav = () => {
 
   return (
     <nav className="app-safe-fixed-bottom fixed bottom-0 left-0 right-0 z-30 border-t border-stone-border bg-stone-surface px-5">
-      <div className="mx-auto grid w-full max-w-[380px] grid-cols-[1fr_1fr_auto_1fr] items-end gap-1 py-3">
+      <div className="mx-auto flex w-full max-w-[380px] items-end justify-between py-3">
         {navItems.slice(0, 2).map(({ label, icon: Icon, to }) => (
           <BottomNavItem key={label} label={label} icon={Icon} to={to} />
         ))}
-        <div className="flex justify-center self-stretch px-2">
+        <div className="flex flex-1 justify-center self-stretch">
           <div className="flex min-h-[3.25rem] items-start justify-center pt-0.5">
             <button
               type="button"
@@ -54,7 +55,7 @@ const BottomNav = () => {
             </button>
           </div>
         </div>
-        {navItems.slice(2, 3).map(({ label, icon: Icon, to }) => (
+        {navItems.slice(2).map(({ label, icon: Icon, to }) => (
           <BottomNavItem key={label} label={label} icon={Icon} to={to} />
         ))}
       </div>
