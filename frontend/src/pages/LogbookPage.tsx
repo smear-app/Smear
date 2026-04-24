@@ -10,36 +10,26 @@ import { useAuth } from "../context/AuthContext"
 import { useLogbookHistory } from "../hooks/useLogbookHistory"
 import { type LoggedGradeOption, type LoggedGymOption } from "../lib/climbs"
 import { getClimbsMeta } from "../lib/api"
+import type { HomeNavigationState, LogbookRestoreState } from "../lib/navigation"
 import {
   DEFAULT_LOGBOOK_FILTERS,
-  LOGBOOK_SORT_OPTIONS,
   formatTagLabel,
   getAttributeFilterSections,
   getClimbsForDateKey,
   getTagCategory,
   getSortLabel,
   type LogbookFilters,
-  type LogbookSort,
-  type LogbookView,
 } from "../lib/logbook"
+import { LOGBOOK_SORT_OPTIONS, LOGBOOK_VIEW_OPTIONS, type LogbookSort, type LogbookView } from "../lib/logbookTypes"
 
 const SORT_PANEL_OPTIONS: LogbookSort[] = [...LOGBOOK_SORT_OPTIONS]
-const VIEW_OPTIONS: LogbookView[] = ["list", "calendar"]
+const VIEW_OPTIONS: LogbookView[] = [...LOGBOOK_VIEW_OPTIONS]
 const SEND_TYPE_OPTIONS = ["flash", "send", "attempt"]
 const POPUP_CARD_SHELL_CLASS =
   "rounded-[18px] border border-stone-border/80 bg-stone-surface p-1.5 shadow-[0_14px_30px_rgba(89,68,51,0.08)]"
 
 type OpenPanel = "filters" | "sort" | null
 type AttributeSectionKey = "holdTypes" | "movementTypes" | "wallTypes" | "mechanicTypes"
-type LogbookRestoreState = {
-  restoreLogbookState?: {
-    view: LogbookView
-    visibleMonth: string
-    selectedDateKey: string | null
-  }
-  focusSessionId?: string
-}
-
 type LogbookPageProps = {
   onDeleteClimb: (climbId: string) => Promise<void> | void
   onEditClimb: (climb: import("../lib/climbs").Climb) => void
@@ -199,7 +189,7 @@ export default function LogbookPage({
   refreshKey = 0,
 }: LogbookPageProps) {
   const location = useLocation()
-  const locationState = (location.state ?? {}) as LogbookRestoreState & { stackTransition?: string }
+  const locationState = (location.state ?? {}) as LogbookRestoreState & HomeNavigationState
   const restoredLogbookState = locationState.restoreLogbookState
   const [searchParams, setSearchParams] = useSearchParams()
   const focusedSessionId = searchParams.get("sessionId") ?? locationState.focusSessionId ?? null

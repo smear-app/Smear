@@ -12,13 +12,7 @@ import { useAuth } from "../context/AuthContext"
 import { buildClimbDetailData } from "../lib/climbDetail"
 import type { Climb } from "../lib/climbs"
 import { fetchClimbById } from "../lib/climbs"
-
-type ClimbLocationState = {
-  climb?: Climb
-  from?: string
-  fromState?: Record<string, unknown>
-  transition?: string
-}
+import type { ClimbLocationState } from "../lib/navigation"
 
 type FetchedClimbState = {
   climb: Climb | null

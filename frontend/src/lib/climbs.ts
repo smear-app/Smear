@@ -1,4 +1,4 @@
-import type { LogbookSort } from './logbook'
+import { gradeToValue } from './grades'
 import { uploadToCloudinary } from './cloudinary'
 import {
   getClimbs as apiGetClimbs,
@@ -11,20 +11,13 @@ import {
   getClimbsMeta,
   type ClimbObject,
   type GetClimbsParams,
+  type LoggedGradeOption,
+  type LoggedGymOption,
 } from './api'
+import type { LogbookSort } from './logbookTypes'
 
-const GRADE_VALUES: Record<string, number> = {
-  VB: -1, V0: 0, V1: 1, V2: 2, V3: 3, V4: 4, V5: 5,
-  V6: 6, V7: 7, V8: 8, V9: 9, V10: 10, 'V10+': 11,
-}
-
-export function gradeToValue(grade: string): number {
-  return GRADE_VALUES[grade] ?? 0
-}
-
-export function getKnownGradeValue(grade: string): number | null {
-  return GRADE_VALUES[grade] ?? null
-}
+export { gradeToValue } from './grades'
+export type { LoggedGradeOption, LoggedGymOption } from './api'
 
 export interface ClimbDraft {
   name: string
@@ -118,16 +111,6 @@ function mapApiClimb(obj: ClimbObject): Climb {
 export interface PaginatedClimbsResult {
   climbs: Climb[]
   totalCount: number
-}
-
-export interface LoggedGymOption {
-  id: string
-  name: string
-}
-
-export interface LoggedGradeOption {
-  grade: string
-  value: number
 }
 
 interface PaginatedClimbsParams {

@@ -2,6 +2,7 @@ import { calculateArchetypeMetrics, calculatePerformanceMetrics, calculateProgre
 import { scaleArchetypePerformanceRadarValues, scaleArchetypeVolumeRadarValues } from "../archetype/radarScaling"
 import { selectArchetypeViewModel } from "../archetype/selectArchetypeViewModel"
 import type { ArchetypeGroupKey, ArchetypeTagMetric } from "../calculators/archetype"
+import { average } from "../calculators/shared"
 import type { ArchetypeSegment } from "../archetype/types"
 import type { EnrichedClimb } from "../primitives"
 import type { StatsAreaId, StatsAreaPlaceholder, StatsPreviewVisualModel } from "../types"
@@ -148,14 +149,6 @@ function formatSignedGradeDelta(value: number | null): string {
 
   const sign = value >= 0 ? "+" : ""
   return `${sign}${value.toFixed(1)} working grade`
-}
-
-function average(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function selectSessionsTile(climbs: readonly EnrichedClimb[], now: Date): OverviewTile {

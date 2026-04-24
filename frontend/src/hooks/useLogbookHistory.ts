@@ -7,10 +7,10 @@ import {
   getVisibleSessions,
   isChronologicalSort,
   type LogbookFilters,
-  type LogbookSession,
-  type LogbookSort,
 } from "../lib/logbook"
 import type { Climb } from "../lib/climbs"
+import type { LogbookSession } from "../lib/logbook"
+import type { LogbookSort } from "../lib/logbookTypes"
 
 interface UseLogbookHistoryParams {
   userId?: string

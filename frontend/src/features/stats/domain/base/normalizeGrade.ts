@@ -1,4 +1,4 @@
-import { getKnownGradeValue } from "../../../../lib/climbs"
+import { getKnownGradeValue } from "../../../../lib/grades"
 
 export type NormalizedGrade = {
   gradeLabel: string | null

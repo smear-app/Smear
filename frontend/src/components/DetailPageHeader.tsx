@@ -1,9 +1,10 @@
 import type { ReactNode } from "react"
 import BackButton from "./BackButton"
+import type { HomeNavigationState } from "../lib/navigation"
 
 type DetailPageHeaderProps = {
   backTo?: string
-  backState?: unknown
+  backState?: HomeNavigationState
   backLabel?: string
   backAriaLabel?: string
   children: ReactNode

@@ -15,7 +15,12 @@ export default function ActiveSessionBanner({ refreshKey }: ActiveSessionBannerP
 
   useEffect(() => {
     setDone(false)
-    getActiveSession().then(setSession).catch(() => setSession(null))
+    getActiveSession()
+      .then(setSession)
+      .catch((error) => {
+        console.error("Failed to load active session", error)
+        setSession(null)
+      })
   }, [refreshKey])
 
   if (!session || done) return null

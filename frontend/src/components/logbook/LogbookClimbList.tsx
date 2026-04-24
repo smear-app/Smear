@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import type { Climb } from "../../lib/climbs"
+import type { ClimbDetailReturnState } from "../../lib/navigation"
 import LogbookClimbTile from "./LogbookClimbTile"
 
 type LogbookClimbListProps = {
@@ -9,7 +10,7 @@ type LogbookClimbListProps = {
   showLoggedDate?: boolean
   className?: string
   emptyState?: ReactNode
-  fromState?: Record<string, unknown>
+  fromState?: ClimbDetailReturnState
   onDelete?: (climbId: string) => Promise<void> | void
   onEdit?: (climb: Climb) => void
 }

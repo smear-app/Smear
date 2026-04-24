@@ -117,6 +117,9 @@ export interface ClimbsMetaResponse {
   grades: { grade: string; value: number }[]
 }
 
+export type LoggedGymOption = ClimbsMetaResponse["gyms"][number]
+export type LoggedGradeOption = ClimbsMetaResponse["grades"][number]
+
 export interface GymObject {
   id: string
   name: string
@@ -210,7 +213,6 @@ async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     const text = await resp.text().catch(() => '')
     throw new Error(`API error ${resp.status}: ${text}`)
   }
-  if (resp.status === 204) return undefined as unknown as T
   return resp.json() as Promise<T>
 }
 
@@ -228,8 +230,23 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     const text = await resp.text().catch(() => '')
     throw new Error(`API error ${resp.status}: ${text}`)
   }
-  if (resp.status === 204) return undefined as unknown as T
   return resp.json() as Promise<T>
+}
+
+async function apiFetchVoid(path: string, init?: RequestInit): Promise<void> {
+  const token = await getToken()
+  const resp = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers ?? {}),
+    },
+  })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new Error(`API error ${resp.status}: ${text}`)
+  }
 }
 
 // ── Me cache ──────────────────────────────────────────────────────────────────
@@ -272,14 +289,14 @@ export async function patchMe(body: PatchMeRequest): Promise<MeResponse> {
 }
 
 export async function patchPassword(body: PatchPasswordRequest): Promise<void> {
-  await apiFetch<void>('/me/password', {
+  await apiFetchVoid('/me/password', {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
 }
 
 export async function patchGymPreferences(body: PatchGymPrefsRequest): Promise<void> {
-  await apiFetch<void>('/me/gym-preferences', {
+  await apiFetchVoid('/me/gym-preferences', {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
@@ -376,7 +393,7 @@ export async function patchClimbPhoto(id: string, photoUrl: string): Promise<Cli
 }
 
 export async function deleteClimbApi(id: string): Promise<void> {
-  await apiFetch<void>(`/climbs/${id}`, { method: 'DELETE' })
+  await apiFetchVoid(`/climbs/${id}`, { method: 'DELETE' })
 }
 
 // ── Canonical Climbs ──────────────────────────────────────────────────────────
@@ -425,7 +442,7 @@ export interface SessionCardObject {
   insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
-  created_at: string
+  created_at: string | null
   author_display_name: string | null
   author_username: string | null
   author_avatar_url: string | null
@@ -460,15 +477,11 @@ export interface SessionObject {
   insight_classifier_version?: string | null
   top_tags: string[]
   cover_photo_url: string | null
-  created_at: string
+  created_at: string | null
 }
 
 export async function getActiveSession(): Promise<SessionObject | null> {
-  try {
-    return await apiFetch<SessionObject | null>('/sessions/active')
-  } catch {
-    return null
-  }
+  return apiFetch<SessionObject | null>('/sessions/active')
 }
 
 export async function endSession(sessionId: string, visibility?: string): Promise<SessionObject> {
@@ -531,11 +544,11 @@ export async function getFollows(): Promise<FollowsResponse> {
 }
 
 export async function followUser(targetUserId: string): Promise<void> {
-  await apiFetch<void>(`/social/follows/${targetUserId}`, { method: 'POST' })
+  await apiFetchVoid(`/social/follows/${targetUserId}`, { method: 'POST' })
 }
 
 export async function unfollowUser(targetUserId: string): Promise<void> {
-  await apiFetch<void>(`/social/follows/${targetUserId}`, { method: 'DELETE' })
+  await apiFetchVoid(`/social/follows/${targetUserId}`, { method: 'DELETE' })
 }
 
 export async function searchUsers(q: string): Promise<UserSearchResult[]> {
@@ -543,11 +556,11 @@ export async function searchUsers(q: string): Promise<UserSearchResult[]> {
 }
 
 export async function addReaction(sessionId: string): Promise<void> {
-  await apiFetch<void>(`/social/sessions/${sessionId}/reactions`, { method: 'POST' })
+  await apiFetchVoid(`/social/sessions/${sessionId}/reactions`, { method: 'POST' })
 }
 
 export async function removeReaction(sessionId: string): Promise<void> {
-  await apiFetch<void>(`/social/sessions/${sessionId}/reactions`, { method: 'DELETE' })
+  await apiFetchVoid(`/social/sessions/${sessionId}/reactions`, { method: 'DELETE' })
 }
 
 export async function getComments(sessionId: string): Promise<CommentObject[]> {

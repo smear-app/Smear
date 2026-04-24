@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import ClimbTileActionsMenu from "./ClimbTileActionsMenu"
 import CompactClimbTileRow from "./CompactClimbTileRow"
 import type { Climb } from "../../lib/climbs"
+import type { ClimbDetailReturnState } from "../../lib/navigation"
 
 type LogbookClimbTileProps = {
   climb: Climb
@@ -9,7 +10,7 @@ type LogbookClimbTileProps = {
   showMeta: boolean
   showLoggedDate?: boolean
   className?: string
-  fromState?: Record<string, unknown>
+  fromState?: ClimbDetailReturnState
   onDelete?: (climbId: string) => Promise<void> | void
   onEdit?: (climb: Climb) => void
 }

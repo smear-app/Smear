@@ -1,4 +1,5 @@
 import type { SessionMetrics } from "../calculators/sessions"
+import { average } from "../calculators/shared"
 
 export type SessionInsightLabel =
   | "Building baseline"
@@ -53,14 +54,6 @@ type Candidate = {
 function getTimestamp(value: string): number {
   const timestamp = new Date(value).getTime()
   return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY
-}
-
-function average(values: readonly number[]): number | null {
-  if (values.length === 0) {
-    return null
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
 function formatSignedDecimal(value: number, suffix: string): string {

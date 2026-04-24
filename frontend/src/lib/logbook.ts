@@ -4,6 +4,7 @@ import {
   DEFAULT_IMPLICIT_SESSION_THRESHOLD_MS,
 } from "../features/stats/domain/primitives"
 import { toEnrichedClimbs } from "../features/stats/domain/base/normalizeClimbs"
+import type { LogbookSort } from "./logbookTypes"
 import {
   HOLD_TAGS,
   MOVEMENT_TAGS,
@@ -16,12 +17,6 @@ import {
 export const LOGBOOK_PAGE_SIZE = 25
 export const RECENT_CLIMBS_LIMIT = 5
 export const SESSION_THRESHOLD_MS = DEFAULT_IMPLICIT_SESSION_THRESHOLD_MS
-
-export const LOGBOOK_SORT_OPTIONS = ["newest", "oldest", "hardest", "easiest"] as const
-export const LOGBOOK_VIEW_OPTIONS = ["list", "calendar"] as const
-
-export type LogbookSort = (typeof LOGBOOK_SORT_OPTIONS)[number]
-export type LogbookView = (typeof LOGBOOK_VIEW_OPTIONS)[number]
 
 export interface LogbookFilters {
   gymId: string
