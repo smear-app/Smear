@@ -32,6 +32,7 @@ class PatchGymPrefsRequest(BaseModel):
     recent_gym_ids: list[str]
 
 
+<<<<<<< HEAD
 # ── Access Requests ───────────────────────────────────────────────────────────
 
 class AccessRequestCreate(BaseModel):
@@ -44,6 +45,8 @@ class AccessRequestResponse(BaseModel):
     status: str
 
 
+=======
+>>>>>>> e41d9ef (Feat/stats v2 (#82) (#83))
 # ── Climbs ───────────────────────────────────────────────────────────────────
 
 class ClimbObject(BaseModel):
