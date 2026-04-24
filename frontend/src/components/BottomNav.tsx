@@ -1,12 +1,12 @@
 import { NavLink } from "react-router-dom"
-import { FiBarChart2, FiHome, FiPlus, FiUser, FiUsers } from "react-icons/fi"
+import { FiBarChart2, FiHome, FiList, FiPlus, FiUsers } from "react-icons/fi"
 import { useLogClimbAction } from "../hooks/useLogClimbAction"
 
 const navItems = [
   { label: "Home", icon: FiHome, to: "/home" },
   { label: "Stats", icon: FiBarChart2, to: "/stats" },
   { label: "Social", icon: FiUsers, to: "/social" },
-  { label: "Profile", icon: FiUser, to: "/profile" },
+  { label: "Log", icon: FiList, to: "/home/logbook" },
 ]
 
 const tabClassName = ({ isActive }: { isActive: boolean }) =>
