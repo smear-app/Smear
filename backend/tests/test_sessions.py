@@ -19,8 +19,10 @@ class FakeQuery:
         self.filters: list[tuple[str, object]] = []
         self._limit = None
         self._update_payload = None
+        self._selected_fields: str | None = None
 
-    def select(self, _fields):
+    def select(self, fields):
+        self._selected_fields = fields
         return self
 
     def eq(self, field, value):
@@ -37,6 +39,9 @@ class FakeQuery:
         return self
 
     def execute(self):
+        if self.table == "sessions" and self._selected_fields and "created_at" in self._selected_fields:
+            raise AssertionError("sessions queries should not request created_at")
+
         rows = self.supabase.tables[self.table]
         matches = [
             row for row in rows
