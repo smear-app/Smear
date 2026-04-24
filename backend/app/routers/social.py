@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.deps import get_current_user
 from app.gyms import get_supabase
+from app.logging_utils import short_id
 from app.models import (
     CommentObject,
     FollowObject,
@@ -17,10 +18,6 @@ from app.routers.climbs import _row_to_climb_object
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/social", tags=["social"])
-
-
-def _short_id(value: str | None) -> str:
-    return value[:8] if value else "-"
 
 
 def _row_to_session_card(row: dict, viewer_id: str, reaction_counts: dict, comment_counts: dict, viewer_reactions: set) -> SessionCardObject:
@@ -145,7 +142,7 @@ def get_feed(
     sessions = result.data or []
     logger.info(
         "Social feed user=%s pool=%d sessions=%d offset=%d limit=%d",
-        _short_id(user_id),
+        short_id(user_id),
         len(following_ids),
         len(sessions),
         offset,
@@ -179,8 +176,8 @@ def get_explore(
     sessions = result.data or []
     logger.info(
         "Social explore user=%s gym=%s sessions=%d offset=%d limit=%d",
-        _short_id(user_id),
-        _short_id(gym_id),
+        short_id(user_id),
+        short_id(gym_id),
         len(sessions),
         offset,
         limit,

@@ -31,7 +31,6 @@ class PatchGymPrefsRequest(BaseModel):
     bookmarked_gym_ids: list[str]
     recent_gym_ids: list[str]
 
-
 # ── Access Requests ───────────────────────────────────────────────────────────
 
 class AccessRequestCreate(BaseModel):

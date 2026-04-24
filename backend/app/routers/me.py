@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from app.deps import get_current_user
 from app.gyms import get_supabase
+from app.logging_utils import short_id
 from app.models import (
     MeResponse,
     PatchMeRequest,
@@ -11,10 +12,6 @@ from app.models import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/me", tags=["me"])
-
-
-def _short_id(value: str | None) -> str:
-    return value[:8] if value else "-"
 
 
 def _build_me_response(user_id: str, supabase) -> MeResponse:
@@ -101,7 +98,7 @@ def patch_gym_preferences(body: PatchGymPrefsRequest, user_id: str = Depends(get
     }).eq("id", user_id).execute()
     logger.info(
         "Updated gym preferences user=%s bookmarked=%d recent=%d",
-        _short_id(user_id),
+        short_id(user_id),
         len(body.bookmarked_gym_ids),
         len(body.recent_gym_ids),
     )
