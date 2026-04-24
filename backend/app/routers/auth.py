@@ -66,6 +66,7 @@ def register(body: RegisterRequest):
         supabase.from_("profiles").insert({
             "id": user_id,
             "username": body.username,
+            "referral_code": body.username.strip().upper(),
             "avatar_url": None,
             "display_name": body.display_name,
             "referred_by": referred_by,
