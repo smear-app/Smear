@@ -1,4 +1,15 @@
+import { postRegister } from './api'
 import { supabase } from './supabase'
+
+export class AccessRequiredError extends Error {
+  email: string
+
+  constructor(email: string) {
+    super('This email needs an invite before you can register.')
+    this.name = 'AccessRequiredError'
+    this.email = email
+  }
+}
 
 export async function signUp(
   email: string,
@@ -7,31 +18,27 @@ export async function signUp(
   displayName: string,
   referralCode?: string,
 ) {
-  const { data, error } = await supabase.auth.signUp({ email, password })
-  if (error) throw error
-
-  const userId = data.user?.id
-  if (!userId) throw new Error('No user returned from signUp')
-
-  // Resolve referral code → referrer's profile id
-  let referredBy: string | null = null
-  if (referralCode) {
-    const { data: referrer } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('referral_code', referralCode.toUpperCase())
-      .maybeSingle()
-    referredBy = referrer?.id ?? null
+  try {
+    await postRegister({
+      email,
+      password,
+      username,
+      display_name: displayName,
+      referral_code: referralCode ?? null,
+    })
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes('403') &&
+      error.message.includes('This email has not been invited yet.')
+    ) {
+      throw new AccessRequiredError(email)
+    }
+    throw error
   }
 
-  const { error: profileError } = await supabase.from('profiles').insert({
-    id: userId,
-    username,
-    avatar_url: null,
-    display_name: displayName,
-    referred_by: referredBy,
-  })
-  if (profileError) throw profileError
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) throw error
 }
 
 export async function signIn(email: string, password: string) {

@@ -6,6 +6,7 @@ body.landing-body {
     linear-gradient(180deg, #f3eee4 0%, #f8f4ec 26%, #f4efe6 58%, #f6f2ea 100%);
   color: #1f1b17;
   font-family: "Manrope", sans-serif;
+  overflow-x: hidden;
 }
 
 .landing-page {
@@ -21,6 +22,8 @@ body.landing-body {
     --landing-mono: "IBM Plex Mono", monospace;
     --landing-serif: "Instrument Serif", serif;
     min-height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 18%),
       radial-gradient(circle at 0% 0%, rgba(255, 255, 255, 0.4), transparent 28%);
@@ -28,7 +31,7 @@ body.landing-body {
   }
 
   .landing-shell {
-    width: min(1120px, calc(100vw - 2rem));
+    width: min(1120px, calc(100% - 2rem));
     margin-inline: auto;
   }
 
@@ -820,6 +823,33 @@ body.landing-body {
     color: var(--landing-accent);
   }
 
+  .landing-access__callout {
+    display: grid;
+    gap: 0.45rem;
+    max-width: 34rem;
+    margin: 0 auto 1rem;
+    padding: 1rem 1.15rem;
+    border: 1px solid rgba(176, 77, 53, 0.22);
+    border-radius: 1.15rem;
+    background:
+      linear-gradient(180deg, rgba(176, 77, 53, 0.12), rgba(255, 248, 241, 0.94));
+    box-shadow: 0 14px 30px rgba(89, 68, 51, 0.08);
+    text-align: left;
+  }
+
+  .landing-access__callout strong {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--landing-accent);
+  }
+
+  .landing-access__callout span {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--landing-charcoal);
+  }
+
   .landing-access__note,
   .landing-access__secondary {
     display: block;
@@ -1036,7 +1066,7 @@ body.landing-body {
 
 @media (max-width: 720px) {
   .landing-shell {
-    width: min(100vw - 1.25rem, 1120px);
+    width: min(1120px, calc(100% - 1.25rem));
   }
 
     .landing-nav__inner {

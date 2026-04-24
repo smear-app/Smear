@@ -107,7 +107,7 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
         "top_tags": top_tags,
         "cover_photo_url": cover_photo_url,
         **insight_payload,
-    }).eq("id", session_id).execute()
+    }).eq("id", session_id).select("id").execute()
 
 
 def publish_stale_sessions(supabase, user_id: str) -> None:
@@ -204,7 +204,7 @@ def end_session(
     # Touch ended_at to now if not set
     supabase.from_("sessions").update(
         {"ended_at": datetime.now(timezone.utc).isoformat()}
-    ).eq("id", session_id).execute()
+    ).eq("id", session_id).select("id").execute()
 
     _compute_and_publish_session(supabase, session_id, user_id, body.visibility)
 

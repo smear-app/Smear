@@ -216,6 +216,26 @@ async function publicApiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return resp.json() as Promise<T>
 }
 
+export interface RegisterRequest {
+  email: string
+  password: string
+  username: string
+  display_name: string
+  referral_code?: string | null
+}
+
+export interface RegisterResponse {
+  email: string
+  user_id: string
+}
+
+export async function postRegister(body: RegisterRequest): Promise<RegisterResponse> {
+  return publicApiFetch<RegisterResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getToken()
   const resp = await fetch(`${API_BASE_URL}${path}`, {

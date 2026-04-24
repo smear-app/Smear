@@ -21,6 +21,7 @@ from app.routers.admin import router as admin_router
 from app.routers.sessions import router as sessions_router
 from app.routers.social import router as social_router
 from app.routers.access_requests import router as access_requests_router
+from app.routers.auth import router as auth_router
 
 
 def get_allowed_origins() -> list[str]:
@@ -33,6 +34,8 @@ def get_allowed_origins() -> list[str]:
         "http://127.0.0.1:5173",
         "http://localhost:4173",
         "http://127.0.0.1:4173",
+        "https://smear.app",
+        "https://www.smear.app",
         "https://smearapp.vercel.app",
     ]
 
@@ -54,6 +57,7 @@ app.include_router(admin_router, prefix="/api/v1")
 app.include_router(sessions_router, prefix="/api/v1")
 app.include_router(social_router, prefix="/api/v1")
 app.include_router(access_requests_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(gyms_router, prefix="/api/v1")
 
 
