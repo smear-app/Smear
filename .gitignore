@@ -2,6 +2,8 @@ node_modules
 backend/venv
 backend/app/__pycache__
 CLAUDE.md
+AGENTS.md
+.codex/
 .claude/
 /docs/
 .env.local

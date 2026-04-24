@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smear</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            grotesk: ['Space Grotesk', 'sans-serif'],
+            serif: ['Instrument Serif', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cream: '#f5f2ec',
+            'cream-dark': '#ede9e0',
+            charcoal: '#1a1917',
+            slate: '#5c6270',
+            sand: '#b5a98e',
+            rust: '#b05a3a',
+            'rust-light': '#c47a5e',
+            rule: '#ddd8cc',
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --cream: #f5f2ec;
+      --charcoal: #1a1917;
+      --slate: #5c6270;
+      --sand: #b5a98e;
+      --rust: #b05a3a;
+      --rule: #ddd8cc;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--cream);
+      color: var(--charcoal);
+      font-family: 'Space Grotesk', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Reveal animations ── */
+    .reveal-ready {
+      will-change: transform, opacity, clip-path;
+    }
+
+    .reveal-from-left {
+      opacity: 0;
+      transform: translateX(-32px);
+      clip-path: inset(0 100% 0 0);
+      transition: opacity 0.7s cubic-bezier(0.4,0,0.1,1),
+                  transform 0.7s cubic-bezier(0.4,0,0.1,1),
+                  clip-path 0.7s cubic-bezier(0.4,0,0.1,1);
+    }
+    .reveal-from-left.in-view {
+      opacity: 1;
+      transform: translateX(0);
+      clip-path: inset(0 0% 0 0);
+    }
+
+    .reveal-from-right {
+      opacity: 0;
+      transform: translateX(32px);
+      clip-path: inset(0 0 0 100%);
+      transition: opacity 0.7s cubic-bezier(0.4,0,0.1,1),
+                  transform 0.7s cubic-bezier(0.4,0,0.1,1),
+                  clip-path 0.7s cubic-bezier(0.4,0,0.1,1);
+    }
+    .reveal-from-right.in-view {
+      opacity: 1;
+      transform: translateX(0);
+      clip-path: inset(0 0 0 0);
+    }
+
+    .reveal-up {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.4,0,0.1,1),
+                  transform 0.65s cubic-bezier(0.4,0,0.1,1);
+    }
+    .reveal-up.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-wipe {
+      overflow: hidden;
+    }
+    .reveal-wipe-inner {
+      transform: translateY(100%);
+      transition: transform 0.8s cubic-bezier(0.4,0,0.1,1);
+    }
+    .reveal-wipe.in-view .reveal-wipe-inner {
+      transform: translateY(0);
+    }
+
+    /* ── Graph animation ── */
+    .graph-path {
+      stroke-dasharray: 900;
+      stroke-dashoffset: 900;
+      transition: stroke-dashoffset 2.2s cubic-bezier(0.4,0,0.1,1);
+    }
+    .graph-active .graph-path {
+      stroke-dashoffset: 0;
+    }
+
+    .graph-dot {
+      opacity: 0;
+      transform: scale(0);
+      transform-origin: center;
+    }
+    .graph-active .graph-dot {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .graph-active .graph-dot:nth-child(1)  { transition: opacity 0.3s 0.4s, transform 0.3s 0.4s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(2)  { transition: opacity 0.3s 0.7s, transform 0.3s 0.7s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(3)  { transition: opacity 0.3s 1.0s, transform 0.3s 1.0s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(4)  { transition: opacity 0.3s 1.3s, transform 0.3s 1.3s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(5)  { transition: opacity 0.3s 1.6s, transform 0.3s 1.6s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(6)  { transition: opacity 0.3s 1.85s, transform 0.3s 1.85s cubic-bezier(0.2,1.4,0.5,1); }
+    .graph-active .graph-dot:nth-child(7)  { transition: opacity 0.3s 2.1s, transform 0.3s 2.1s cubic-bezier(0.2,1.4,0.5,1); }
+
+    /* ── Hero line draw ── */
+    @keyframes drawLine {
+      from { stroke-dashoffset: 600; }
+      to   { stroke-dashoffset: 0; }
+    }
+    .hero-line {
+      stroke-dasharray: 600;
+      stroke-dashoffset: 600;
+      animation: drawLine 2s 0.6s cubic-bezier(0.4,0,0.1,1) forwards;
+    }
+
+    /* ── Loading pulse ── */
+    @keyframes smearPulse {
+      0%, 100% { transform: scaleX(0.3); opacity: 0.3; }
+      50%       { transform: scaleX(1);   opacity: 0.8; }
+    }
+    .loading-bar {
+      transform-origin: left;
+      animation: smearPulse 1.8s ease-in-out infinite;
+    }
+    .loading-bar:nth-child(2) { animation-delay: 0.2s; }
+    .loading-bar:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── Nav ── */
+    nav {
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s, background 0.3s;
+    }
+    nav.scrolled {
+      border-color: var(--rule);
+      background: rgba(245,242,236,0.92);
+      backdrop-filter: blur(12px);
+    }
+
+    /* ── Feature card hover ── */
+    .feature-card {
+      border: 1px solid var(--rule);
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .feature-card:hover {
+      border-color: var(--sand);
+      background: rgba(181,169,142,0.06);
+    }
+
+    /* ── Step connector ── */
+    .step-line {
+      background: linear-gradient(to bottom, var(--rust), transparent);
+    }
+
+    /* ── CTA button ── */
+    .btn-primary {
+      background: var(--charcoal);
+      color: var(--cream);
+      transition: background 0.25s, color 0.25s, transform 0.2s;
+    }
+    .btn-primary:hover {
+      background: var(--rust);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      border: 1px solid var(--rule);
+      color: var(--slate);
+      transition: border-color 0.25s, color 0.25s;
+    }
+    .btn-ghost:hover {
+      border-color: var(--charcoal);
+      color: var(--charcoal);
+    }
+
+    /* ── Tweak panel ── */
+    #tweak-panel {
+      display: none;
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--cream);
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 20px;
+      width: 240px;
+      z-index: 1000;
+      box-shadow: 0 8px 32px rgba(26,25,23,0.12);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+    }
+
+    /* ── Horizontal rule ── */
+    hr { border-color: var(--rule); }
+
+    /* ── Radar chart ── */
+    .radar-polygon {
+      transform-origin: 170px 140px;
+      transform: scale(0);
+      transition: transform 1s cubic-bezier(0.4,0,0.1,1);
+    }
+    .radar-polygon.user-poly {
+      transition-delay: 0.35s;
+    }
+    .radar-polygon.avg-poly {
+      transition-delay: 0.1s;
+    }
+    .radar-active .radar-polygon {
+      transform: scale(1);
+    }
+    .radar-dot {
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .radar-active .radar-dot { opacity: 1; }
+    .radar-active .radar-dot:nth-child(1) { transition-delay: 0.7s; }
+    .radar-active .radar-dot:nth-child(2) { transition-delay: 0.8s; }
+    .radar-active .radar-dot:nth-child(3) { transition-delay: 0.9s; }
+    .radar-active .radar-dot:nth-child(4) { transition-delay: 1.0s; }
+    .radar-active .radar-dot:nth-child(5) { transition-delay: 1.1s; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--sand); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<div id="tweak-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <span style="font-weight:600;color:var(--charcoal)">Tweaks</span>
+    <button onclick="document.getElementById('tweak-panel').style.display='none'" style="color:var(--slate);line-height:1;background:none;border:none;cursor:pointer;font-size:16px;">×</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div>
+      <label style="display:block;color:var(--slate);margin-bottom:6px;">Accent color</label>
+      <div style="display:flex;gap:8px;">
+        <button class="swatch" data-color="#b05a3a" onclick="setAccent('#b05a3a','#c47a5e')" style="width:24px;height:24px;border-radius:50%;background:#b05a3a;border:2px solid #1a1917;cursor:pointer;"></button>
+        <button class="swatch" onclick="setAccent('#3a6bb0','#5e8ac4')" style="width:24px;height:24px;border-radius:50%;background:#3a6bb0;border:2px solid transparent;cursor:pointer;"></button>
+        <button class="swatch" onclick="setAccent('#5a8c4e','#78a86c')" style="width:24px;height:24px;border-radius:50%;background:#5a8c4e;border:2px solid transparent;cursor:pointer;"></button>
+        <button class="swatch" onclick="setAccent('#7a4a9a','#9a6aba')" style="width:24px;height:24px;border-radius:50%;background:#7a4a9a;border:2px solid transparent;cursor:pointer;"></button>
+      </div>
+    </div>
+    <div>
+      <label style="display:block;color:var(--slate);margin-bottom:6px;">Background tone</label>
+      <div style="display:flex;gap:8px;">
+        <button onclick="setBg('#f5f2ec')" style="width:24px;height:24px;border-radius:4px;background:#f5f2ec;border:2px solid #1a1917;cursor:pointer;"></button>
+        <button onclick="setBg('#f0eff4')" style="width:24px;height:24px;border-radius:4px;background:#f0eff4;border:2px solid transparent;cursor:pointer;"></button>
+        <button onclick="setBg('#1a1917')" style="width:24px;height:24px;border-radius:4px;background:#1a1917;border:2px solid transparent;cursor:pointer;"></button>
+      </div>
+    </div>
+    <div>
+      <label style="display:block;color:var(--slate);margin-bottom:6px;">Animation speed</label>
+      <input type="range" min="0.5" max="2" step="0.25" value="1" oninput="setAnimSpeed(this.value)" style="width:100%;accent-color:var(--rust);">
+    </div>
+    <div>
+      <label style="display:block;color:var(--slate);margin-bottom:6px;">Type scale</label>
+      <select onchange="setTypeScale(this.value)" style="width:100%;padding:4px 8px;border:1px solid var(--rule);background:var(--cream);color:var(--charcoal);border-radius:4px;font-family:inherit;">
+        <option value="1">Default</option>
+        <option value="0.85">Compact</option>
+        <option value="1.15">Large</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<script>
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "#5a8c4e",
+  "accentLight": "#78a86c",
+  "bg": "#f5f2ec",
+  "animSpeed": 0.75,
+  "typeScale": 1
+}/*EDITMODE-END*/;
+
+let tweaks = { ...TWEAK_DEFAULTS };
+
+function setAccent(c, cl) {
+  tweaks.accent = c; tweaks.accentLight = cl;
+  document.documentElement.style.setProperty('--rust', c);
+  document.documentElement.style.setProperty('--rust-light', cl);
+  document.querySelectorAll('.swatch').forEach(s => s.style.border = '2px solid transparent');
+  event.target.style.border = '2px solid var(--charcoal)';
+  persist();
+}
+function setBg(c) {
+  tweaks.bg = c;
+  const isDark = c === '#1a1917';
+  document.documentElement.style.setProperty('--cream', c);
+  document.documentElement.style.setProperty('--charcoal', isDark ? '#f5f2ec' : '#1a1917');
+  document.documentElement.style.setProperty('--rule', isDark ? '#2e2c29' : '#ddd8cc');
+  document.body.style.background = c;
+  persist();
+}
+function setAnimSpeed(v) {
+  tweaks.animSpeed = parseFloat(v);
+  document.querySelectorAll('.graph-path').forEach(el => {
+    el.style.transition = `stroke-dashoffset ${2.2/parseFloat(v)}s cubic-bezier(0.4,0,0.1,1)`;
+  });
+  persist();
+}
+function setTypeScale(v) {
+  tweaks.typeScale = parseFloat(v);
+  document.documentElement.style.fontSize = (16 * parseFloat(v)) + 'px';
+  persist();
+}
+function persist() {
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: tweaks }, '*');
+}
+
+window.addEventListener('message', e => {
+  if (e.data?.type === '__activate_edit_mode')   document.getElementById('tweak-panel').style.display = 'block';
+  if (e.data?.type === '__deactivate_edit_mode') document.getElementById('tweak-panel').style.display = 'none';
+});
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ─────────────────────────────────────────────
+   MotionWrapper
+   Triggers directional reveal on scroll entry
+───────────────────────────────────────────── */
+function MotionWrapper({ children, direction = 'left', delay = 0, className = '', tag: Tag = 'div' }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.12 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const cls = `reveal-ready reveal-${direction} ${visible ? 'in-view' : ''} ${className}`;
+
+  return (
+    <Tag
+      ref={ref}
+      className={cls}
+      style={{ transitionDelay: visible ? `${delay}ms` : '0ms' }}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   HeroAnimationSlot
+   Placeholder — replace src with future .riv
+───────────────────────────────────────────── */
+function HeroAnimationSlot({ rivSrc = null }) {
+  if (rivSrc) {
+    return <canvas data-rive-src={rivSrc} style={{ width: '100%', height: '100%' }} />;
+  }
+  return (
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" aria-label="Hero animation placeholder">
+      {/* Static fallback: abstract smear gesture */}
+      <svg viewBox="0 0 600 320" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+        {/* Grid */}
+        {[0,1,2,3,4,5].map(i => (
+          <line key={i} x1={i*120} y1="0" x2={i*120} y2="320" stroke="#ddd8cc" strokeWidth="0.5"/>
+        ))}
+        {[0,1,2,3,4].map(i => (
+          <line key={i} x1="0" y1={i*80} x2="600" y2={i*80} stroke="#ddd8cc" strokeWidth="0.5"/>
+        ))}
+        {/* Smear arc — the central visual motif */}
+        <path
+          className="hero-line"
+          d="M 60 260 C 100 240, 120 220, 160 200 C 200 180, 200 180, 240 170 C 290 160, 300 190, 340 160 C 380 130, 390 100, 440 80 C 480 62, 510 58, 540 48"
+          stroke="#b05a3a"
+          strokeWidth="2"
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Grade labels */}
+        {[['V3',260],['V4',200],['V5',160],['V6',100],['V7',58]].map(([g, y]) => (
+          <text key={g} x="18" y={y+4} fill="#b5a98e" fontSize="10" fontFamily="JetBrains Mono">{g}</text>
+        ))}
+        {/* Area fill */}
+        <path
+          d="M 60 260 C 100 240, 120 220, 160 200 C 200 180, 200 180, 240 170 C 290 160, 300 190, 340 160 C 380 130, 390 100, 440 80 C 480 62, 510 58, 540 48 L 540 320 L 60 320 Z"
+          fill="url(#heroGrad)"
+          opacity="0.08"
+        />
+        <defs>
+          <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#b05a3a"/>
+            <stop offset="100%" stopColor="#b05a3a" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        {/* Annotation */}
+        <line x1="340" y1="160" x2="380" y2="130" stroke="#b5a98e" strokeWidth="0.75" strokeDasharray="3,3"/>
+        <text x="384" y="127" fill="#b5a98e" fontSize="9" fontFamily="JetBrains Mono">breakthrough</text>
+      </svg>
+      {/* Rive slot marker — visible to devs */}
+      <span className="absolute bottom-3 right-3 font-mono text-[10px] text-sand opacity-50 select-none">rive:hero_arc.riv</span>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   AnalyticsAnimationSlot
+   Style archetype radar chart — replace with Rive
+───────────────────────────────────────────── */
+function AnalyticsAnimationSlot({ rivSrc = null }) {
+  const ref = useRef(null);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setActive(true); obs.disconnect(); } },
+      { threshold: 0.25 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  if (rivSrc) {
+    return <canvas data-rive-src={rivSrc} style={{ width: '100%', height: '100%' }} />;
+  }
+
+  const cx = 170, cy = 140, r = 95;
+  const dims = ['Slab', 'Overhang', 'Crimp', 'Compression', 'Endurance'];
+  // User profile — strong on slab + crimp, weaker on overhang + compression
+  const userVals  = [0.82, 0.44, 0.74, 0.37, 0.68];
+  // Gym average — roughly even across dimensions
+  const avgVals   = [0.53, 0.51, 0.55, 0.50, 0.52];
+  const rings     = [0.25, 0.5, 0.75, 1.0];
+
+  const angleOf = i => -Math.PI / 2 + (i * 2 * Math.PI / dims.length);
+  const ptOf    = (val, i) => ({
+    x: cx + r * val * Math.cos(angleOf(i)),
+    y: cy + r * val * Math.sin(angleOf(i)),
+  });
+  const polyPts = vals => vals.map((v, i) => { const p = ptOf(v, i); return `${p.x.toFixed(2)},${p.y.toFixed(2)}`; }).join(' ');
+
+  return (
+    <div ref={ref} className={`relative w-full ${active ? 'radar-active' : ''}`}>
+      <svg viewBox="0 0 340 280" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+        {/* Rings */}
+        {rings.map((rv, ri) => (
+          <polygon key={ri} points={polyPts(dims.map(() => rv))}
+            fill="none" stroke="#ddd8cc" strokeWidth="0.75"
+          />
+        ))}
+        {/* Axes + labels */}
+        {dims.map((d, i) => {
+          const outer = ptOf(1, i);
+          const label = ptOf(1.28, i);
+          // nudge label for readability
+          const tx = label.x + (i === 2 ? 6 : i === 3 ? -6 : 0);
+          return (
+            <g key={d}>
+              <line x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="#ddd8cc" strokeWidth="0.75"/>
+              <text x={tx.toFixed(1)} y={(label.y + 4).toFixed(1)}
+                textAnchor="middle" fill="#b5a98e" fontSize="10" fontFamily="JetBrains Mono"
+              >{d}</text>
+            </g>
+          );
+        })}
+        {/* Average polygon */}
+        <polygon points={polyPts(avgVals)}
+          className="radar-polygon avg-poly"
+          fill="#b5a98e" fillOpacity="0.07"
+          stroke="#b5a98e" strokeWidth="1" strokeDasharray="3,3"
+        />
+        {/* User polygon */}
+        <polygon points={polyPts(userVals)}
+          className="radar-polygon user-poly"
+          fill="var(--rust)" fillOpacity="0.14"
+          stroke="var(--rust)" strokeWidth="1.75"
+        />
+        {/* User data points */}
+        {userVals.map((v, i) => {
+          const p = ptOf(v, i);
+          const isWeak = v < 0.5;
+          return (
+            <circle key={i} cx={p.x.toFixed(2)} cy={p.y.toFixed(2)} r={isWeak ? 4.5 : 3.5}
+              fill={isWeak ? 'var(--cream)' : 'var(--rust)'}
+              stroke="var(--rust)" strokeWidth="1.5"
+              className="radar-dot"
+              style={{ transitionDelay: `${0.7 + i * 0.1}s` }}
+            />
+          );
+        })}
+        {/* Center */}
+        <circle cx={cx} cy={cy} r="2" fill="#b5a98e" opacity="0.4"/>
+        {/* Weak-point callout */}
+        {(() => {
+          const weakIdx = 3; // Compression
+          const p = ptOf(userVals[weakIdx], weakIdx);
+          const lp = ptOf(userVals[weakIdx] - 0.22, weakIdx);
+          return active ? (
+            <g style={{ opacity: active ? 1 : 0, transition: 'opacity 0.4s 1.4s' }}>
+              <line x1={p.x} y1={p.y} x2={lp.x - 8} y2={lp.y + 4}
+                stroke="var(--rust)" strokeWidth="0.75" strokeDasharray="3,3" opacity="0.6"/>
+              <text x={lp.x - 10} y={lp.y + 14} textAnchor="middle"
+                fill="var(--rust)" fontSize="9" fontFamily="JetBrains Mono" opacity="0.8"
+              >gap</text>
+            </g>
+          ) : null;
+        })()}
+      </svg>
+      {/* Legend */}
+      <div style={{ display:'flex', gap:20, justifyContent:'center', marginTop:4, paddingBottom:4 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ width:14, height:2, background:'var(--rust)' }}/>
+          <span style={{ fontFamily:'JetBrains Mono', fontSize:10, color:'#b5a98e' }}>your profile</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ width:14, height:0, borderTop:'1px dashed #b5a98e' }}/>
+          <span style={{ fontFamily:'JetBrains Mono', fontSize:10, color:'#b5a98e' }}>gym average</span>
+        </div>
+      </div>
+      <span className="absolute bottom-0 right-2 font-mono text-[10px] text-sand opacity-40 select-none">rive:archetype.riv</span>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   LoadingAnimationSlot
+───────────────────────────────────────────── */
+function LoadingAnimationSlot({ rivSrc = null, label = 'Processing session...' }) {
+  if (rivSrc) {
+    return <canvas data-rive-src={rivSrc} style={{ width: '100%', height: '100%' }} />;
+  }
+  return (
+    <div className="flex flex-col gap-3 items-start" aria-label="Loading animation placeholder">
+      {[1, 0.7, 0.5].map((w, i) => (
+        <div key={i} className="h-[2px] bg-rust rounded-full loading-bar" style={{ width: `${w * 120}px` }}/>
+      ))}
+      <span className="font-mono text-xs text-sand mt-1">{label}</span>
+      <span className="absolute bottom-1 right-2 font-mono text-[10px] text-sand opacity-40 select-none">rive:loading.riv</span>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Nav
+───────────────────────────────────────────── */
+function Nav() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <nav className={`fixed top-0 left-0 right-0 z-50 ${scrolled ? 'scrolled' : ''}`}>
+      <div className="max-w-6xl mx-auto px-8 py-5 flex items-center justify-between">
+        <span className="font-grotesk font-semibold text-charcoal tracking-tight text-lg">Smear</span>
+        <div className="flex items-center gap-8">
+          <a href="#features" className="text-slate text-sm hover:text-charcoal transition-colors font-grotesk">Features</a>
+          <a href="#how-it-works" className="text-slate text-sm hover:text-charcoal transition-colors font-grotesk">How it works</a>
+          <button className="btn-primary font-grotesk text-sm px-4 py-2 rounded-md">Early access</button>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   HeroSection
+───────────────────────────────────────────── */
+function HeroSection() {
+  return (
+    <section className="relative pt-32 pb-24 px-8 min-h-screen flex flex-col justify-center max-w-6xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <MotionWrapper direction="left" delay={0}>
+            <div className="font-mono text-xs text-rust mb-6 tracking-widest uppercase">Indoor climbing progression</div>
+          </MotionWrapper>
+
+          <div className="overflow-hidden mb-2">
+            <div className="reveal-wipe in-view">
+              <div className="reveal-wipe-inner" style={{ transitionDelay: '100ms' }}>
+                <h1 className="font-grotesk font-semibold text-charcoal leading-none" style={{ fontSize: 'clamp(48px,6.5vw,84px)', letterSpacing: '-0.03em' }}>
+                  Know the climber
+                </h1>
+              </div>
+            </div>
+          </div>
+          <div className="overflow-hidden mb-8">
+            <div style={{ transitionDelay: '180ms', transform: 'translateY(0)' }}>
+              <h1 className="font-grotesk font-light text-charcoal leading-none" style={{ fontSize: 'clamp(48px,6.5vw,84px)', letterSpacing: '-0.03em', opacity: 0.4 }}>
+                you're becoming.
+              </h1>
+            </div>
+          </div>
+
+          <MotionWrapper direction="left" delay={300}>
+            <p className="font-grotesk text-slate text-lg leading-relaxed max-w-md font-light">
+              Climbers have an intuitive sense of improvement. Smear makes it legible — broken down by style, grounded in what actually happened.
+            </p>
+          </MotionWrapper>
+
+          <MotionWrapper direction="left" delay={450} className="flex items-center gap-4 mt-10">
+            <button className="btn-primary font-grotesk text-sm px-6 py-3 rounded-md">Request early access</button>
+            <button className="btn-ghost font-grotesk text-sm px-5 py-3 rounded-md">See how it works</button>
+          </MotionWrapper>
+
+          <MotionWrapper direction="left" delay={560} className="mt-12 flex items-center gap-3">
+            <LoadingAnimationSlot label="Building your archetype..." />
+          </MotionWrapper>
+        </div>
+
+        <MotionWrapper direction="right" delay={200} className="relative rounded-xl overflow-hidden bg-cream-dark border border-rule" style={{ aspectRatio: '4/3' }}>
+          <HeroAnimationSlot />
+        </MotionWrapper>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30">
+        <span className="font-mono text-[10px] text-charcoal tracking-widest">SCROLL</span>
+        <div className="w-px h-8 bg-gradient-to-b from-charcoal to-transparent"/>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   ProblemSection
+───────────────────────────────────────────── */
+function ProblemSection() {
+  const problems = [
+    { num: '01', head: 'Your max grade is a proxy.', body: 'One number covering slab, overhang, crimp, compression, endurance. It hides more than it shows.' },
+    { num: '02', head: 'Intuition drifts.', body: 'You feel like you are improving. Sometimes you are. Without structure, the feeling and the fact stay disconnected.' },
+    { num: '03', head: 'Sessions vanish.', body: 'Notes, photos, voice memos — the record exists. The meaning doesn\'t.' },
+  ];
+
+  return (
+    <section className="py-28 px-8 border-t border-rule">
+      <div className="max-w-6xl mx-auto">
+        <MotionWrapper direction="left">
+          <div className="font-mono text-xs text-rust tracking-widest uppercase mb-16">The problem</div>
+        </MotionWrapper>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          {problems.map((p, i) => (
+            <MotionWrapper key={i} direction="up" delay={i * 120}>
+              <div className="flex flex-col gap-4">
+                <span className="font-mono text-[11px] text-sand">{p.num}</span>
+                <h3 className="font-grotesk font-semibold text-charcoal text-xl leading-snug">{p.head}</h3>
+                <p className="font-grotesk text-slate text-sm leading-relaxed font-light">{p.body}</p>
+              </div>
+            </MotionWrapper>
+          ))}
+        </div>
+
+        <MotionWrapper direction="up" delay={400} className="mt-20">
+          <blockquote className="border-l-2 border-rust pl-8 max-w-2xl">
+            <p className="font-serif italic text-charcoal text-2xl leading-snug" style={{ fontStyle: 'italic' }}>
+              "Most climbers improve. Few can say precisely where, in what style, and why it happened when it did."
+            </p>
+            <footer className="font-mono text-xs text-sand mt-4">— The Smear Method</footer>
+          </blockquote>
+        </MotionWrapper>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SolutionSection
+───────────────────────────────────────────── */
+function SolutionSection() {
+  return (
+    <section id="solution" className="py-28 px-8 bg-charcoal">
+      <div className="max-w-6xl mx-auto">
+        <MotionWrapper direction="left">
+          <div className="font-mono text-xs text-rust tracking-widest uppercase mb-16">The solution</div>
+        </MotionWrapper>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+          <div>
+            <MotionWrapper direction="left" delay={100}>
+              <h2 className="font-grotesk font-semibold text-cream leading-tight mb-6" style={{ fontSize: 'clamp(36px,5vw,60px)', letterSpacing: '-0.025em' }}>
+                You are not<br/>
+                <span className="font-light opacity-50">one grade.</span>
+              </h2>
+            </MotionWrapper>
+            <MotionWrapper direction="left" delay={220}>
+              <p className="font-grotesk text-sand font-light leading-relaxed text-lg mb-8 max-w-md">
+                Smear models you as a style-specific athlete. Slab, overhang, crimp, compression — each dimension tracked separately, each telling a different story.
+              </p>
+            </MotionWrapper>
+            <MotionWrapper direction="left" delay={340}>
+              <p className="font-grotesk text-sand font-light leading-relaxed text-lg max-w-md opacity-70">
+                The goal is not your hardest send. It is whether you are improving in ways that are true.
+              </p>
+            </MotionWrapper>
+
+            <MotionWrapper direction="up" delay={460} className="grid grid-cols-2 gap-6 mt-12">
+              {[
+                { stat: '5', label: 'style dimensions tracked independently per climber' },
+                { stat: '1 number', label: 'is never the full picture of a climber\'s ability' },
+              ].map(({ stat, label }, i) => (
+                <div key={i} className="border border-slate/30 rounded-lg p-5">
+                  <div className="font-grotesk font-semibold text-rust text-3xl mb-2">{stat}</div>
+                  <div className="font-grotesk text-sand text-xs font-light leading-snug opacity-70">{label}</div>
+                </div>
+              ))}
+            </MotionWrapper>
+          </div>
+
+          {/* Analytics Graph */}
+          <MotionWrapper direction="right" delay={200}>
+            <div className="bg-charcoal border border-slate/20 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <div className="font-mono text-[10px] text-rust tracking-widest uppercase mb-1">Climbing archetype</div>
+                  <div className="font-grotesk text-cream text-sm opacity-50">Style profile</div>
+                </div>
+                <div className="font-mono text-xs text-sand opacity-50">5 dimensions</div>
+              </div>
+              <AnalyticsAnimationSlot />
+            </div>
+          </MotionWrapper>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   FeatureCard
+───────────────────────────────────────────── */
+function FeatureCard({ number, title, body, tag, delay = 0 }) {
+  return (
+    <MotionWrapper direction="up" delay={delay}>
+      <div className="feature-card rounded-xl p-7 h-full flex flex-col gap-5">
+        <div className="flex items-start justify-between">
+          <span className="font-mono text-[10px] text-sand">{number}</span>
+          <span className="font-mono text-[10px] text-rust tracking-wider uppercase">{tag}</span>
+        </div>
+        <h3 className="font-grotesk font-semibold text-charcoal text-xl leading-snug">{title}</h3>
+        <p className="font-grotesk text-slate text-sm leading-relaxed font-light flex-1">{body}</p>
+        <div className="w-8 h-px bg-rust opacity-40"/>
+      </div>
+    </MotionWrapper>
+  );
+}
+
+function FeaturesSection() {
+  const features = [
+    {
+      number: '01',
+      title: 'Style fingerprint',
+      body: 'Your ability broken into slab, overhang, crimp, compression, and endurance. Where you are strong, where the gap is, and whether each dimension is moving.',
+      tag: 'Archetype',
+    },
+    {
+      number: '02',
+      title: 'Session capture',
+      body: 'Log climbs with enough structure that the data is useful later. Canonical routes, hold types, outcomes. Two minutes per session.',
+      tag: 'Data',
+    },
+    {
+      number: '03',
+      title: 'Canonical routes',
+      body: 'Shared climbs across gyms give your progress context. Your arc measured against the route — not your memory of it.',
+      tag: 'Context',
+    },
+    {
+      number: '04',
+      title: 'Progress reflection',
+      body: 'Your history shown back to you in a form more truthful than your hardest send. Broken down. Situated. Legible.',
+      tag: 'Insight',
+    },
+  ];
+
+  return (
+    <section id="features" className="py-28 px-8 border-t border-rule">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 mb-16">
+          <div className="lg:col-span-1">
+            <MotionWrapper direction="left">
+              <div className="font-mono text-xs text-rust tracking-widest uppercase mb-6">Features</div>
+              <h2 className="font-grotesk font-semibold text-charcoal leading-tight" style={{ fontSize: 'clamp(32px,4vw,48px)', letterSpacing: '-0.025em' }}>
+                Structure over<br/>
+                <span className="font-light opacity-40">feeling.</span>
+              </h2>
+            </MotionWrapper>
+          </div>
+          <div className="lg:col-span-2 flex items-end">
+            <MotionWrapper direction="right" delay={150}>
+              <p className="font-grotesk text-slate font-light text-lg leading-relaxed max-w-lg">
+                Smear is not a training log. It uses your training data to build a model of the climber you are — and the climber you are becoming.
+              </p>
+            </MotionWrapper>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {features.map((f, i) => (
+            <FeatureCard key={i} {...f} delay={i * 90} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   HowItWorksSection
+───────────────────────────────────────────── */
+function HowItWorksSection() {
+  const steps = [
+    {
+      num: '01',
+      title: 'Log the climb',
+      body: 'Grade, style, hold type, outcome. Enough structure that the data means something. Two minutes per session.',
+    },
+    {
+      num: '02',
+      title: 'Smear builds your archetype',
+      body: 'Patterns across sessions reveal which dimensions are growing, which are stalled, and where the next gap is.',
+    },
+    {
+      num: '03',
+      title: 'Train toward the gap',
+      body: 'Your next session is informed by every previous one. You know what to work on. You know why.',
+    },
+  ];
+
+  return (
+    <section id="how-it-works" className="py-28 px-8 border-t border-rule">
+      <div className="max-w-6xl mx-auto">
+        <MotionWrapper direction="left">
+          <div className="font-mono text-xs text-rust tracking-widest uppercase mb-16">How it works</div>
+        </MotionWrapper>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 relative">
+          {/* Connector line */}
+          <div className="hidden lg:block absolute top-8 left-[16.66%] right-[16.66%] h-px bg-rule z-0"/>
+
+          {steps.map((step, i) => (
+            <MotionWrapper key={i} direction="up" delay={i * 140} className="relative z-10 px-8 first:pl-0 last:pr-0">
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full border-2 border-rust flex items-center justify-center bg-cream flex-shrink-0">
+                    <span className="font-mono text-[10px] text-rust">{step.num}</span>
+                  </div>
+                  {i < 2 && <div className="lg:hidden flex-1 h-px bg-rule"/>}
+                </div>
+                <h3 className="font-grotesk font-semibold text-charcoal text-xl">{step.title}</h3>
+                <p className="font-grotesk text-slate text-sm leading-relaxed font-light">{step.body}</p>
+              </div>
+            </MotionWrapper>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CTASection
+───────────────────────────────────────────── */
+function CTASection() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+  const accessInbox = 'smear.app@gmail.com';
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email.includes('@')) { setError('Enter a valid email.'); return; }
+    setError('');
+    const subject = encodeURIComponent('Smear access request');
+    const body = encodeURIComponent(`Please add this email to the Smear access list:\n\n${email.trim()}`);
+    window.location.href = `mailto:${accessInbox}?subject=${subject}&body=${body}`;
+    setSubmitted(true);
+  };
+
+  return (
+    <section className="py-32 px-8 border-t border-rule bg-cream-dark">
+      <div className="max-w-2xl mx-auto text-center">
+        <MotionWrapper direction="up">
+          <div className="font-mono text-xs text-rust tracking-widest uppercase mb-8">Early access</div>
+        </MotionWrapper>
+        <MotionWrapper direction="up" delay={100}>
+          <h2 className="font-grotesk font-semibold text-charcoal leading-tight mb-6" style={{ fontSize: 'clamp(36px,5vw,64px)', letterSpacing: '-0.03em' }}>
+            Improvement<br/>
+            <span className="font-light opacity-40">made legible.</span>
+          </h2>
+        </MotionWrapper>
+        <MotionWrapper direction="up" delay={200}>
+          <p className="font-grotesk text-slate font-light text-lg leading-relaxed mb-12 max-w-md mx-auto">
+            Smear is in early access for indoor climbers who want to understand their progress more precisely than a grade allows.
+          </p>
+        </MotionWrapper>
+
+        {!submitted ? (
+          <MotionWrapper direction="up" delay={320}>
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 px-4 py-3 border border-rule bg-cream rounded-md font-grotesk text-sm text-charcoal placeholder-sand focus:outline-none focus:border-charcoal transition-colors"
+              />
+              <button type="submit" className="btn-primary font-grotesk text-sm px-6 py-3 rounded-md whitespace-nowrap">
+                Request access
+              </button>
+            </form>
+            {error && <p className="font-mono text-xs text-rust mt-3">{error}</p>}
+            <p className="font-mono text-[10px] text-sand mt-4 opacity-60">No noise. No updates until your access is ready.</p>
+          </MotionWrapper>
+        ) : (
+          <MotionWrapper direction="up" className="text-center">
+            <div className="inline-flex items-center gap-3 border border-rule rounded-md px-6 py-4">
+              <div className="w-2 h-2 rounded-full bg-rust"/>
+              <span className="font-mono text-sm text-charcoal">You are on the list.</span>
+            </div>
+          </MotionWrapper>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Footer
+───────────────────────────────────────────── */
+function Footer() {
+  return (
+    <footer className="border-t border-rule py-10 px-8">
+      <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <span className="font-grotesk font-semibold text-charcoal">Smear</span>
+        <span className="font-mono text-xs text-sand">contact → friction → reveal → clarity</span>
+        <span className="font-mono text-xs text-sand opacity-50">2026</span>
+      </div>
+    </footer>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   App
+───────────────────────────────────────────── */
+function App() {
+  return (
+    <>
+      <Nav />
+      <main>
+        <HeroSection />
+        <ProblemSection />
+        <SolutionSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+
+</body>
+</html>
