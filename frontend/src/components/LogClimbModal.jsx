@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { FiMapPin } from "react-icons/fi"
 import GradeStep from "./GradeStep"
 import BottomSheet from "./BottomSheet"
 import CanonicalStep from "./CanonicalStep"
+import GymPickerSheet from "./GymPickerSheet"
 import LogClimbHeader from "./LogClimbHeader"
 import SendStep from "./SendStep"
 import StepProgress from "./StepProgress"
 import SuccessStep from "./SuccessStep"
 import TagsStep from "./TagsStep"
+import { useGym } from "../context/GymContext"
 import {
   LOG_CLIMB_ROUTE_STEP_INDEX,
   LOG_CLIMB_SUCCESS_STEP_INDEX,
@@ -40,12 +43,14 @@ function LogClimbModal({
   initialDraft = null,
   mode = "create",
 }) {
+  const { selectGym } = useGym()
   const [isRendered, setIsRendered] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [draft, setDraft] = useState(EMPTY_DRAFT)
   const [saveError, setSaveError] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isGymPickerOpen, setIsGymPickerOpen] = useState(false)
   const previousPhotoRef = useRef(null)
 
   const resetDraft = () => {
@@ -193,15 +198,38 @@ function LogClimbModal({
               onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
               onClose={onClose}
             />
-            <div className="px-6 pb-1 text-center text-sm text-stone-muted">
-              {mode === "edit" ? "Editing at " : "Logging at "}
-              <span className="font-semibold text-stone-text">{draft.gymName}</span>
+            <div className="flex justify-center pb-3">
+              {mode === "edit" ? (
+                <span className="text-sm text-stone-muted">
+                  Editing at <span className="font-semibold text-stone-text">{draft.gymName}</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsGymPickerOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-ember-soft px-3 py-1 text-sm font-semibold text-ember transition hover:bg-ember/20 active:scale-95"
+                >
+                  <FiMapPin className="h-3.5 w-3.5 shrink-0" />
+                  <span className="max-w-[200px] truncate">{draft.gymName || "Select gym"}</span>
+                </button>
+              )}
             </div>
             <StepProgress currentStep={currentStep} />
           </>
         )}
         <div className="flex min-h-0 flex-1 flex-col">{steps[currentStep]}</div>
       </div>
+      <GymPickerSheet
+        isOpen={isGymPickerOpen}
+        activeGymId={draft.gymId || null}
+        title="Change gym"
+        onClose={() => setIsGymPickerOpen(false)}
+        onSelect={(gymId, gymName) => {
+          setDraft((d) => ({ ...d, gymId, gymName }))
+          selectGym(gymId)
+          setIsGymPickerOpen(false)
+        }}
+      />
     </BottomSheet>
   )
 }

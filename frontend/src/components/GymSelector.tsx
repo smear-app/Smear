@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react"
-import { FiBookmark, FiCheck, FiChevronDown, FiLoader, FiMapPin, FiSearch } from "react-icons/fi"
+import { useMemo, useState, type MouseEvent as ReactMouseEvent } from "react"
+import { FiBookmark, FiCheck, FiChevronDown, FiMapPin } from "react-icons/fi"
 
 import { RiBookmarkFill } from "react-icons/ri"
 import { useGym } from "../context/GymContext"
 import { formatGymLocation, type GymRecord } from "../lib/gyms"
 import AnchoredPopover from "./logbook/AnchoredPopover"
-import SurfaceLayer from "./surfaces/SurfaceLayer"
+import GymPickerSheet from "./GymPickerSheet"
 
 interface GymSelectorProps {
   className?: string
@@ -51,28 +51,14 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
     isHydrated,
     selectGym,
     toggleBookmark,
-    searchGyms,
   } = useGym()
   const [isOpen, setIsOpen] = useState(false)
   const [isRegistryOpen, setIsRegistryOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
-  const searchResults = useMemo(() => searchGyms(query), [query, searchGyms])
   const selectedSnapshot = useMemo(
     () => getSelectedGymSnapshot(activeGym, isHydrated),
     [activeGym, isHydrated],
   )
-
-  useEffect(() => {
-    if (!isRegistryOpen) return undefined
-
-    const timeoutId = window.setTimeout(() => {
-      searchInputRef.current?.focus()
-    }, 10)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [isRegistryOpen])
 
   function handleSelectFromPopup(gymId: string) {
     selectGym(gymId)
@@ -81,7 +67,6 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
 
   function handleSelectFromRegistry(gymId: string) {
     selectGym(gymId)
-    setQuery("")
     setIsRegistryOpen(false)
     setIsOpen(false)
   }
@@ -172,95 +157,12 @@ function GymSelector({ className = "", showLocation = true }: GymSelectorProps) 
         </div>
       </AnchoredPopover>
 
-      {isRegistryOpen && (
-        <SurfaceLayer open backdropClassName="bg-black/20" zIndexClassName="z-[60]">
-          <div className="pointer-events-none flex h-full w-full items-center justify-center px-5">
-            <div className="pointer-events-auto flex h-[520px] w-full max-w-[420px] flex-col rounded-[28px] bg-stone-surface p-4 shadow-[0_30px_80px_rgba(15,23,42,0.2)] ring-1 ring-stone-border">
-              <div className="flex items-start justify-between gap-4">
-                <p className="text-sm font-semibold text-stone-text">Select gym</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsRegistryOpen(false)
-                    setQuery("")
-                  }}
-                  className="rounded-full bg-stone-alt px-3 py-1.5 text-xs font-semibold text-stone-secondary"
-                >
-                  Close
-                </button>
-              </div>
-
-              <label className="mt- flex items-center gap-2 rounded-2xl border border-stone-border bg-stone-surface px-3 py-2.5">
-                <FiSearch className="h- w-4 text-stone-muted" />
-                <input
-                  ref={searchInputRef}
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search gyms, cities, or chains"
-                  className="app-native-text-entry w-full bg-transparent text-stone-text outline-none placeholder:text-stone-muted"
-                />
-              </label>
-
-              <div className="mt-6 min-h-0 flex-1 overflow-y-auto px-1 py-1">
-                {!isHydrated ? (
-                  <div className="flex items-center justify-center py-10 text-sm text-stone-muted">
-                    <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                    Loading gyms...
-                  </div>
-                ) : searchResults.length === 0 ? (
-                  <div className="rounded-2xl bg-stone-surface px-4 py-8 text-center">
-                    <p className="text-sm text-stone-muted">No gyms matched your search.</p>
-                    <a
-                      href="/support"
-                      className="mt-3 inline-block text-xs font-semibold text-ember"
-                    >
-                      Don't see your gym?
-                    </a>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {searchResults.map((gym) => {
-                      const isBookmarked = bookmarkedGymIds.includes(gym.id)
-                      const isActive = activeGymId === gym.id
-
-                      return (
-                        <div
-                          key={gym.id}
-                          className={`flex items-center justify-between rounded-2xl px-3 py-2.5 ring-1 transition ${
-                            isActive
-                              ? "bg-ember-soft ring-ember/25"
-                              : "bg-stone-surface ring-stone-border hover:bg-stone-alt"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => handleSelectFromRegistry(gym.id)}
-                            className="min-w-0 flex-1 text-left"
-                          >
-                            <p className="truncate text-sm font-semibold text-stone-text">{gym.name}</p>
-                            <p className="mt-0.5 truncate text-xs text-stone-muted">
-                              {formatGymLocation(gym)}
-                              {gym.address ? ` • ${gym.address}` : ""}
-                            </p>
-                          </button>
-                          <div className="ml-3 flex shrink-0 items-center gap-2">
-                            <BookmarkToggleButton
-                              gymName={gym.name}
-                              isBookmarked={isBookmarked}
-                              onClick={(event) => handleBookmarkToggle(event, gym.id)}
-                            />
-                            {isActive && <FiCheck className="h-4 w-4 text-ember" />}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </SurfaceLayer>
-      )}
+      <GymPickerSheet
+        isOpen={isRegistryOpen}
+        activeGymId={activeGymId}
+        onClose={() => setIsRegistryOpen(false)}
+        onSelect={(gymId) => handleSelectFromRegistry(gymId)}
+      />
     </>
   )
 }

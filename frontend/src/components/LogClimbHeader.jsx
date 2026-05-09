@@ -4,7 +4,7 @@ function LogClimbHeader({ currentStep, title, onBack, onClose }) {
   const showBackButton = currentStep > 0
 
   return (
-    <header className="grid grid-cols-[48px_1fr_48px] items-center px-4 pb-4 pt-3">
+    <header className="grid grid-cols-[48px_1fr_48px] items-center px-4 pt-3">
       <div className="flex justify-start">
         {showBackButton ? (
           <button
