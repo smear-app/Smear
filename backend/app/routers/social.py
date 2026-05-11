@@ -352,16 +352,23 @@ def post_comment(session_id: str, body: PostCommentRequest, user_id: str = Depen
     if not body.body.strip():
         raise HTTPException(status_code=400, detail="Comment body cannot be empty")
     supabase = get_supabase()
-    result = (
+    insert_result = (
         supabase.from_("session_comments")
         .insert({"session_id": session_id, "user_id": user_id, "body": body.body.strip()})
-        .select("*, profiles(display_name, username, avatar_url)")
         .execute()
     )
-    if not result.data:
+    if not insert_result.data:
         raise HTTPException(status_code=500, detail="Failed to post comment")
-    row = result.data[0]
-    profile = row.get("profiles") or {}
+    row = insert_result.data[0]
+
+    profile_result = (
+        supabase.from_("profiles")
+        .select("display_name, username, avatar_url")
+        .eq("id", user_id)
+        .maybe_single()
+        .execute()
+    )
+    profile = profile_result.data or {}
     return CommentObject(
         id=row["id"],
         session_id=row["session_id"],

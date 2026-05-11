@@ -594,6 +594,32 @@ export async function postComment(sessionId: string, body: string): Promise<Comm
   })
 }
 
+// ── Coaching ──────────────────────────────────────────────────────────────────
+
+export interface CoachingInsightResponse {
+  insight: string
+  generated_at: string | null
+}
+
+export async function getPreSessionInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/pre-session')
+}
+
+export async function getPostSessionInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/post-session')
+}
+
+export async function getTrainingFocusInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/training-focus')
+}
+
+export async function postCheckinInsight(feeling: 'good' | 'tired' | 'sore'): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/checkin', {
+    method: 'POST',
+    body: JSON.stringify({ feeling }),
+  })
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminDuplicateFlags(): Promise<DuplicateFlagObject[]> {

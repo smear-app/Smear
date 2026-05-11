@@ -119,6 +119,13 @@ def _compute_and_publish_session(supabase, session_id: str, user_id: str, visibi
         returning="representation",
     ).eq("id", session_id).execute()
 
+    try:
+        supabase.from_("coaching_insights").update({"is_valid": False}).eq(
+            "user_id", user_id
+        ).in_("insight_type", ["pre-session", "post-session", "training-focus"]).execute()
+    except Exception:
+        logger.exception("Failed to invalidate coaching cache for user %s", user_id)
+
 
 def publish_stale_sessions(supabase, user_id: str) -> None:
     """Publish sessions that have been idle longer than the threshold. Called as background task."""

@@ -6,6 +6,7 @@ import { getComments, postComment } from '../../lib/api'
 interface SessionCommentsSheetProps {
   sessionId: string | null
   onClose: () => void
+  onCommentPosted?: () => void
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -20,7 +21,7 @@ function formatRelativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export default function SessionCommentsSheet({ sessionId, onClose }: SessionCommentsSheetProps) {
+export default function SessionCommentsSheet({ sessionId, onClose, onCommentPosted }: SessionCommentsSheetProps) {
   const [comments, setComments] = useState<CommentObject[]>([])
   const [loading, setLoading] = useState(false)
   const [body, setBody] = useState('')
@@ -52,6 +53,7 @@ export default function SessionCommentsSheet({ sessionId, onClose }: SessionComm
     try {
       const comment = await postComment(sessionId, trimmed)
       setComments((prev) => [...prev, comment])
+      onCommentPosted?.()
     } catch (e) {
       console.error(e)
       setBody(trimmed)

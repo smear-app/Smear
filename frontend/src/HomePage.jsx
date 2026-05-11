@@ -6,6 +6,7 @@ import ClimbTileActionsMenu from "./components/logbook/ClimbTileActionsMenu"
 import WelcomeCard from "./components/WelcomeCard"
 import CompactClimbTileRow from "./components/logbook/CompactClimbTileRow"
 import ActiveSessionBanner from "./components/ActiveSessionBanner"
+import CoachingStatusCard from "./features/coaching/components/CoachingStatusCard"
 
 function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError, refreshKey }) {
   const location = useLocation()
@@ -62,6 +63,10 @@ function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError, 
 
         <div className="mt-4">
           <ActiveSessionBanner refreshKey={refreshKey} />
+        </div>
+
+        <div className="mt-3">
+          <CoachingStatusCard refreshKey={refreshKey} />
         </div>
 
         <section className="mt-2 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">

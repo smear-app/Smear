@@ -18,6 +18,7 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
   const [feedStateByKey, setFeedStateByKey] = useState<Record<string, FeedState>>({})
   const [showSearch, setShowSearch] = useState(false)
   const [commentSessionId, setCommentSessionId] = useState<string | null>(null)
+  const [commentDeltas, setCommentDeltas] = useState<Record<string, number>>({})
   const { activeGym, isHydrated } = useGym()
   const scrollPositionRef = useRef(0)
 
@@ -123,7 +124,12 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
         {!loading && !error && feed.length > 0 && (
           <div className="flex flex-col gap-4">
             {feed.map((session) => (
-              <SessionCard key={session.id} session={session} onCommentTap={setCommentSessionId} />
+              <SessionCard
+                key={session.id}
+                session={session}
+                onCommentTap={setCommentSessionId}
+                commentCountDelta={commentDeltas[session.id] ?? 0}
+              />
             ))}
           </div>
         )}
@@ -131,7 +137,15 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
 
       <BottomNav />
       <UserSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <SessionCommentsSheet sessionId={commentSessionId} onClose={() => setCommentSessionId(null)} />
+      <SessionCommentsSheet
+        sessionId={commentSessionId}
+        onClose={() => setCommentSessionId(null)}
+        onCommentPosted={() => {
+          if (commentSessionId) {
+            setCommentDeltas((prev) => ({ ...prev, [commentSessionId]: (prev[commentSessionId] ?? 0) + 1 }))
+          }
+        }}
+      />
     </div>
   )
 }
