@@ -24,6 +24,7 @@ from app.routers.access_requests import router as access_requests_router
 from app.routers.auth import router as auth_router
 from app.routers.graphql_router import graphql_router as graphql_api_router
 from app.routers.coaching import router as coaching_router
+from app.routers.notifications import router as notifications_router
 
 
 def get_allowed_origins() -> list[str]:
@@ -63,6 +64,7 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(gyms_router, prefix="/api/v1")
 app.include_router(graphql_api_router, prefix="/graphql")
 app.include_router(coaching_router, prefix="/api/v1")
+app.include_router(notifications_router, prefix="/api/v1")
 
 
 @app.get("/")
