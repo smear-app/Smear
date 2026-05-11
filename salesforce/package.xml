@@ -27,5 +27,5 @@
         <members>SmearGraphQL</members>
         <name>NamedCredential</name>
     </types>
-    <version>61.0</version>
+    <version>66.0</version>
 </Package>
