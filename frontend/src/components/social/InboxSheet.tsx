@@ -49,14 +49,18 @@ export default function InboxSheet({ isOpen, onClose, onOpenSession }: InboxShee
 
   useEffect(() => {
     if (!isOpen) return
-    setLoading(true)
-    getNotifications()
-      .then((res) => {
+    void (async () => {
+      setLoading(true)
+      try {
+        const res = await getNotifications()
         setNotifications(res.notifications)
-        return markNotificationsRead()
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false))
+        await markNotificationsRead()
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    })()
   }, [isOpen])
 
   if (!isOpen) return null

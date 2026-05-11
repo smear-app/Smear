@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalServiceRegistration xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Smear climbing app GraphQL endpoint. Provides live climber performance data: working grade, send rate, flash rate, archetype, style breakdown, plateau weeks, and days since last session.</description>
+    <label>Smear GraphQL</label>
+    <namedCredential>SmearGraphQL</namedCredential>
+    <operations>
+        <active>true</active>
+        <name>climberProfile</name>
+    </operations>
+    <operations>
+        <active>true</active>
+        <name>recentSessions</name>
+    </operations>
+    <schema>openapi: "3.0.0"
+info:
+  title: Smear GraphQL API
+  version: "1.0"
+  description: |
+    GraphQL-over-HTTP endpoint for the Smear climbing app.
+    All operations use POST with a JSON body containing query and variables.
+    The climberProfile query returns live performance data self-reported by the climber.
+    Treat this data as the ground truth for what the athlete actually logged.
+servers:
+  - url: https://smear-backend.onrender.com
+paths:
+  /graphql:
+    post:
+      operationId: executeGraphQL
+      summary: Execute a GraphQL query against Smear athlete data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: GraphQL query string
+                variables:
+                  type: object
+                  description: GraphQL variables map
+      responses:
+        "200":
+          description: GraphQL response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    description: Query result data
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        message:
+                          type: string
+</schema>
+    <schemaType>OpenApi3</schemaType>
+    <status>Complete</status>
+    <systemVersion>2</systemVersion>
+</ExternalServiceRegistration>

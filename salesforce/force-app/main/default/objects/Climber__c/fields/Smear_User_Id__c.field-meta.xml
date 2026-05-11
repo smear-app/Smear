@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Smear_User_Id__c</fullName>
+    <description>Supabase auth.users UUID for this climber. Used as the userId parameter when calling the Smear GraphQL endpoint to fetch live performance data.</description>
+    <externalId>true</externalId>
+    <label>Smear User ID</label>
+    <length>36</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
