@@ -293,6 +293,27 @@ class PostCommentRequest(BaseModel):
     body: str
 
 
+# ── Notifications ─────────────────────────────────────────────────────────────
+
+class NotificationObject(BaseModel):
+    id: str
+    type: str  # new_post | reaction | comment
+    actor_id: str
+    actor_display_name: Optional[str] = None
+    actor_username: Optional[str] = None
+    actor_avatar_url: Optional[str] = None
+    session_id: Optional[str] = None
+    session_gym_name: Optional[str] = None
+    session_cover_photo_url: Optional[str] = None
+    comment_body: Optional[str] = None
+    created_at: str
+
+
+class NotificationsResponse(BaseModel):
+    notifications: list[NotificationObject]
+    unread_count: int
+
+
 # ── Admin / Duplicate Flags ───────────────────────────────────────────────────
 
 class CanonicalSummary(BaseModel):

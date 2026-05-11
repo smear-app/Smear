@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>GetClimberSessions</members>
+        <members>ComputeGradeTrend</members>
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>ClimbSession__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Climber__c.Coach_Notes__c</members>
+        <members>Climber__c.Assessment_Date__c</members>
+        <name>CustomField</name>
+    </types>
+    <version>66.0</version>
+</Package>

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiUsers, FiCompass, FiUserPlus } from 'react-icons/fi'
+import { FiUsers, FiCompass, FiUserPlus, FiBell } from 'react-icons/fi'
 import BottomNav from '../components/BottomNav'
 import SessionCard from '../components/social/SessionCard'
 import SessionCommentsSheet from '../components/social/SessionCommentsSheet'
 import UserSearchSheet from '../components/social/UserSearchSheet'
+import InboxSheet from '../components/social/InboxSheet'
 import type { SessionCardObject } from '../lib/api'
-import { getSocialFeed, getExploreFeed } from '../lib/api'
+import { getSocialFeed, getExploreFeed, getNotifications } from '../lib/api'
 import { useGym } from '../context/GymContext'
 
 type Tab = 'friends' | 'explore'
@@ -17,9 +18,20 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
   const [tab, setTab] = useState<Tab>('friends')
   const [feedStateByKey, setFeedStateByKey] = useState<Record<string, FeedState>>({})
   const [showSearch, setShowSearch] = useState(false)
+  const [showInbox, setShowInbox] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [commentSessionId, setCommentSessionId] = useState<string | null>(null)
+  const [commentDeltas, setCommentDeltas] = useState<Record<string, number>>({})
   const { activeGym, isHydrated } = useGym()
   const scrollPositionRef = useRef(0)
+
+  // Fetch unread count once on mount (when tab becomes active)
+  useEffect(() => {
+    if (!isActive) return
+    getNotifications()
+      .then((res) => setUnreadCount(res.unread_count))
+      .catch(() => {})
+  }, [isActive])
 
   const currentKey = `${tab}-${activeGym?.id ?? ''}`
   const currentState = feedStateByKey[currentKey]
@@ -90,13 +102,26 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-stone-text">Social</h1>
-          <button
-            onClick={() => setShowSearch(true)}
-            className="flex items-center gap-1.5 rounded-full border border-stone-border bg-stone-surface px-3 py-1.5 text-sm font-medium text-stone-secondary"
-          >
-            <FiUserPlus className="h-4 w-4" />
-            Find Climbers
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setShowInbox(true); setUnreadCount(0) }}
+              className="relative flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-surface text-stone-secondary"
+            >
+              <FiBell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-ember px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-1.5 rounded-full border border-stone-border bg-stone-surface px-3 py-1.5 text-sm font-medium text-stone-secondary"
+            >
+              <FiUserPlus className="h-4 w-4" />
+              Find Climbers
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -123,7 +148,12 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
         {!loading && !error && feed.length > 0 && (
           <div className="flex flex-col gap-4">
             {feed.map((session) => (
-              <SessionCard key={session.id} session={session} onCommentTap={setCommentSessionId} />
+              <SessionCard
+                key={session.id}
+                session={session}
+                onCommentTap={setCommentSessionId}
+                commentCountDelta={commentDeltas[session.id] ?? 0}
+              />
             ))}
           </div>
         )}
@@ -131,7 +161,16 @@ export default function SocialPage({ isActive = true }: { isActive?: boolean }) 
 
       <BottomNav />
       <UserSearchSheet isOpen={showSearch} onClose={() => setShowSearch(false)} />
-      <SessionCommentsSheet sessionId={commentSessionId} onClose={() => setCommentSessionId(null)} />
+      <InboxSheet isOpen={showInbox} onClose={() => setShowInbox(false)} />
+      <SessionCommentsSheet
+        sessionId={commentSessionId}
+        onClose={() => setCommentSessionId(null)}
+        onCommentPosted={() => {
+          if (commentSessionId) {
+            setCommentDeltas((prev) => ({ ...prev, [commentSessionId]: (prev[commentSessionId] ?? 0) + 1 }))
+          }
+        }}
+      />
     </div>
   )
 }

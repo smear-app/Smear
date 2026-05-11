@@ -594,6 +594,61 @@ export async function postComment(sessionId: string, body: string): Promise<Comm
   })
 }
 
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export interface NotificationObject {
+  id: string
+  type: 'new_post' | 'reaction' | 'comment'
+  actor_id: string
+  actor_display_name: string | null
+  actor_username: string | null
+  actor_avatar_url: string | null
+  session_id: string | null
+  session_gym_name: string | null
+  session_cover_photo_url: string | null
+  comment_body: string | null
+  created_at: string
+}
+
+export interface NotificationsResponse {
+  notifications: NotificationObject[]
+  unread_count: number
+}
+
+export async function getNotifications(): Promise<NotificationsResponse> {
+  return apiFetch<NotificationsResponse>('/notifications')
+}
+
+export async function markNotificationsRead(): Promise<void> {
+  await apiFetchVoid('/notifications/mark-read', { method: 'POST' })
+}
+
+// ── Coaching ──────────────────────────────────────────────────────────────────
+
+export interface CoachingInsightResponse {
+  insight: string
+  generated_at: string | null
+}
+
+export async function getPreSessionInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/pre-session')
+}
+
+export async function getPostSessionInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/post-session')
+}
+
+export async function getTrainingFocusInsight(): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/training-focus')
+}
+
+export async function postCheckinInsight(feeling: 'good' | 'tired' | 'sore'): Promise<CoachingInsightResponse> {
+  return apiFetch<CoachingInsightResponse>('/coach/checkin', {
+    method: 'POST',
+    body: JSON.stringify({ feeling }),
+  })
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminDuplicateFlags(): Promise<DuplicateFlagObject[]> {

@@ -9,6 +9,7 @@ import CompactClimbTileRow from '../logbook/CompactClimbTileRow'
 interface SessionCardProps {
   session: SessionCardObject
   onCommentTap?: (sessionId: string) => void
+  commentCountDelta?: number
 }
 
 const TAG_RANK_STYLES = [
@@ -38,7 +39,7 @@ function formatDuration(startedAt: string | null, endedAt: string | null): strin
   return m > 0 ? `${h}h ${m}m` : `${h}h`
 }
 
-export default function SessionCard({ session, onCommentTap }: SessionCardProps) {
+export default function SessionCard({ session, onCommentTap, commentCountDelta = 0 }: SessionCardProps) {
   const [reacted, setReacted] = useState(session.viewer_has_reacted)
   const [reactionCount, setReactionCount] = useState(session.reaction_count)
   const [loading, setLoading] = useState(false)
@@ -243,7 +244,7 @@ export default function SessionCard({ session, onCommentTap }: SessionCardProps)
             className="flex items-center gap-1.5 text-sm text-stone-secondary transition-colors"
           >
             <FiMessageCircle className="h-4 w-4" />
-            <span>{session.comment_count > 0 ? session.comment_count : ''}</span>
+            <span>{session.comment_count + commentCountDelta > 0 ? session.comment_count + commentCountDelta : ''}</span>
           </button>
         </div>
       </div>

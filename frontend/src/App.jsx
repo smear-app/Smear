@@ -22,6 +22,7 @@ import PerformanceStatsPage from "./features/stats/pages/PerformanceStatsPage"
 import ProgressionStatsPage from "./features/stats/pages/ProgressionStatsPage"
 import SessionsStatsPage from "./features/stats/pages/SessionsStatsPage"
 import AdminDuplicatesPage from "./pages/AdminDuplicatesPage"
+import CoachingDetailPage from "./features/coaching/pages/CoachingDetailPage"
 import { invalidateSharedStatsBase, removeClimbFromSharedStatsBase } from "./features/stats/domain/base"
 
 function getRootRouteElement() {
@@ -220,6 +221,7 @@ function ProtectedApp() {
               </>
             }
           />
+          <Route path="/coaching" element={<CoachingDetailPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin/duplicates" element={isAdmin ? <AdminDuplicatesPage /> : <Navigate to="/home" replace />} />
         </Routes>
