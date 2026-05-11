@@ -367,7 +367,7 @@ function BottomSheet({ isVisible, onClose, closeLabel, children }) {
       <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none">
         <div
           ref={sheetRef}
-          className={`pointer-events-auto relative flex h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[32px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.44)] ${
+          className={`pointer-events-auto relative flex h-[100dvh] w-full max-w-[420px] flex-col overflow-hidden rounded-t-[28px] border border-b-0 border-stone-border bg-stone-surface shadow-[0_-18px_40px_rgba(89,68,51,0.16)] dark:shadow-[0_-18px_40px_rgba(0,0,0,0.44)] ${
             isDragging ? "" : "transition-transform duration-300"
           } ${isVisible ? "translate-y-0" : "translate-y-full"}`}
           style={{
