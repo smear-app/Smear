@@ -52,6 +52,7 @@ function LogClimbModal({
   const [isSaving, setIsSaving] = useState(false)
   const [isGymPickerOpen, setIsGymPickerOpen] = useState(false)
   const previousPhotoRef = useRef(null)
+  const savingRef = useRef(false)
 
   const resetDraft = () => {
     if (previousPhotoRef.current?.startsWith("blob:")) {
@@ -59,6 +60,7 @@ function LogClimbModal({
     }
 
     previousPhotoRef.current = null
+    savingRef.current = false
     setDraft(EMPTY_DRAFT)
     setCurrentStep(0)
     setIsSaving(false)
@@ -160,17 +162,19 @@ function LogClimbModal({
           setDraft((currentDraft) => ({ ...currentDraft, [field]: value }))
         }
         onSave={async (finalDraft) => {
-          if (isSaving) return
+          if (savingRef.current) return
+          savingRef.current = true
           setSaveError(null)
           setIsSaving(true)
           try {
             await onSave(finalDraft)
-            setIsSaving(false)
             setCurrentStep(LOG_CLIMB_SUCCESS_STEP_INDEX)
           } catch (err) {
-            setIsSaving(false)
             setSaveError(err instanceof Error ? err.message : "Failed to save climb")
             throw err
+          } finally {
+            savingRef.current = false
+            setIsSaving(false)
           }
         }}
       />,

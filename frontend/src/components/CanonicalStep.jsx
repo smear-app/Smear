@@ -8,6 +8,7 @@ import {
 } from "../lib/canonicalClimbs"
 import { getClimbColorBadgeStyle } from "../lib/climbColors"
 import { useAuth } from "../context/AuthContext"
+import { uploadToCloudinary } from "../lib/cloudinary"
 
 // Auto-select threshold: top candidate must score ≥80 with a ≥15pt gap to #2
 const AUTO_SELECT_MIN_SCORE = 80
@@ -140,6 +141,8 @@ function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
 function CanonicalStep({ draft, onChange, onSave }) {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const savingRef = useRef(false)
+  const photoUploadRef = useRef(null) // { file: File, promise: Promise<string> }
   const [state, setState] = useState("loading") // loading | candidates | seed | error
   const [scored, setScored] = useState([]) // [{candidate, score}]
   const [selectedId, setSelectedId] = useState(null)
@@ -198,7 +201,8 @@ function CanonicalStep({ draft, onChange, onSave }) {
   }
 
   async function handleConfirm() {
-    if (isSaving) return
+    if (savingRef.current) return
+    savingRef.current = true
     setIsSaving(true)
     setError(null)
 
@@ -241,15 +245,36 @@ function CanonicalStep({ draft, onChange, onSave }) {
         onChange("overrideSignal", false)
       }
 
+      // Resolve photo upload before calling onSave to avoid blocking during save
+      let resolvedPhotoUrl = null
+      if (draft.photoFile) {
+        const pending = photoUploadRef.current
+        if (pending?.file === draft.photoFile) {
+          try {
+            resolvedPhotoUrl = await pending.promise
+          } catch {
+            // Pre-upload failed; retry now
+            const retryPromise = uploadToCloudinary(draft.photoFile)
+            photoUploadRef.current = { file: draft.photoFile, promise: retryPromise }
+            resolvedPhotoUrl = await retryPromise
+          }
+        } else {
+          resolvedPhotoUrl = await uploadToCloudinary(draft.photoFile)
+        }
+      }
+
       // Trigger the actual climb insert + navigate to success
       await onSave({
         ...draft,
         canonicalClimbId: canonicalId,
         ...(inheritedPhotoUrl ? { photo: inheritedPhotoUrl } : {}),
+        ...(resolvedPhotoUrl ? { photo: resolvedPhotoUrl, photoFile: null } : {}),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setIsSaving(false)
+    } finally {
+      savingRef.current = false
     }
   }
 
@@ -391,6 +416,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
                   if (draft.photo?.startsWith("blob:")) URL.revokeObjectURL(draft.photo)
                   onChange("photoFile", file)
                   onChange("photo", URL.createObjectURL(file))
+                  photoUploadRef.current = { file, promise: uploadToCloudinary(file) }
                 }}
               />
             </>
