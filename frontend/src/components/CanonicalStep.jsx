@@ -8,6 +8,7 @@ import {
 } from "../lib/canonicalClimbs"
 import { getClimbColorBadgeStyle } from "../lib/climbColors"
 import { useAuth } from "../context/AuthContext"
+import { uploadToCloudinary } from "../lib/cloudinary"
 
 // Auto-select threshold: top candidate must score ≥80 with a ≥15pt gap to #2
 const AUTO_SELECT_MIN_SCORE = 80
@@ -87,50 +88,85 @@ function formatRecency(isoString) {
 
 function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
   const badgeStyle = getClimbColorBadgeStyle(candidate.hold_color)
-  const tagLabel = candidate.canonical_tags.length > 0
-    ? candidate.canonical_tags.slice(0, 3).map((t) => t.charAt(0).toUpperCase() + t.slice(1)).join(", ")
-    : "No tags yet"
+  const tags = candidate.canonical_tags.map((t) => t.charAt(0).toUpperCase() + t.slice(1))
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full rounded-2xl border px-4 py-3 text-left transition-all duration-200 active:scale-[0.99] ${
+      className={`w-full rounded-2xl border text-left transition-all duration-200 active:scale-[0.99] overflow-hidden ${
         isSelected
-          ? "border-ember/40 bg-ember-soft"
+          ? "border-ember/50 bg-ember-soft"
           : "border-stone-border bg-stone-surface"
       }`}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className="flex-shrink-0 rounded-[14px] border px-3 py-1.5 text-center text-sm font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
-          style={badgeStyle}
-        >
-          {gymGrade}
+      <div className="flex gap-0">
+        {/* Photo thumbnail */}
+        <div className="w-24 flex-shrink-0 self-stretch">
+          {candidate.photo_url ? (
+            <img
+              src={candidate.photo_url}
+              alt="Climb"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={badgeStyle}
+            >
+              <span className="text-2xl font-bold opacity-80">{gymGrade}</span>
+            </div>
+          )}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="truncate text-sm font-medium text-stone-text">{tagLabel}</p>
+        {/* Info */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-3.5 py-3">
+          <div className="flex items-center gap-2">
+            {candidate.photo_url && (
+              <div
+                className="flex-shrink-0 rounded-lg border px-2 py-0.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]"
+                style={badgeStyle}
+              >
+                {gymGrade}
+              </div>
+            )}
+            <ConfidencePill score={score} />
             <CanonicalStatusIcon status={candidate.status} />
           </div>
-          <p className="mt-0.5 text-xs text-stone-muted">{formatRecency(candidate.last_logged_at)}</p>
+
+          {tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-stone-border/40 px-2 py-0.5 text-xs font-medium text-stone-text"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-stone-muted">No tags yet</p>
+          )}
+
+          <p className="text-xs text-stone-muted">{formatRecency(candidate.last_logged_at)}</p>
         </div>
 
-        <ConfidencePill score={score} />
-
-        <div className={`h-5 w-5 flex-shrink-0 rounded-full border-2 ${
-          isSelected ? "border-ember bg-ember" : "border-stone-border bg-stone-surface"
-        }`}>
-          {isSelected && (
-            <svg viewBox="0 0 20 20" fill="white" className="h-full w-full p-0.5">
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          )}
+        {/* Selection indicator */}
+        <div className="flex flex-shrink-0 items-center pr-3.5">
+          <div className={`h-5 w-5 rounded-full border-2 ${
+            isSelected ? "border-ember bg-ember" : "border-stone-border bg-stone-surface"
+          }`}>
+            {isSelected && (
+              <svg viewBox="0 0 20 20" fill="white" className="h-full w-full p-0.5">
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+          </div>
         </div>
       </div>
     </button>
@@ -140,6 +176,8 @@ function CandidateRow({ candidate, score, gymGrade, isSelected, onSelect }) {
 function CanonicalStep({ draft, onChange, onSave }) {
   const { user } = useAuth()
   const fileInputRef = useRef(null)
+  const savingRef = useRef(false)
+  const photoUploadRef = useRef(null) // { file: File, promise: Promise<string> }
   const [state, setState] = useState("loading") // loading | candidates | seed | error
   const [scored, setScored] = useState([]) // [{candidate, score}]
   const [selectedId, setSelectedId] = useState(null)
@@ -198,7 +236,8 @@ function CanonicalStep({ draft, onChange, onSave }) {
   }
 
   async function handleConfirm() {
-    if (isSaving) return
+    if (savingRef.current) return
+    savingRef.current = true
     setIsSaving(true)
     setError(null)
 
@@ -241,15 +280,36 @@ function CanonicalStep({ draft, onChange, onSave }) {
         onChange("overrideSignal", false)
       }
 
+      // Resolve photo upload before calling onSave to avoid blocking during save
+      let resolvedPhotoUrl = null
+      if (draft.photoFile) {
+        const pending = photoUploadRef.current
+        if (pending?.file === draft.photoFile) {
+          try {
+            resolvedPhotoUrl = await pending.promise
+          } catch {
+            // Pre-upload failed; retry now
+            const retryPromise = uploadToCloudinary(draft.photoFile)
+            photoUploadRef.current = { file: draft.photoFile, promise: retryPromise }
+            resolvedPhotoUrl = await retryPromise
+          }
+        } else {
+          resolvedPhotoUrl = await uploadToCloudinary(draft.photoFile)
+        }
+      }
+
       // Trigger the actual climb insert + navigate to success
       await onSave({
         ...draft,
         canonicalClimbId: canonicalId,
         ...(inheritedPhotoUrl ? { photo: inheritedPhotoUrl } : {}),
+        ...(resolvedPhotoUrl ? { photo: resolvedPhotoUrl, photoFile: null } : {}),
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong")
       setIsSaving(false)
+    } finally {
+      savingRef.current = false
     }
   }
 
@@ -305,22 +365,6 @@ function CanonicalStep({ draft, onChange, onSave }) {
               <p className="mt-1.5 text-xs leading-5 text-stone-muted">
                 Tap to confirm which climb you logged. This helps others find it too.
               </p>
-
-              {selectedId && (() => {
-                const sel = scored.find((s) => s.candidate.id === selectedId)
-                return sel?.candidate.photo_url ? (
-                  <img
-                    key={selectedId}
-                    src={sel.candidate.photo_url}
-                    alt="Selected climb"
-                    className="mt-4 h-72 w-full rounded-2xl object-cover"
-                  />
-                ) : (
-                  <div className="mt-4 flex h-44 w-full items-center justify-center rounded-2xl bg-stone-border/30">
-                    <span className="text-4xl">🧗</span>
-                  </div>
-                )
-              })()}
 
               <div className="mt-4 space-y-2">
                 {scored.map(({ candidate, score }) => (
@@ -391,6 +435,7 @@ function CanonicalStep({ draft, onChange, onSave }) {
                   if (draft.photo?.startsWith("blob:")) URL.revokeObjectURL(draft.photo)
                   onChange("photoFile", file)
                   onChange("photo", URL.createObjectURL(file))
+                  photoUploadRef.current = { file, promise: uploadToCloudinary(file) }
                 }}
               />
             </>
