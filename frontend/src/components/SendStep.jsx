@@ -38,6 +38,7 @@ function getSliderToneClasses(isDisabled) {
       progress: "bg-stone-muted",
       tickActive: "bg-stone-muted",
       tickInactive: "bg-stone-border",
+      trackInactive: "bg-stone-border",
       thumbShell: "bg-stone-surface/70",
       thumbCore: "bg-stone-muted shadow-[0_2px_8px_rgba(46,42,38,0.12)]",
     }
@@ -47,6 +48,7 @@ function getSliderToneClasses(isDisabled) {
     progress: "bg-ember",
     tickActive: "bg-ember",
     tickInactive: "bg-[#55585d]",
+    trackInactive: "bg-[#55585d]",
     thumbShell: "bg-transparent",
     thumbCore: "bg-ember shadow-[0_4px_12px_rgba(46,42,38,0.24)]",
   }
@@ -128,9 +130,11 @@ function SendStep({ draft, onChange, onContinue }) {
           <div className={`mt-3 ${!isWorkedSelection ? "opacity-55" : "opacity-100"}`}>
             <div className="min-w-0">
               <div className="relative h-6 pr-1">
-                <div className="pointer-events-none absolute inset-x-[10px] inset-y-0">
+                  <div className="pointer-events-none absolute inset-x-[10px] inset-y-0">
                   <div className="relative h-full">
-                    <div className="absolute left-0 right-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-[#55585d]" />
+                    <div
+                      className={`absolute left-0 right-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full ${sliderToneClasses.trackInactive}`}
+                    />
                     <div
                       className={`absolute left-0 top-1/2 h-[4px] -translate-y-1/2 rounded-full ${sliderToneClasses.progress}`}
                       style={{ width: `${sliderPercent}%` }}
