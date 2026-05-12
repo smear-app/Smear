@@ -67,6 +67,7 @@ class ClimbObject(BaseModel):
     personal_grade: Optional[str] = None
     personal_grade_value: Optional[int] = None
     send_type: str
+    attempts: Optional[int] = None
     tags: list[str] = []
     photo_url: Optional[str] = None
     hold_color: Optional[str] = None
@@ -89,6 +90,7 @@ class PostClimbRequest(BaseModel):
     personal_grade: Optional[str] = None
     personal_grade_value: Optional[int] = None
     send_type: str
+    attempts: Optional[int] = None
     tags: list[str] = []
     photo_url: Optional[str] = None
     hold_color: Optional[str] = None
@@ -106,6 +108,7 @@ class PatchClimbRequest(BaseModel):
     personal_grade: Optional[str] = None
     personal_grade_value: Optional[int] = None
     send_type: Optional[str] = None
+    attempts: Optional[int] = None
     tags: Optional[list[str]] = None
     photo_url: Optional[str] = None
     hold_color: Optional[str] = None

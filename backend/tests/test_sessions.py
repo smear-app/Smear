@@ -29,6 +29,10 @@ class FakeQuery:
         self.filters.append((field, value))
         return self
 
+    def in_(self, field, values):
+        self.filters.append((field, tuple(values)))
+        return self
+
     def limit(self, value):
         self._limit = value
         return self
@@ -45,11 +49,14 @@ class FakeQuery:
         rows = self.supabase.tables[self.table]
         matches = [
             row for row in rows
-            if all(row.get(field) == value for field, value in self.filters)
+            if all(
+                row.get(field) in value if isinstance(value, tuple) else row.get(field) == value
+                for field, value in self.filters
+            )
         ]
 
         if self._update_payload is not None:
-            if self.returning != "representation":
+            if self.returning not in (None, "representation"):
                 raise RuntimeError("Missing response")
             for row in matches:
                 row.update(self._update_payload)
@@ -83,6 +90,7 @@ class FakeSupabase:
                     "default_visibility": "followers",
                 }
             ],
+            "coaching_insights": [],
             "climbs": [
                 {
                     "session_id": "session-1",

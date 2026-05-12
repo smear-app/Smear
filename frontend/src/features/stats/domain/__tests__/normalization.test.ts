@@ -19,6 +19,7 @@ const rawClimb: RawStatsClimb = {
   personal_grade: null,
   personal_grade_value: null,
   send_type: "flash",
+  attempts: 1,
   tags: ["Crimp", "Slab", "Unknown Tag"],
   photo_url: null,
   hold_color: "blue",

@@ -263,6 +263,7 @@ function mapSessionClimbToClimb(climb: SessionDetailObject['climbs'][number]): C
     personal_grade: climb.personal_grade,
     personal_grade_value: climb.personal_grade_value,
     send_type: climb.send_type,
+    attempts: climb.attempts,
     tags: climb.tags,
     photo_url: climb.photo_url,
     climbColor: climb.hold_color,

@@ -17,6 +17,9 @@ const EMPTY_DRAFT = {
   gymGrade: "",
   feltLike: "",
   sendType: "",
+  attemptsSlider: 2,
+  attemptsUseCustom: false,
+  attemptsCustom: "2",
   tags: [],
   notes: "",
 }

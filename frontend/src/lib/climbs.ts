@@ -14,6 +14,11 @@ import {
   type LoggedGradeOption,
   type LoggedGymOption,
 } from './api'
+import {
+  clampCustomAttemptsInput,
+  clampSliderAttempts,
+  resolveDraftAttempts,
+} from './climbAttempts'
 import type { LogbookSort } from './logbookTypes'
 
 export { gradeToValue } from './grades'
@@ -26,6 +31,9 @@ export interface ClimbDraft {
   gymGrade: string
   feltLike: string
   sendType: string
+  attemptsSlider: number
+  attemptsUseCustom: boolean
+  attemptsCustom: string
   tags: string[]
   photo: string | null       // blob URL for preview only
   photoFile: File | null     // raw File for upload
@@ -48,6 +56,7 @@ export interface Climb {
   personal_grade: string | null
   personal_grade_value: number | null
   send_type: string
+  attempts: number | null
   tags: string[]
   photo_url: string | null
   climbColor: string | null
@@ -70,6 +79,7 @@ export function applyDraftToClimb(climb: Climb, draft: ClimbDraft): Climb {
     personal_grade: draft.feltLike || null,
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
+    attempts: resolveDraftAttempts(draft).attempts,
     tags: draft.tags.map((tag) => tag.toLowerCase()),
     climbColor: draft.climbColor,
     notes: draft.notes || null,
@@ -96,6 +106,7 @@ function mapApiClimb(obj: ClimbObject): Climb {
     personal_grade: obj.personal_grade,
     personal_grade_value: obj.personal_grade_value,
     send_type: obj.send_type,
+    attempts: obj.attempts,
     tags: obj.tags,
     photo_url: obj.photo_url,
     climbColor: obj.hold_color,
@@ -129,6 +140,10 @@ interface PaginatedClimbsParams {
 
 export async function insertClimb(draft: ClimbDraft, userId: string): Promise<Climb> {
   void userId  // backend reads user from auth token
+  const attemptValidation = resolveDraftAttempts(draft)
+  if (!attemptValidation.isValid || attemptValidation.attempts == null) {
+    throw new Error(attemptValidation.helperText)
+  }
 
   const photoUrl = draft.photoFile
     ? await uploadToCloudinary(draft.photoFile)
@@ -144,6 +159,7 @@ export async function insertClimb(draft: ClimbDraft, userId: string): Promise<Cl
     personal_grade: draft.feltLike || null,
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
+    attempts: attemptValidation.attempts,
     tags: draft.tags.map((t) => t.toLowerCase()),
     photo_url: photoUrl,
     hold_color: draft.climbColor || null,
@@ -159,6 +175,11 @@ export async function updateClimb(
   draft: ClimbDraft,
   climb: Pick<Climb, 'id' | 'user_id'>,
 ): Promise<Climb> {
+  const attemptValidation = resolveDraftAttempts(draft)
+  if (!attemptValidation.isValid || attemptValidation.attempts == null) {
+    throw new Error(attemptValidation.helperText)
+  }
+
   let photoUrl: string | null = null
   if (draft.photoFile) {
     photoUrl = await uploadToCloudinary(draft.photoFile)
@@ -174,6 +195,7 @@ export async function updateClimb(
     personal_grade: draft.feltLike || null,
     personal_grade_value: draft.feltLike ? gradeToValue(draft.feltLike) : null,
     send_type: draft.sendType.toLowerCase(),
+    attempts: attemptValidation.attempts,
     tags: draft.tags.map((tag) => tag.toLowerCase()),
     photo_url: photoUrl,
     hold_color: draft.climbColor || null,
@@ -253,6 +275,9 @@ export function toClimbDraft(climb: Climb): ClimbDraft {
     gymGrade: climb.gym_grade,
     feltLike: climb.personal_grade ?? '',
     sendType: toTitleCase(climb.send_type),
+    attemptsSlider: clampSliderAttempts(climb.attempts ?? 2),
+    attemptsUseCustom: Boolean(climb.attempts && climb.attempts > 10),
+    attemptsCustom: clampCustomAttemptsInput(`${climb.attempts ?? 2}`),
     tags: climb.tags.map(toTitleCase),
     photo: climb.photo_url,
     photoFile: null,

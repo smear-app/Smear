@@ -6,6 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from app.deps import get_current_user
 from app.gyms import get_supabase
 from app.duplicate_detection import run_duplicate_check
+from app.climb_attempts import recompute_user_canonical_attempt_progress, resolve_attempts_for_send_type
 from app.models import (
     ClimbObject,
     PaginatedClimbsResponse,
@@ -42,6 +43,7 @@ def _row_to_climb_object(row: dict) -> ClimbObject:
         personal_grade=row.get("personal_grade"),
         personal_grade_value=row.get("personal_grade_value"),
         send_type=row["send_type"],
+        attempts=row.get("attempts"),
         tags=row.get("tags") or [],
         photo_url=photo_url,
         hold_color=row.get("hold_color"),
@@ -252,6 +254,10 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
     supabase = get_supabase()
 
     session_id = _get_or_create_session(supabase, user_id, body.gym_id, body.gym_name)
+    try:
+        attempts = resolve_attempts_for_send_type(body.send_type, body.attempts)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     payload: dict = {
         "user_id": user_id,
@@ -262,6 +268,7 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
         "personal_grade": body.personal_grade,
         "personal_grade_value": body.personal_grade_value,
         "send_type": body.send_type.lower(),
+        "attempts": attempts,
         "tags": [t.lower() for t in body.tags],
         "photo_url": body.photo_url,
         "hold_color": body.hold_color,
@@ -282,6 +289,7 @@ def post_climb(body: PostClimbRequest, background_tasks: BackgroundTasks, user_i
     _touch_session(supabase, session_id)
     background_tasks.add_task(publish_stale_sessions, supabase, user_id)
     if body.canonical_climb_id:
+        recompute_user_canonical_attempt_progress(supabase, user_id, body.canonical_climb_id)
         _refresh_canonical_state(supabase, body.canonical_climb_id)
         if body.photo_url:
             supabase.from_("canonical_climbs").update({"photo_url": body.photo_url}).eq(
@@ -312,7 +320,7 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
 
     existing = (
         supabase.from_("climbs")
-        .select("id, canonical_climb_id")
+        .select("id, canonical_climb_id, send_type, attempts")
         .eq("id", climb_id)
         .eq("user_id", user_id)
         .maybe_single()
@@ -325,6 +333,14 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
         updates["tags"] = [tag.lower() for tag in updates["tags"]]
     if updates.get("send_type") is not None:
         updates["send_type"] = updates["send_type"].lower()
+    if "send_type" in updates or "attempts" in updates:
+        try:
+            updates["attempts"] = resolve_attempts_for_send_type(
+                updates.get("send_type") or existing.data.get("send_type") or "",
+                updates.get("attempts", existing.data.get("attempts")),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     update_result = (
         supabase.from_("climbs")
@@ -338,6 +354,8 @@ def patch_climb(climb_id: str, body: PatchClimbRequest, user_id: str = Depends(g
     canonical_climb_id = existing.data.get("canonical_climb_id")
     if canonical_climb_id and ("tags" in updates or "send_type" in updates):
         _refresh_canonical_state(supabase, canonical_climb_id)
+    if canonical_climb_id and ("send_type" in updates or "attempts" in updates):
+        recompute_user_canonical_attempt_progress(supabase, user_id, canonical_climb_id)
     result = (
         supabase.from_("climbs")
         .select(
@@ -387,5 +405,6 @@ def delete_climb(climb_id: str, user_id: str = Depends(get_current_user)):
     canonical_climb_id = climb.data.get("canonical_climb_id")
 
     supabase.from_("climbs").delete().eq("id", climb_id).eq("user_id", user_id).execute()
+    recompute_user_canonical_attempt_progress(supabase, user_id, canonical_climb_id)
     _refresh_canonical_state(supabase, canonical_climb_id)
     _soft_delete_canonical_if_unused(supabase, canonical_climb_id)

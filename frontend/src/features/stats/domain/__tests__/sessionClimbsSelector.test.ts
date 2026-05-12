@@ -13,6 +13,7 @@ function climb(id: string, overrides: Partial<Climb> = {}): Climb {
     personal_grade: null,
     personal_grade_value: null,
     send_type: "send",
+    attempts: 2,
     tags: [],
     photo_url: null,
     climbColor: null,
