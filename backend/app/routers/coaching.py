@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field, field_validator
 from app.climber_profile import get_climber_profile
 from app.deps import get_current_user
 from app.gyms import get_supabase
+from app.session_insights import _working_grade
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/coach", tags=["coach"])
@@ -122,8 +124,94 @@ def _profile_summary(p: dict) -> str:
         f"Flash rate: {p.get('flash_rate', 0):.0%} | "
         f"Archetype: {p.get('archetype', 'unknown')} | "
         f"Style gaps: {gaps} | "
-        f"Gym: {p.get('gym_name', 'your gym')}"
+        f"Last gym: {p.get('gym_name', 'unknown')} (all stats are cross-gym, last 90 days)"
     )
+
+
+# ── Tools ─────────────────────────────────────────────────────────────────────
+
+COACH_TOOLS = [
+    {
+        "name": "get_gym_stats",
+        "description": (
+            "Fetch the user's climbing stats filtered to a specific gym. "
+            "Call this when the user asks about their performance at a particular gym by name. "
+            "Returns session count, total climbs, working grade, send rate, and flash rate "
+            "for that gym over the last 90 days. Partial gym name matches are supported."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "gym_name": {
+                    "type": "string",
+                    "description": "The gym name to look up. Partial matches work (e.g. 'Movement' matches 'Movement Denver').",
+                }
+            },
+            "required": ["gym_name"],
+        },
+    }
+]
+
+
+def _tool_get_gym_stats(user_id: str, gym_name: str) -> str:
+    supabase = get_supabase()
+    now = datetime.now(timezone.utc)
+    cutoff_90 = (now - timedelta(days=90)).isoformat()
+
+    sessions_result = (
+        supabase.from_("sessions")
+        .select("sends, flashes, total_climbs, gym_name")
+        .eq("user_id", user_id)
+        .eq("is_published", True)
+        .gte("started_at", cutoff_90)
+        .ilike("gym_name", f"%{gym_name}%")
+        .execute()
+    )
+    sessions = sessions_result.data or []
+
+    if not sessions:
+        return f"No sessions found at a gym matching '{gym_name}' in the last 90 days."
+
+    matched_gyms = list({s.get("gym_name") for s in sessions if s.get("gym_name")})
+    total_sends = sum(s.get("sends") or 0 for s in sessions)
+    total_flashes = sum(s.get("flashes") or 0 for s in sessions)
+    total_climbs = sum(s.get("total_climbs") or 0 for s in sessions)
+
+    climbs_result = (
+        supabase.from_("climbs")
+        .select("gym_grade_value")
+        .eq("user_id", user_id)
+        .in_("send_type", ["send", "flash"])
+        .ilike("gym_name", f"%{gym_name}%")
+        .gte("created_at", cutoff_90)
+        .execute()
+    )
+    grades = [
+        c["gym_grade_value"]
+        for c in (climbs_result.data or [])
+        if isinstance(c.get("gym_grade_value"), (int, float))
+    ]
+    working_grade = _working_grade(grades) if grades else None
+
+    send_rate = total_sends / total_climbs if total_climbs else 0.0
+    flash_rate = total_flashes / total_climbs if total_climbs else 0.0
+    gym_label = matched_gyms[0] if len(matched_gyms) == 1 else ", ".join(matched_gyms)
+
+    return (
+        f"Stats at {gym_label} (last 90 days): "
+        f"{len(sessions)} sessions, {total_climbs} total climbs, "
+        f"working grade {_fmt_grade(working_grade)}, "
+        f"send rate {send_rate:.0%}, flash rate {flash_rate:.0%}."
+    )
+
+
+def _execute_tool(name: str, tool_input: dict, user_id: str) -> str:
+    if name == "get_gym_stats":
+        gym_name = tool_input.get("gym_name", "").strip()
+        if not gym_name:
+            return "Error: gym_name is required."
+        return _tool_get_gym_stats(user_id, gym_name)
+    return f"Unknown tool: {name}"
 
 
 @router.get("/greeting")
@@ -208,7 +296,7 @@ def greeting(user_id: str = Depends(get_current_user)):
         return {"context": "pre_session", "insight": cached["insight_text"], "generated_at": cached["generated_at"]}
     p = get_climber_profile(user_id)
     prompt = (
-        f"Pre-session opening message for a climber at {p.get('gym_name', 'their gym')}.\n"
+        f"Pre-session opening message. Stats are cross-gym aggregates for the last 90 days.\n"
         f"Stats: {_profile_summary(p)}\n"
         "Give a 1-2 sentence opener that sets up their next session based on the data and invites them to ask a question."
     )
@@ -226,7 +314,7 @@ def pre_session(user_id: str = Depends(get_current_user)):
 
     p = get_climber_profile(user_id)
     prompt = (
-        f"Pre-session intent for a climber at {p.get('gym_name', 'their gym')}.\n"
+        f"Pre-session intent. Stats are cross-gym aggregates for the last 90 days.\n"
         f"Stats: {_profile_summary(p)}\n"
         "Give a 2-3 sentence training intent: what grade to target, what style to focus on, "
         "and one reason why based on the data."
@@ -332,7 +420,7 @@ def training_focus(user_id: str = Depends(get_current_user)):
 
     p = get_climber_profile(user_id)
     prompt = (
-        f"2-4 week training plan.\n"
+        f"2-4 week training plan. Stats are cross-gym aggregates for the last 90 days.\n"
         f"Stats: {_profile_summary(p)}\n"
         "Write a focused 2-4 week training plan: one primary goal, one style to prioritize, "
         "and a weekly session structure. Reference specific numbers from the data."
@@ -378,19 +466,66 @@ def chat(body: ChatBody, user_id: str = Depends(get_current_user)):
     p = get_climber_profile(user_id)
     system = [
         {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}},
-        {"type": "text", "text": f"Climber context: {_profile_summary(p)}"},
+        {"type": "text", "text": f"Climber context (all stats are cross-gym, last 90 days): {_profile_summary(p)}"},
     ]
     trimmed = body.messages[-MAX_HISTORY_MESSAGES:]
     messages = [{"role": m.role, "content": m.content} for m in trimmed]
 
     def stream():
-        with _anthropic_client.messages.stream(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=600,
-            system=system,
-            messages=messages,
-        ) as s:
-            for text in s.text_stream:
-                yield text
+        msgs = list(messages)
+
+        for _ in range(3):  # max tool-use roundtrips
+            pending: dict[str, dict] = {}
+            current_tool_id: str | None = None
+
+            with _anthropic_client.messages.stream(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=600,
+                system=system,
+                tools=COACH_TOOLS,
+                messages=msgs,
+            ) as s:
+                for event in s:
+                    if event.type == "content_block_start":
+                        cb = event.content_block
+                        if cb.type == "tool_use":
+                            current_tool_id = cb.id
+                            pending[cb.id] = {"id": cb.id, "name": cb.name, "input_json": ""}
+                        else:
+                            current_tool_id = None
+                    elif event.type == "content_block_delta":
+                        d = event.delta
+                        if d.type == "text_delta":
+                            yield d.text
+                        elif d.type == "input_json_delta" and current_tool_id:
+                            pending[current_tool_id]["input_json"] += d.partial_json
+                    elif event.type == "content_block_stop":
+                        current_tool_id = None
+
+                final = s.get_final_message()
+
+            if final.stop_reason != "tool_use":
+                break
+
+            # Serialize assistant content blocks for the next turn
+            assistant_content = []
+            for b in final.content:
+                if b.type == "text":
+                    assistant_content.append({"type": "text", "text": b.text})
+                elif b.type == "tool_use":
+                    assistant_content.append({"type": "tool_use", "id": b.id, "name": b.name, "input": b.input})
+
+            # Execute each tool and collect results
+            tool_results = []
+            for tc in pending.values():
+                try:
+                    tool_input = json.loads(tc["input_json"]) if tc["input_json"] else {}
+                except json.JSONDecodeError:
+                    tool_input = {}
+                result = _execute_tool(tc["name"], tool_input, user_id)
+                tool_results.append({"type": "tool_result", "tool_use_id": tc["id"], "content": result})
+
+            msgs.append({"role": "assistant", "content": assistant_content})
+            msgs.append({"role": "user", "content": tool_results})
 
     return StreamingResponse(stream(), media_type="text/plain")
