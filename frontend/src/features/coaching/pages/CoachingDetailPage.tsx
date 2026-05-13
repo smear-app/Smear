@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiSend } from 'react-icons/fi'
 import ReactMarkdown from 'react-markdown'
-import { streamChatMessage, type ChatMessage } from '../../../lib/api'
+import { streamChatMessage, fetchCoachGreeting, type ChatMessage } from '../../../lib/api'
 
-const GREETING = "Hey! I'm Coach Smear. I've got your climbing data in front of me — what's on your mind?"
+const FALLBACK_GREETING = "Hey! I'm Coach Smear. I've got your climbing data in front of me — what's on your mind?"
 
 export default function CoachingDetailPage() {
   const navigate = useNavigate()
@@ -12,11 +12,17 @@ export default function CoachingDetailPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: GREETING },
+    { role: 'assistant', content: '' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const MAX_INPUT = 500
+
+  useEffect(() => {
+    fetchCoachGreeting()
+      .then(({ insight }) => setMessages([{ role: 'assistant', content: insight }]))
+      .catch(() => setMessages([{ role: 'assistant', content: FALLBACK_GREETING }]))
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -36,7 +42,7 @@ export default function CoachingDetailPage() {
 
     try {
       await streamChatMessage(
-        next.filter((m) => m.role !== 'assistant' || m.content !== GREETING),
+        next.slice(1), // skip the opening greeting
         (chunk) => {
           assistantMsg.content += chunk
           setMessages([...next, { ...assistantMsg }])

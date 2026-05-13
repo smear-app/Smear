@@ -126,6 +126,97 @@ def _profile_summary(p: dict) -> str:
     )
 
 
+@router.get("/greeting")
+def greeting(user_id: str = Depends(get_current_user)):
+    supabase = get_supabase()
+
+    # 1. Active session (unpublished, ended_at within last 3 h)
+    threshold_active = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat()
+    active_result = (
+        supabase.from_("sessions")
+        .select("id, started_at")
+        .eq("user_id", user_id)
+        .eq("is_published", False)
+        .gt("ended_at", threshold_active)
+        .order("ended_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    active = (active_result.data or [None])[0]
+
+    if active:
+        count_result = (
+            supabase.from_("climbs")
+            .select("id")
+            .eq("session_id", active["id"])
+            .execute()
+        )
+        climbs_so_far = len(count_result.data or [])
+        duration_str = ""
+        if active.get("started_at"):
+            try:
+                start = datetime.fromisoformat(active["started_at"].replace("Z", "+00:00"))
+                mins = int((datetime.now(timezone.utc) - start).total_seconds() // 60)
+                duration_str = f"{mins} min in, "
+            except Exception:
+                pass
+        p = get_climber_profile(user_id)
+        gaps = ", ".join(g["tag"] for g in (p.get("archetype_gaps") or [])[:2]) or "none"
+        prompt = (
+            f"Opening message for a climber mid-session. {duration_str}{climbs_so_far} climbs logged. "
+            f"Working grade: {_fmt_grade(p.get('working_grade'))}. "
+            f"Archetype: {p.get('archetype', 'unknown')}. Style gaps: {gaps}.\n"
+            "Give a 1-2 sentence opener that acknowledges the session in progress and invites them to ask a question or share how it's going."
+        )
+        text = _call_haiku(prompt)
+        return {"context": "active_session", "insight": text, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    # 2. Recent completed session (within 12 h)
+    threshold_post = (datetime.now(timezone.utc) - timedelta(hours=12)).isoformat()
+    recent_result = (
+        supabase.from_("sessions")
+        .select("sends, flashes, total_climbs, hardest_grade, insight_label, started_at")
+        .eq("user_id", user_id)
+        .eq("is_published", True)
+        .gt("started_at", threshold_post)
+        .order("started_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    recent_session = (recent_result.data or [None])[0]
+
+    if recent_session:
+        cached = _check_cache(supabase, user_id, "post-session")
+        if cached:
+            return {"context": "post_session", "insight": cached["insight_text"], "generated_at": cached["generated_at"]}
+        p = get_climber_profile(user_id)
+        prompt = (
+            f"Post-session opening message.\n"
+            f"Session: {recent_session.get('total_climbs', 0)} climbs, {recent_session.get('sends', 0)} sends, "
+            f"{recent_session.get('flashes', 0)} flashes, hardest: {recent_session.get('hardest_grade', 'unknown')}. "
+            f"Session label: {recent_session.get('insight_label', 'none')}.\n"
+            f"Overall stats: {_profile_summary(p)}\n"
+            "Give a 1-2 sentence opener that references the session just completed and invites them to ask about it."
+        )
+        text = _call_haiku(prompt)
+        _write_cache(supabase, user_id, "post-session", text)
+        return {"context": "post_session", "insight": text, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    # 3. Pre-session (default)
+    cached = _check_cache(supabase, user_id, "pre-session")
+    if cached:
+        return {"context": "pre_session", "insight": cached["insight_text"], "generated_at": cached["generated_at"]}
+    p = get_climber_profile(user_id)
+    prompt = (
+        f"Pre-session opening message for a climber at {p.get('gym_name', 'their gym')}.\n"
+        f"Stats: {_profile_summary(p)}\n"
+        "Give a 1-2 sentence opener that sets up their next session based on the data and invites them to ask a question."
+    )
+    text = _call_haiku(prompt)
+    _write_cache(supabase, user_id, "pre-session", text)
+    return {"context": "pre_session", "insight": text, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+
 @router.get("/pre-session")
 def pre_session(user_id: str = Depends(get_current_user)):
     supabase = get_supabase()

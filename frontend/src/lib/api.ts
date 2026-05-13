@@ -649,6 +649,18 @@ export async function postCheckinInsight(feeling: 'good' | 'tired' | 'sore'): Pr
   })
 }
 
+export type CoachContext = 'active_session' | 'post_session' | 'pre_session'
+
+export interface CoachGreetingResponse {
+  context: CoachContext
+  insight: string
+  generated_at: string
+}
+
+export async function fetchCoachGreeting(): Promise<CoachGreetingResponse> {
+  return apiFetch<CoachGreetingResponse>('/coach/greeting')
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
