@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Optional
-
 import os
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
 import anthropic
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.climber_profile import get_climber_profile
@@ -27,10 +27,11 @@ SYSTEM_PROMPT = """You are a concise, data-driven climbing coach embedded in the
 Rules:
 - Every insight must reference at least one real number from the user's data.
 - Be direct. No filler. No "Great job!" No generic advice.
-- 2-3 sentences max unless instructed otherwise.
+- 2-3 sentences max for cards; for chat, answer fully but stay tight.
 - Speak in second person ("you", "your").
 - Grade references use V-scale (e.g. V5, V6). Grade values are numeric: VB=-1, V0=0, V1=1, up to V10+=11.
 - If data is sparse, acknowledge it briefly and give a conservative recommendation.
+- Use markdown sparingly: **bold** for grades and key numbers only. No headers. No bullet lists unless the user explicitly asks for a breakdown.
 """
 
 
@@ -225,3 +226,40 @@ def training_focus(user_id: str = Depends(get_current_user)):
     text = _call_haiku(prompt)
     _write_cache(supabase, user_id, "training-focus", text)
     return {"insight": text, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+
+class ChatMessage(BaseModel):
+    role: str  # "user" | "assistant"
+    content: str
+
+
+class ChatBody(BaseModel):
+    messages: List[ChatMessage]
+
+
+@router.post("/chat")
+def chat(body: ChatBody, user_id: str = Depends(get_current_user)):
+    if not _anthropic_client.api_key:
+        raise HTTPException(status_code=503, detail="Coaching unavailable: ANTHROPIC_API_KEY not configured")
+
+    if not body.messages or body.messages[-1].role != "user":
+        raise HTTPException(status_code=422, detail="Last message must be from user")
+
+    p = get_climber_profile(user_id)
+    system = [
+        {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}},
+        {"type": "text", "text": f"Climber context: {_profile_summary(p)}"},
+    ]
+    messages = [{"role": m.role, "content": m.content} for m in body.messages]
+
+    def stream():
+        with _anthropic_client.messages.stream(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=600,
+            system=system,
+            messages=messages,
+        ) as s:
+            for text in s.text_stream:
+                yield text
+
+    return StreamingResponse(stream(), media_type="text/plain")

@@ -649,6 +649,35 @@ export async function postCheckinInsight(feeling: 'good' | 'tired' | 'sore'): Pr
   })
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export async function streamChatMessage(
+  messages: ChatMessage[],
+  onChunk: (chunk: string) => void,
+): Promise<void> {
+  const token = await getToken()
+  const resp = await fetch(`${API_BASE_URL}/coach/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ messages }),
+  })
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '')
+    throw new Error(`API error ${resp.status}: ${text}`)
+  }
+  const reader = resp.body?.getReader()
+  if (!reader) return
+  const decoder = new TextDecoder()
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    onChunk(decoder.decode(value, { stream: true }))
+  }
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
 export async function getAdminDuplicateFlags(): Promise<DuplicateFlagObject[]> {
