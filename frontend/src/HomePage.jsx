@@ -66,7 +66,7 @@ function HomePage({ onEditClimb, onDeleteClimb, climbs, totalClimbs, loadError, 
         </div>
 
         <div className="mt-3">
-          <CoachingStatusCard refreshKey={refreshKey} />
+          <CoachingStatusCard />
         </div>
 
         <section className="mt-2 rounded-[28px] border border-stone-border bg-stone-surface px-5 py-5 shadow-[0_14px_34px_rgba(89,68,51,0.08)]">

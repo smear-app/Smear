@@ -1,161 +1,145 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiArrowLeft, FiZap } from 'react-icons/fi'
-import {
-  getPreSessionInsight,
-  getPostSessionInsight,
-  getTrainingFocusInsight,
-  postCheckinInsight,
-  getActiveSession,
-  type CoachingInsightResponse,
-} from '../../../lib/api'
+import { FiArrowLeft, FiSend } from 'react-icons/fi'
+import ReactMarkdown from 'react-markdown'
+import { streamChatMessage, fetchCoachGreeting, type ChatMessage } from '../../../lib/api'
 
-type Feeling = 'good' | 'tired' | 'sore'
-
-function InsightSection({
-  title,
-  insight,
-  loading,
-}: {
-  title: string
-  insight: string | null
-  loading: boolean
-}) {
-  return (
-    <div className="rounded-[22px] border border-stone-border bg-stone-surface px-5 py-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-stone-secondary">{title}</p>
-      {loading ? (
-        <div className="mt-3 space-y-2">
-          <div className="h-3.5 w-full animate-pulse rounded-full bg-stone-alt" />
-          <div className="h-3.5 w-4/5 animate-pulse rounded-full bg-stone-alt" />
-          <div className="h-3.5 w-3/5 animate-pulse rounded-full bg-stone-alt" />
-        </div>
-      ) : insight ? (
-        <p className="mt-2 text-sm leading-relaxed text-stone-text">{insight}</p>
-      ) : (
-        <p className="mt-2 text-sm text-stone-secondary">No insight available yet.</p>
-      )}
-    </div>
-  )
-}
+const FALLBACK_GREETING = "Hey! I'm Coach Smear. I've got your climbing data in front of me — what's on your mind?"
 
 export default function CoachingDetailPage() {
   const navigate = useNavigate()
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const [todayInsight, setTodayInsight] = useState<string | null>(null)
-  const [todayLoading, setTodayLoading] = useState(true)
-
-  const [focusInsight, setFocusInsight] = useState<string | null>(null)
-  const [focusLoading, setFocusLoading] = useState(true)
-
-  const [hasActiveSession, setHasActiveSession] = useState(false)
-  const [feeling, setFeeling] = useState<Feeling | null>(null)
-  const [checkinInsight, setCheckinInsight] = useState<string | null>(null)
-  const [checkinLoading, setCheckinLoading] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: 'assistant', content: '' },
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+  const MAX_INPUT = 500
 
   useEffect(() => {
-    async function loadToday() {
-      try {
-        const active = await getActiveSession()
-        setHasActiveSession(!!active)
-
-        let resp: CoachingInsightResponse
-        try {
-          resp = await getPostSessionInsight()
-        } catch {
-          resp = await getPreSessionInsight()
-        }
-        setTodayInsight(resp.insight)
-      } catch {
-        setTodayInsight(null)
-      } finally {
-        setTodayLoading(false)
-      }
-    }
-
-    async function loadFocus() {
-      try {
-        const resp = await getTrainingFocusInsight()
-        setFocusInsight(resp.insight)
-      } catch {
-        setFocusInsight(null)
-      } finally {
-        setFocusLoading(false)
-      }
-    }
-
-    void loadToday()
-    void loadFocus()
+    fetchCoachGreeting()
+      .then(({ insight }) => setMessages([{ role: 'assistant', content: insight }]))
+      .catch(() => setMessages([{ role: 'assistant', content: FALLBACK_GREETING }]))
   }, [])
 
-  async function handleCheckin(f: Feeling) {
-    setFeeling(f)
-    setCheckinLoading(true)
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  async function handleSend() {
+    const text = input.trim()
+    if (!text || loading || text.length > MAX_INPUT) return
+
+    const next: ChatMessage[] = [...messages, { role: 'user', content: text }]
+    setMessages(next)
+    setInput('')
+    setLoading(true)
+
+    const assistantMsg: ChatMessage = { role: 'assistant', content: '' }
+    setMessages([...next, assistantMsg])
+
     try {
-      const resp = await postCheckinInsight(f)
-      setCheckinInsight(resp.insight)
-    } catch {
-      setCheckinInsight(null)
+      await streamChatMessage(
+        next.slice(1), // skip the opening greeting
+        (chunk) => {
+          assistantMsg.content += chunk
+          setMessages([...next, { ...assistantMsg }])
+        },
+      )
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message.includes('429')
+          ? 'Rate limit reached. Try again in an hour.'
+          : 'Something went wrong. Try again.'
+      setMessages([...next, { role: 'assistant', content: msg }])
     } finally {
-      setCheckinLoading(false)
+      setLoading(false)
+      inputRef.current?.focus()
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      void handleSend()
     }
   }
 
   return (
-    <div className="app-safe-shell min-h-screen bg-stone-bg">
-      <main className="app-safe-shell__main mx-auto max-w-[420px] px-5 pb-32 pt-6">
-        <div className="mb-5 flex items-center gap-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-surface text-stone-secondary transition hover:bg-stone-alt"
-            aria-label="Back"
-          >
-            <FiArrowLeft className="h-4 w-4" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-ember/15">
-              <FiZap className="h-3.5 w-3.5 text-ember" />
-            </div>
-            <h1 className="text-xl font-bold text-stone-text">Coaching</h1>
-          </div>
+    <div className="fixed inset-0 flex flex-col bg-stone-bg">
+      {/* Header */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-stone-border bg-stone-bg px-4 pt-safe pb-3 pt-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-border bg-stone-surface text-stone-secondary transition hover:bg-stone-alt"
+          aria-label="Back"
+        >
+          <FiArrowLeft className="h-4 w-4" />
+        </button>
+        <div>
+          <p className="text-base font-bold text-stone-text leading-tight">Coach Smear</p>
+          <p className="text-xs text-stone-secondary">Powered by your climbing data</p>
         </div>
+      </div>
 
-        <div className="space-y-3">
-          <InsightSection title="Today" insight={todayInsight} loading={todayLoading} />
-
-          {hasActiveSession && (
-            <div className="rounded-[22px] border border-stone-border bg-stone-surface px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-stone-secondary">
-                Check-in
-              </p>
-              {!feeling ? (
-                <div className="mt-3 flex gap-2">
-                  {(['good', 'tired', 'sore'] as Feeling[]).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => handleCheckin(f)}
-                      className="flex-1 rounded-full border border-stone-border bg-stone-alt py-2 text-sm font-medium text-stone-text capitalize transition hover:border-ember/30 hover:bg-ember/5 hover:text-ember"
-                    >
-                      {f}
-                    </button>
-                  ))}
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+        {messages.map((m, i) => (
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`max-w-[82%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                m.role === 'user'
+                  ? 'rounded-br-sm bg-ember text-white'
+                  : 'rounded-bl-sm bg-stone-surface border border-stone-border text-stone-text'
+              }`}
+            >
+              {m.role === 'assistant' ? (
+                <div className="prose-sm prose-stone max-w-none [&_p]:my-0 [&_p+p]:mt-2">
+                  <ReactMarkdown>{m.content || '…'}</ReactMarkdown>
                 </div>
-              ) : checkinLoading ? (
-                <div className="mt-3 space-y-2">
-                  <div className="h-3.5 w-full animate-pulse rounded-full bg-stone-alt" />
-                  <div className="h-3.5 w-3/5 animate-pulse rounded-full bg-stone-alt" />
-                </div>
-              ) : checkinInsight ? (
-                <p className="mt-2 text-sm leading-relaxed text-stone-text">{checkinInsight}</p>
               ) : (
-                <p className="mt-2 text-sm text-stone-secondary">Could not load check-in.</p>
+                m.content
               )}
             </div>
-          )}
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
 
-          <InsightSection title="Training Focus" insight={focusInsight} loading={focusLoading} />
+      {/* Input */}
+      <div className="shrink-0 border-t border-stone-border bg-stone-bg px-4 py-3 pb-safe">
+        {input.length > MAX_INPUT - 60 && (
+          <p className={`mb-1 text-right text-xs ${input.length > MAX_INPUT ? 'text-red-500' : 'text-stone-secondary'}`}>
+            {input.length}/{MAX_INPUT}
+          </p>
+        )}
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => {
+              setInput(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask anything about your climbing…"
+            disabled={loading}
+            rows={1}
+            className="flex-1 resize-none overflow-hidden rounded-2xl border border-stone-border bg-stone-surface px-4 py-2.5 text-sm text-stone-text placeholder:text-stone-secondary/60 focus:border-ember/40 focus:outline-none disabled:opacity-50"
+            style={{ height: '40px' }}
+          />
+          <button
+            onClick={() => void handleSend()}
+            disabled={!input.trim() || loading || input.trim().length > MAX_INPUT}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ember text-white transition hover:bg-ember/90 disabled:opacity-40"
+          >
+            <FiSend className="h-4 w-4" />
+          </button>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

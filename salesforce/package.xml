@@ -2,6 +2,8 @@
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
         <members>GetClimberGoal</members>
+        <members>GetClimberProfile</members>
+        <members>GetRecentSessions</members>
         <members>UpsertClimberGoal</members>
         <name>ApexClass</name>
     </types>
@@ -18,10 +20,6 @@
     <types>
         <members>SmearCoaching</members>
         <name>PermissionSet</name>
-    </types>
-    <types>
-        <members>SmearGraphQL</members>
-        <name>ExternalServiceRegistration</name>
     </types>
     <types>
         <members>SmearGraphQL</members>
