@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import os
+
 import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -14,6 +16,9 @@ from app.gyms import get_supabase
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/coach", tags=["coach"])
+
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    logger.warning("ANTHROPIC_API_KEY is not set — coaching endpoints will return 503")
 
 _anthropic_client = anthropic.Anthropic()
 
@@ -64,6 +69,8 @@ def _write_cache(supabase, user_id: str, insight_type: str, text: str) -> None:
 
 
 def _call_haiku(user_content: str) -> str:
+    if not _anthropic_client.api_key:
+        raise HTTPException(status_code=503, detail="Coaching unavailable: ANTHROPIC_API_KEY not configured")
     response = _anthropic_client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=300,

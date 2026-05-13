@@ -41,13 +41,13 @@ export default function CoachingStatusCard({ refreshKey }: CoachingStatusCardPro
           const post = await getPostSessionInsight()
           text = post.insight
           state = 'post-session'
-        } catch {
+        } catch (postErr) {
           try {
             const pre = await getPreSessionInsight()
             text = pre.insight
             state = 'pre-session'
-          } catch {
-            // hide silently
+          } catch (preErr) {
+            console.error('[CoachingStatusCard] pre-session failed:', preErr)
           }
         }
 
@@ -55,7 +55,8 @@ export default function CoachingStatusCard({ refreshKey }: CoachingStatusCardPro
           setInsight(text)
           setCardState(text ? state : 'hidden')
         }
-      } catch {
+      } catch (err) {
+        console.error('[CoachingStatusCard] load failed:', err)
         if (!cancelled) setCardState('hidden')
       }
     }

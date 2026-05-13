@@ -27,6 +27,22 @@
         <field>Climber__c.Smear_User_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <classAccesses>
+        <apexClass>GetClimberGoal</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>GetClimberProfile</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>GetRecentSessions</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>UpsertClimberGoal</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <userPermissions>
         <enabled>true</enabled>
         <name>RunFlow</name>
