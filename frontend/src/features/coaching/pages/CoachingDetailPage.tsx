@@ -16,6 +16,7 @@ export default function CoachingDetailPage() {
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const MAX_INPUT = 500
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -23,7 +24,7 @@ export default function CoachingDetailPage() {
 
   async function handleSend() {
     const text = input.trim()
-    if (!text || loading) return
+    if (!text || loading || text.length > MAX_INPUT) return
 
     const next: ChatMessage[] = [...messages, { role: 'user', content: text }]
     setMessages(next)
@@ -41,8 +42,12 @@ export default function CoachingDetailPage() {
           setMessages([...next, { ...assistantMsg }])
         },
       )
-    } catch {
-      setMessages([...next, { role: 'assistant', content: 'Something went wrong. Try again.' }])
+    } catch (err) {
+      const msg =
+        err instanceof Error && err.message.includes('429')
+          ? 'Rate limit reached. Try again in an hour.'
+          : 'Something went wrong. Try again.'
+      setMessages([...next, { role: 'assistant', content: msg }])
     } finally {
       setLoading(false)
       inputRef.current?.focus()
@@ -99,6 +104,11 @@ export default function CoachingDetailPage() {
 
       {/* Input */}
       <div className="shrink-0 border-t border-stone-border bg-stone-bg px-4 py-3 pb-safe">
+        {input.length > MAX_INPUT - 60 && (
+          <p className={`mb-1 text-right text-xs ${input.length > MAX_INPUT ? 'text-red-500' : 'text-stone-secondary'}`}>
+            {input.length}/{MAX_INPUT}
+          </p>
+        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -117,7 +127,7 @@ export default function CoachingDetailPage() {
           />
           <button
             onClick={() => void handleSend()}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || loading || input.trim().length > MAX_INPUT}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ember text-white transition hover:bg-ember/90 disabled:opacity-40"
           >
             <FiSend className="h-4 w-4" />
