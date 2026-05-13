@@ -43,7 +43,7 @@ def get_climber_profile(user_id: str) -> dict:
     session_count = len(sessions)
 
     send_rate = _safe_divide(total_sends, total_climbs_all)
-    flash_rate = _safe_divide(total_flashes, total_sends)
+    flash_rate = _safe_divide(total_flashes, total_climbs_all)
     avg_climbs_per_session = _safe_divide(total_climbs_all, session_count)
     sessions_per_week = session_count / 13.0
 
